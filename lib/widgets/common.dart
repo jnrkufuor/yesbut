@@ -1,0 +1,338 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../models/analysis.dart';
+import '../theme/app_theme.dart';
+
+/// Squishy press feedback used for every tappable card.
+class Pressable extends StatefulWidget {
+  const Pressable({super.key, required this.child, this.onTap, this.scale = 0.96});
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.onTap == null ? null : (_) => setState(() => _down = true),
+      onTapCancel: () => setState(() => _down = false),
+      onTapUp: (_) => setState(() => _down = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// The wordmark: "yes, but" + three brand dots as the ellipsis.
+class Wordmark extends StatelessWidget {
+  const Wordmark({super.key, this.size = 30});
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = size * 0.26;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text('yes, but',
+            style: TextStyle(
+              fontFamily: AppTheme.font,
+              fontSize: size,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -size * 0.05,
+              color: GColors.ink,
+              height: 1,
+            )),
+        SizedBox(width: size * 0.1),
+        for (final c in const [GColors.red, GColors.blue, GColors.green])
+          Container(
+            width: dot,
+            height: dot,
+            margin: EdgeInsets.only(left: dot * 0.3, bottom: size * 0.12),
+            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+          ),
+      ],
+    );
+  }
+}
+
+/// Loud primary button.
+class BigButton extends StatelessWidget {
+  const BigButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.color = GColors.ink,
+    this.icon,
+    this.busy = false,
+  });
+  final String label;
+  final VoidCallback? onTap;
+  final Color color;
+  final IconData? icon;
+  final bool busy;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null && !busy;
+    final fg = enabled ? GColors.onColor(color) : GColors.inkFaint;
+    return Pressable(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 58,
+        decoration: BoxDecoration(
+          color: enabled ? color : GColors.line,
+          borderRadius: BorderRadius.circular(GRadius.md),
+        ),
+        alignment: Alignment.center,
+        child: busy
+            ? SizedBox(
+                width: 22, height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.6, color: fg))
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(label,
+                    style: TextStyle(
+                      fontFamily: AppTheme.font,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: fg,
+                    )),
+                if (icon != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(icon, size: 20, color: fg),
+                ],
+              ]),
+      ),
+    );
+  }
+}
+
+class SeverityPill extends StatelessWidget {
+  const SeverityPill(this.severity, {super.key, this.count});
+  final Severity severity;
+  final int? count;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = GColors.textForSeverity(severity);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 5, 11, 5),
+      decoration: BoxDecoration(
+        color: GColors.softForSeverity(severity),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(severityIcon(severity), size: 14, color: c),
+        const SizedBox(width: 5),
+        Text(
+          count == null ? severity.label : '$count ${severity.label}${count == 1 ? '' : 's'}',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: c),
+        ),
+      ]),
+    );
+  }
+}
+
+/// Animated score ring (0–100).
+class ScoreRing extends StatelessWidget {
+  const ScoreRing({super.key, required this.score, this.size = 120, this.stroke = 13});
+  final int score;
+  final double size;
+  final double stroke;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = GColors.forScore(score);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: score / 100),
+      duration: const Duration(milliseconds: 1100),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => SizedBox(
+        width: size,
+        height: size,
+        child: CustomPaint(
+          painter: _RingPainter(v, color, stroke),
+          child: Center(
+            child: Text('${(v * 100).round()}',
+                style: TextStyle(
+                  fontSize: size * 0.34,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -size * 0.02,
+                  color: GColors.ink,
+                  height: 1,
+                )),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  _RingPainter(this.value, this.color, this.stroke);
+  final double value;
+  final Color color;
+  final double stroke;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final r = rect.deflate(stroke / 2);
+    final bg = Paint()
+      ..color = GColors.white.withValues(alpha: 0.7)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke;
+    final fg = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = stroke;
+    canvas.drawArc(r, 0, math.pi * 2, false, bg);
+    canvas.drawArc(r, -math.pi / 2, math.pi * 2 * value, false, fg);
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) => old.value != value || old.color != color;
+}
+
+/// Three hopping dots in brand colors — our loader.
+class HopDots extends StatefulWidget {
+  const HopDots({super.key, this.size = 18});
+  final double size;
+  @override
+  State<HopDots> createState() => _HopDotsState();
+}
+
+class _HopDotsState extends State<HopDots> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))
+        ..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = [GColors.red, GColors.blue, GColors.green];
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (i) {
+          final t = (_c.value - i * 0.16) % 1.0;
+          final hop = t < 0.4 ? math.sin(t / 0.4 * math.pi) : 0.0;
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: widget.size * 0.28),
+            child: Transform.translate(
+              offset: Offset(0, -hop * widget.size * 1.1),
+              child: Transform.scale(
+                scaleY: 1 - hop * 0.1 + (t > 0.4 && t < 0.48 ? -0.15 : 0),
+                child: Container(
+                  width: widget.size,
+                  height: widget.size,
+                  decoration: BoxDecoration(color: colors[i], shape: BoxShape.circle),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class SectionTitle extends StatelessWidget {
+  const SectionTitle(this.text, {super.key, this.trailing});
+  final String text;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
+      child: Row(children: [
+        Expanded(child: Text(text, style: Theme.of(context).textTheme.titleLarge)),
+        if (trailing != null) trailing!,
+      ]),
+    );
+  }
+}
+
+/// Soft rounded container.
+class SoftCard extends StatelessWidget {
+  const SoftCard({
+    super.key,
+    required this.child,
+    this.color = GColors.surface,
+    this.padding = const EdgeInsets.all(18),
+    this.radius = GRadius.lg,
+  });
+  final Widget child;
+  final Color color;
+  final EdgeInsets padding;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: padding,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(radius)),
+        child: child,
+      );
+}
+
+/// Circle badge with a letter — used for library logos (no trademarks bundled).
+class LetterBadge extends StatelessWidget {
+  const LetterBadge({super.key, required this.letter, required this.color, this.size = 46});
+  final String letter;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(size * 0.34)),
+        alignment: Alignment.center,
+        child: Text(letter,
+            style: TextStyle(
+              color: GColors.white,
+              fontWeight: FontWeight.w900,
+              fontSize: size * 0.46,
+              height: 1,
+            )),
+      );
+}
+
+String timeAgo(DateTime t) {
+  final d = DateTime.now().difference(t);
+  if (d.inMinutes < 1) return 'just now';
+  if (d.inHours < 1) return '${d.inMinutes}m ago';
+  if (d.inDays < 1) return '${d.inHours}h ago';
+  if (d.inDays < 7) return '${d.inDays}d ago';
+  return '${t.day}/${t.month}/${t.year}';
+}
+
+void showToast(BuildContext context, String msg) {
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text(msg)));
+}

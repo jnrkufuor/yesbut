@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "note": "Curated list of public terms pages. YesBut fetches each page live and analyzes it, so results always reflect the current terms. Ship updates by editing this file or serving it from a backend.",
+  "items": [
+    {"id": "netflix", "name": "Netflix", "kind": "Terms of Use", "category": "Streaming", "color": "red", "url": "https://help.netflix.com/legal/termsofuse"},
+    {"id": "spotify", "name": "Spotify", "kind": "Terms of Use", "category": "Streaming", "color": "green", "url": "https://www.spotify.com/us/legal/end-user-agreement/"},
+    {"id": "disneyplus", "name": "Disney+", "kind": "Subscriber Agreement", "category": "Streaming", "color": "blue", "url": "https://www.disneyplus.com/legal/subscriber-agreement"},
+    {"id": "youtube", "name": "YouTube", "kind": "Terms of Service", "category": "Streaming", "color": "red", "url": "https://www.youtube.com/t/terms"},
+    {"id": "apple", "name": "Apple Media Services", "kind": "Terms & Conditions", "category": "Software", "color": "blue", "url": "https://www.apple.com/legal/internet-services/itunes/us/terms.html"},
+    {"id": "google", "name": "Google", "kind": "Terms of Service", "category": "Software", "color": "blue", "url": "https://policies.google.com/terms"},
+    {"id": "microsoft", "name": "Microsoft", "kind": "Services Agreement", "category": "Software", "color": "green", "url": "https://www.microsoft.com/en-us/servicesagreement"},
+    {"id": "adobe", "name": "Adobe", "kind": "General Terms of Use", "category": "Software", "color": "red", "url": "https://www.adobe.com/legal/terms.html"},
+    {"id": "dropbox", "name": "Dropbox", "kind": "Terms of Service", "category": "Software", "color": "blue", "url": "https://www.dropbox.com/terms"},
+    {"id": "amazon", "name": "Amazon", "kind": "Conditions of Use", "category": "Shopping", "color": "blue", "url": "https://www.amazon.com/gp/help/customer/display.html?nodeId=508088"},
+    {"id": "facebook", "name": "Facebook", "kind": "Terms of Service", "category": "Social", "color": "blue", "url": "https://www.facebook.com/terms.php"},
+    {"id": "instagram", "name": "Instagram", "kind": "Terms of Use", "category": "Social", "color": "red", "url": "https://help.instagram.com/581066165581870"},
+    {"id": "tiktok", "name": "TikTok", "kind": "Terms of Service", "category": "Social", "color": "red", "url": "https://www.tiktok.com/legal/page/us/terms-of-service/en"},
+    {"id": "x", "name": "X (Twitter)", "kind": "Terms of Service", "category": "Social", "color": "blue", "url": "https://x.com/en/tos"},
+    {"id": "uber", "name": "Uber", "kind": "Terms of Use", "category": "Travel", "color": "green", "url": "https://www.uber.com/legal/en/document/?name=general-terms-of-use&country=united-states&lang=en"},
+    {"id": "airbnb", "name": "Airbnb", "kind": "Terms of Service", "category": "Travel", "color": "red", "url": "https://www.airbnb.com/help/article/2908"},
+    {"id": "openai", "name": "OpenAI", "kind": "Terms of Use", "category": "AI", "color": "green", "url": "https://openai.com/policies/terms-of-use"},
+    {"id": "anthropic", "name": "Claude (Anthropic)", "kind": "Consumer Terms", "category": "AI", "color": "red", "url": "https://www.anthropic.com/legal/consumer-terms"}
+  ]
+}

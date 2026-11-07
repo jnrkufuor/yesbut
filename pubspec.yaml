@@ -1,0 +1,46 @@
+name: yesbut
+description: "YesBut — read the fine print without reading the fine print."
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.2
+  http: ^1.2.2
+  html: ^0.15.4
+  shared_preferences: ^2.3.2
+  file_picker: ">=8.1.2 <12.0.0"
+  image_picker: ^1.1.2
+  google_mlkit_text_recognition: ">=0.13.0 <0.17.0"
+  syncfusion_flutter_pdf: ">=27.1.48 <40.0.0"
+  share_plus: ^10.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/catalog.json
+    - assets/rules.json
+  fonts:
+    - family: GoogleSansFlex
+      fonts:
+        - asset: assets/fonts/GoogleSansFlex-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/GoogleSansFlex-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/GoogleSansFlex-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/GoogleSansFlex-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/GoogleSansFlex-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/GoogleSansFlex-Black.ttf
+          weight: 900
