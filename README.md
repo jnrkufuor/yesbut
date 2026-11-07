@@ -21,7 +21,7 @@ YesBut reads contracts and terms & conditions, explains them in plain English, a
 ### Option A: GitHub builds it for you (no setup)
 1. Create a new GitHub repo and upload this folder. Any method works, including dragging the files into the GitHub web UI.
 2. Open the **Actions** tab. **Build Android APK** runs on every push, and you can also start it by hand.
-3. Wait about 8–12 minutes, open the finished run, and download **YesBut-apk**. Unzip it to get `app-release.apk`.
+3. Wait about 8–12 minutes, open the finished run, and open **Releases** on the repo page and download **YesBut.apk** (also available as the YesBut-apk artifact).
 4. Send the APK to your Android phone and open it. You may need to allow "Install unknown apps".
 
 ### Option B: Build on your Mac

@@ -35,6 +35,7 @@ class HistoryScreen extends StatelessWidget {
     if (!context.mounted) return;
     if (v == 'delete') await state.delete(r.id);
     if (v == 'rename') {
+      if (!context.mounted) return;
       final c = TextEditingController(text: r.title);
       final name = await showDialog<String>(
         context: context,

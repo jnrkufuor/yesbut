@@ -1,7 +1,7 @@
-/// Core data model for a contract analysis.
-///
-/// Everything here is plain Dart + JSON so the same model can be produced by
-/// the on-device rule engine, by an AI provider, or by a future backend.
+// Core data model for a contract analysis.
+//
+// Everything here is plain Dart + JSON so the same model can be produced by
+// the on-device rule engine, by an AI provider, or by a future backend.
 
 enum Severity { redFlag, headsUp, goodNews }
 
