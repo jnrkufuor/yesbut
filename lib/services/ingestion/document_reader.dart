@@ -23,15 +23,17 @@ class DocumentReader {
   static const extensions = ['pdf', 'txt', 'md', 'html', 'htm', 'rtf'];
 
   Future<PickedDocument?> pickAndRead() async {
-    final result = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: extensions,
-      withData: true,
     );
-    if (result == null || result.files.isEmpty) return null;
-    final file = result.files.first;
-    final bytes = file.bytes;
-    if (bytes == null) throw DocumentException('Couldn\'t open that file.');
+    if (file == null) return null;
+    final Uint8List bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (_) {
+      throw DocumentException('Couldn\'t open that file.');
+    }
     final text = extract(file.name, bytes);
     if (text.trim().split(RegExp(r'\s+')).length < 20) {
       throw DocumentException(
