@@ -180,7 +180,6 @@ class AppTheme {
       dividerColor: GColors.line,
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
         TargetPlatform.android: ZoomPageTransitionsBuilder(),
-        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
       }),
     );
   }

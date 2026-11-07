@@ -23,7 +23,7 @@ class DocumentReader {
   static const extensions = ['pdf', 'txt', 'md', 'html', 'htm', 'rtf'];
 
   Future<PickedDocument?> pickAndRead() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: extensions,
       withData: true,
