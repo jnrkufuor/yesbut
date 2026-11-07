@@ -22,7 +22,9 @@ class _ResultScreenState extends State<ResultScreen> {
 
   AnalysisResult get r => widget.result;
 
-  void _share() => Share.share(r.toShareText(), subject: 'YesBut: ${r.title}');
+  void _share() => SharePlus.instance.share(
+        ShareParams(text: r.toShareText(), subject: 'YesBut: ${r.title}'),
+      );
 
   Future<void> _menu(String v) async {
     switch (v) {
