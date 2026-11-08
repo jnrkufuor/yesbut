@@ -48,9 +48,9 @@ Future<bool> confirmLeave(BuildContext context, {String? message, bool exitApp =
         style: const TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft),
       ),
       const SizedBox(height: 22),
-      BigButton(label: exitApp ? 'Leave' : 'Yes, leave', onTap: () => Navigator.pop(ctx, true)),
+      BigButton(label: 'Stay', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
       const SizedBox(height: 8),
-      BigButton(label: 'Stay', color: GColors.surface, onTap: () => Navigator.pop(ctx, false)),
+      BigButton(label: 'Leave', color: GColors.red, onTap: () => Navigator.pop(ctx, true)),
     ]),
   );
   return ok ?? false;
@@ -93,7 +93,7 @@ Future<bool> confirmDeleteOne(BuildContext context, String title) async {
       const SizedBox(height: 22),
       BigButton(label: 'Delete', color: GColors.red, onTap: () => Navigator.pop(ctx, true)),
       const SizedBox(height: 8),
-      BigButton(label: 'Keep it', color: GColors.surface, onTap: () => Navigator.pop(ctx, false)),
+      BigButton(label: 'Keep it', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
     ]),
   );
   return ok ?? false;
@@ -171,12 +171,12 @@ Future<void> showClearHistorySheet(BuildContext context) async {
         ),
         const SizedBox(height: 20),
         BigButton(
-          label: n == 0 ? 'Nothing to delete' : 'Delete $n check${n == 1 ? '' : 's'}',
+          label: n == 0 ? 'Nothing to delete' : 'Delete',
           color: GColors.red,
           onTap: ticked && n > 0 ? () => Navigator.pop(ctx, true) : null,
         ),
         const SizedBox(height: 8),
-        BigButton(label: 'Cancel', color: GColors.surface, onTap: () => Navigator.pop(ctx, false)),
+        BigButton(label: 'Cancel', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
       ]);
     }),
   );

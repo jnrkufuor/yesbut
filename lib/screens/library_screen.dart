@@ -162,13 +162,11 @@ class _Row extends StatelessWidget {
                   )),
             )
           else
-            // Not checked yet: a greyed-out search circle.
-            Container(
+            // Not checked yet: just a greyed-out search icon.
+            const SizedBox(
               width: 46,
               height: 46,
-              alignment: Alignment.center,
-              decoration: const BoxDecoration(color: GColors.surface, shape: BoxShape.circle),
-              child: const LoopyIcon('search', size: 22, color: GColors.inkFaint, stroke: 2.6),
+              child: Center(child: LoopyIcon('search', size: 24, color: Color(0xFFB9B3AD), stroke: 2.6)),
             ),
         ]),
       ),

@@ -144,8 +144,7 @@ class InputScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = GColors.onColor(accent);
-    return LeaveGuard(
-      child: Scaffold(
+    return Scaffold(
       backgroundColor: accent,
       body: SafeArea(
         child: Column(children: [
@@ -178,7 +177,6 @@ class InputScaffold extends StatelessWidget {
           Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), child: bottom),
         ]),
       ),
-    ),
     );
   }
 }

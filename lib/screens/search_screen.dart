@@ -140,7 +140,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
     );
-    return widget.embedded ? page : LeaveGuard(child: page);
+    return page;
   }
 }
 

@@ -26,6 +26,31 @@ class _ResultScreenState extends State<ResultScreen> {
 
   AnalysisResult get r => widget.result;
 
+  final _scroll = ScrollController();
+  bool _showMini = false; // score badge top-right once the hero scrolls away
+  bool _showTop = false; // back-to-top button
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(() {
+      final o = _scroll.offset;
+      final mini = o > 300, top = o > 700;
+      if (mini != _showMini || top != _showTop) {
+        setState(() {
+          _showMini = mini;
+          _showTop = top;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   void _share() => SharePlus.instance.share(
         ShareParams(text: r.toShareText(), subject: 'YesBut: ${r.title}'),
       );
@@ -50,12 +75,14 @@ class _ResultScreenState extends State<ResultScreen> {
     final shown = _filter == null ? r.findings : r.bySeverity(_filter!);
     final jargon = _allJargon ? r.jargon : r.jargon.take(5).toList();
 
-    return LeaveGuard(
-      child: Scaffold(
+    final scoreColor = GColors.forScore(r.score);
+    return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
+        child: Stack(children: [
+        ListView(
+        controller: _scroll,
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
         children: staggered([
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
@@ -139,10 +166,10 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             )
           else
-            for (final f in shown) _FindingCard(finding: f, sourceUrl: webUrlOf(r)),
+            for (final f in shown) _FindingCard(finding: f, sourceUrl: webUrlOf(r), jargon: r.jargon),
           if (r.questions.isNotEmpty) ...[
             const SizedBox(height: 26),
-            const SectionTitle('Ask before you sign'),
+            const SectionTitle('Ponder before you agree'),
             SoftCard(
               color: GColors.blueSoft,
               child: Column(children: [
@@ -192,8 +219,89 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ]),
       ),
+        // Score badge that docks top-right once the big card scrolls away.
+        Positioned(
+          top: 14,
+          right: 16,
+          child: IgnorePointer(
+            ignoring: !_showMini,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutBack,
+              offset: _showMini ? Offset.zero : const Offset(0, -1.4),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                opacity: _showMini ? 1 : 0,
+                child: Pressable(
+                  onTap: () => _scroll.animateTo(0, duration: const Duration(milliseconds: 600), curve: Curves.easeOutCubic),
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.fromLTRB(6, 0, 14, 0),
+                    decoration: BoxDecoration(
+                      color: GColors.white,
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: GColors.line, width: 1),
+                      boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: scoreColor, shape: BoxShape.circle),
+                        child: Text('${r.score}',
+                            style: TextStyle(
+                              fontFamily: AppTheme.display,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: GColors.onColor(scoreColor),
+                            )),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(r.verdict, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Back to top.
+        Positioned(
+          right: 16,
+          bottom: 24 + MediaQuery.of(context).padding.bottom,
+          child: IgnorePointer(
+            ignoring: !_showTop,
+            child: AnimatedScale(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutBack,
+              scale: _showTop ? 1 : 0.6,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showTop ? 1 : 0,
+                child: Semantics(
+                  button: true,
+                  label: 'Back to top',
+                  child: Pressable(
+                    onTap: () => _scroll.animateTo(0, duration: const Duration(milliseconds: 700), curve: Curves.easeOutCubic),
+                    child: Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: GColors.ink,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.2), blurRadius: 18, offset: const Offset(0, 8))],
+                      ),
+                      child: const Icon(Icons.arrow_upward_rounded, color: GColors.white),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        ]),
       ),
-    ),
     );
   }
 }
@@ -278,7 +386,7 @@ class _ScoreCardState extends State<_ScoreCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 600),
           curve: const Cubic(0.2, 0.9, 0.2, 1),
-          height: _open ? 400 : 168,
+          height: _open ? 430 : 168,
           decoration: BoxDecoration(
             color: _open ? GColors.ink : bg,
             borderRadius: BorderRadius.circular(32),
@@ -302,14 +410,6 @@ class _ScoreCardState extends State<_ScoreCard> {
                 height: 168,
                 width: double.infinity,
                 child: Stack(alignment: Alignment.center, children: [
-                  Positioned(
-                    top: 15,
-                    right: 17,
-                    child: Opacity(
-                      opacity: 0.45,
-                      child: Icon(Icons.open_in_full_rounded, size: 14, color: fg),
-                    ),
-                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(
@@ -376,6 +476,24 @@ class _ScoreCardState extends State<_ScoreCard> {
                 ),
               ),
             ),
+            // Expand / contract toggle, fully visible on both sides.
+            Positioned(
+              top: 14,
+              right: 16,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 250),
+                transitionBuilder: (c, a) => RotationTransition(
+                  turns: Tween(begin: 0.75, end: 1.0).animate(a),
+                  child: FadeTransition(opacity: a, child: c),
+                ),
+                child: Icon(
+                  _open ? Icons.close_fullscreen_rounded : Icons.open_in_full_rounded,
+                  key: ValueKey(_open),
+                  size: 18,
+                  color: _open ? GColors.white : fg,
+                ),
+              ),
+            ),
           ]),
         ),
       ),
@@ -418,7 +536,10 @@ class _ScoreExplainer extends StatelessWidget {
       const SizedBox(height: 8),
       Text('Every contract starts at 100. Red flags knock off a lot, heads-ups a little, good news adds some back.',
           style: TextStyle(color: w.withValues(alpha: 0.85), fontSize: 13, height: 1.4)),
-      const Spacer(),
+      const SizedBox(height: 16),
+      Text('THE SCORES',
+          style: TextStyle(color: w.withValues(alpha: 0.55), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2)),
+      const SizedBox(height: 8),
       Wrap(spacing: 14, runSpacing: 6, children: [
         range(GColors.blue, '70+', 'fair'),
         range(GColors.green, '45–69', 'careful'),
@@ -584,9 +705,10 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _FindingCard extends StatefulWidget {
-  const _FindingCard({required this.finding, this.sourceUrl});
+  const _FindingCard({required this.finding, this.sourceUrl, this.jargon = const []});
   final Finding finding;
   final Uri? sourceUrl;
+  final List<JargonTerm> jargon;
 
   @override
   State<_FindingCard> createState() => _FindingCardState();
@@ -597,107 +719,225 @@ class _FindingCardState extends State<_FindingCard> {
 
   static const _icon = {Severity.redFlag: 'flag', Severity.headsUp: 'eye', Severity.goodNews: 'check'};
 
+  /// Jargon terms that actually appear in this catch (title, plain or quote).
+  List<JargonTerm> _termsHere() {
+    final f = widget.finding;
+    final hay = '${f.title} ${f.plain} ${f.quote ?? ''}'.toLowerCase();
+    return widget.jargon.where((j) => j.term.trim().length > 2 && hay.contains(j.term.toLowerCase())).take(4).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final f = widget.finding;
     final bg = GColors.forSeverity(f.severity);
     final fg = GColors.onColor(bg);
     final hasQuote = f.quote != null && f.quote!.trim().isNotEmpty;
+    final terms = _termsHere();
     final label = switch (f.severity) {
       Severity.redFlag => 'RED FLAG',
       Severity.headsUp => 'HEADS UP',
       Severity.goodNews => 'GOOD NEWS',
     };
-    return Pressable(
-      scale: 0.985,
-      onTap: hasQuote ? () => setState(() => _open = !_open) : null,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 6),
-        decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(30)),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(children: [
-          Padding(
-            padding: const EdgeInsets.all(18),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(30)),
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(18),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text('$label · ${f.category.toUpperCase()}',
-                        style: TextStyle(fontSize: 10.5, letterSpacing: 1.2, fontWeight: FontWeight.w600, color: fg)),
-                    const SizedBox(height: 6),
-                    Text(f.title,
-                        style: TextStyle(
-                            fontFamily: AppTheme.display,
-                            fontSize: 21,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
-                            height: 1.12,
-                            color: fg)),
-                  ]),
-                ),
-                const SizedBox(width: 10),
-                LoopyIcon(_icon[f.severity]!, size: 30, color: fg, stroke: 2.2),
-              ]),
-              const SizedBox(height: 10),
-              Text(f.plain, style: TextStyle(fontSize: 14, height: 1.45, color: fg)),
-              if (hasQuote)
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 220),
-                  crossFadeState: _open ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                  firstChild: Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Text('See the fine print*',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                          color: fg,
-                          decoration: TextDecoration.underline,
-                          decorationColor: fg,
-                        )),
-                  ),
-                  secondChild: Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(top: 12),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.circular(18)),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text.rich(
-                        TextSpan(children: [
-                          const TextSpan(text: 'The fine print* ', style: TextStyle(fontWeight: FontWeight.w700)),
-                          TextSpan(
-                            text: '“${f.quote!.trim()}”',
-                            style: const TextStyle(fontFamily: AppTheme.serif, fontStyle: FontStyle.italic, fontSize: 14),
-                          ),
-                        ]),
-                        style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.ink),
-                      ),
-                      if (widget.sourceUrl != null) ...[
-                        const SizedBox(height: 10),
-                        Pressable(
-                          onTap: () => openExternal(context, jumpToQuote(widget.sourceUrl!, f.quote!)),
-                          child: Container(
-                            height: 34,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(99)),
-                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                              Text('See it on their page',
-                                  style: TextStyle(color: GColors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
-                              SizedBox(width: 6),
-                              Icon(Icons.arrow_outward_rounded, size: 15, color: GColors.white),
-                            ]),
-                          ),
-                        ),
-                      ],
-                    ]),
-                  ),
-                ),
+              Text('$label · ${f.category.toUpperCase()}',
+                  style: TextStyle(fontSize: 10.5, letterSpacing: 1.2, fontWeight: FontWeight.w600, color: fg)),
+              const SizedBox(height: 6),
+              Text(f.title,
+                  style: TextStyle(
+                      fontFamily: AppTheme.display,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      height: 1.12,
+                      color: fg)),
             ]),
           ),
+          const SizedBox(width: 10),
+          LoopyIcon(_icon[f.severity]!, size: 30, color: fg, stroke: 2.2),
         ]),
-      ),
+        const SizedBox(height: 10),
+        Text(f.plain, style: TextStyle(fontSize: 14, height: 1.45, color: fg)),
+        if (terms.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final j in terms)
+              Pressable(
+                onTap: () => showJargon(context, j),
+                child: Container(
+                  height: 30,
+                  padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: fg, width: 1),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(j.term, style: TextStyle(fontSize: 12.5, color: fg)),
+                    const SizedBox(width: 5),
+                    Container(
+                      width: 16,
+                      height: 16,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
+                      child: Text('?',
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: bg, height: 1)),
+                    ),
+                  ]),
+                ),
+              ),
+          ]),
+        ],
+        if (hasQuote) ...[
+          const SizedBox(height: 12),
+          // Only the link toggles the quote, not the whole card.
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(_open ? 'Hide the fine print' : 'See the fine print*',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                      color: fg,
+                      decoration: TextDecoration.underline,
+                      decorationColor: fg,
+                    )),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _open ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 380),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(Icons.expand_more_rounded, size: 18, color: fg),
+                ),
+              ]),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 420),
+            curve: const Cubic(0.2, 0.9, 0.2, 1),
+            alignment: Alignment.topCenter,
+            child: !_open
+                ? const SizedBox(width: double.infinity)
+                : TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 360),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, v, child) => Opacity(
+                      opacity: v,
+                      child: Transform.translate(offset: Offset(0, (1 - v) * 10), child: child),
+                    ),
+                    child: Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.circular(18)),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text.rich(
+                          TextSpan(children: [
+                            const TextSpan(text: 'The fine print* ', style: TextStyle(fontWeight: FontWeight.w700)),
+                            TextSpan(
+                              text: '“${f.quote!.trim()}”',
+                              style: const TextStyle(fontFamily: AppTheme.serif, fontStyle: FontStyle.italic, fontSize: 14),
+                            ),
+                          ]),
+                          style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.ink),
+                        ),
+                        if (widget.sourceUrl != null) ...[
+                          const SizedBox(height: 10),
+                          Pressable(
+                            onTap: () => openExternal(context, jumpToQuote(widget.sourceUrl!, f.quote!)),
+                            child: Container(
+                              height: 34,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(99)),
+                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                                Text('See it on their page',
+                                    style: TextStyle(color: GColors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                                SizedBox(width: 6),
+                                Icon(Icons.arrow_outward_rounded, size: 15, color: GColors.white),
+                              ]),
+                            ),
+                          ),
+                        ],
+                      ]),
+                    ),
+                  ),
+          ),
+        ],
+      ]),
     );
   }
 }
+
+/// Small pop-up that explains one piece of jargon.
+Future<void> showJargon(BuildContext context, JargonTerm j) => showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close',
+      barrierColor: GColors.ink.withValues(alpha: 0.35),
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (ctx, _, __) => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Material(
+            color: GColors.ink,
+            borderRadius: BorderRadius.circular(30),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('JARGON, DECODED',
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                        color: GColors.white.withValues(alpha: 0.6))),
+                const SizedBox(height: 8),
+                Text(j.term,
+                    style: const TextStyle(
+                        fontFamily: AppTheme.display,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.6,
+                        color: GColors.white)),
+                const SizedBox(height: 8),
+                Text(j.meaning, style: const TextStyle(fontSize: 15, height: 1.45, color: GColors.white)),
+                const SizedBox(height: 18),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Pressable(
+                    onTap: () => Navigator.of(ctx).pop(),
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.circular(99)),
+                      child: const Text('Got it',
+                          style: TextStyle(fontFamily: AppTheme.display, fontWeight: FontWeight.w700, fontSize: 15)),
+                    ),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (ctx, a, _, child) => FadeTransition(
+        opacity: a,
+        child: ScaleTransition(
+          scale: Tween(begin: 0.92, end: 1.0).animate(CurvedAnimation(parent: a, curve: Curves.easeOutBack)),
+          child: child,
+        ),
+      ),
+    );
 
 class _JargonRow extends StatelessWidget {
   const _JargonRow({required this.term});

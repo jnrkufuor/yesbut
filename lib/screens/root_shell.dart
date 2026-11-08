@@ -22,6 +22,7 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom > 0;
     return LeaveGuard(
       exitApp: true,
       child: Scaffold(
@@ -56,7 +57,20 @@ class _RootShellState extends State<RootShell> {
           left: 0,
           right: 0,
           bottom: 22 + bottom,
-          child: Center(child: PillNav(index: _index, onTap: _go)),
+          // Slide the nav away while the keyboard is up, bring it back after.
+          child: AnimatedSlide(
+            duration: const Duration(milliseconds: 280),
+            curve: Curves.easeOutCubic,
+            offset: keyboard ? const Offset(0, 2) : Offset.zero,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 200),
+              opacity: keyboard ? 0 : 1,
+              child: IgnorePointer(
+                ignoring: keyboard,
+                child: Center(child: PillNav(index: _index, onTap: _go)),
+              ),
+            ),
+          ),
         ),
       ]),
     ),
