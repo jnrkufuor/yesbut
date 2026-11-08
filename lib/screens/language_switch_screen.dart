@@ -55,7 +55,6 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
   late final Ticker _ticker = createTicker(_tick);
   Duration _last = Duration.zero;
   double _t = 0; // seconds since start
-  double _angle = 0;
   bool _downloading = false;
   String? _error;
 
@@ -78,17 +77,34 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
     final dt = (now - _last).inMicroseconds / 1e6;
     _last = now;
     _t += dt;
-    // Turns in surges: quick, then lazy, then quick again.
-    final speed = 1.1 + 2.6 * math.pow(0.5 + 0.5 * math.sin(_t * 2.2), 3);
-    _angle += speed * dt;
     setState(() {});
   }
 
-  /// Each leg swells and shrinks in turn, going round clockwise, like a cell
-  /// breathing.
-  List<double> get _legs => [
-        for (var i = 0; i < 6; i++) 0.5 + 0.5 * math.pow(0.5 + 0.5 * math.sin(_t * 9 - i * math.pi / 3), 1.6),
-      ];
+  // Core colours plus a tangerine and a neon, one per beat.
+  static const _colors = [
+    GColors.red,
+    Color(0xFFFF8A1F), // tangerine
+    GColors.blue,
+    Color(0xFFFF2BD6), // neon pink
+    GColors.green,
+    GColors.ink,
+  ];
+  static const _beat = 0.62; // seconds per twist
+
+  /// One beat: a sixth of a turn that swells as it twists, switching colour
+  /// at the top of the swell.
+  ({double angle, double scale, Color color}) get _pose {
+    final x = _t / _beat;
+    final b = x.floor();
+    final f = x - b;
+    final turn = Curves.easeInOutCubic.transform(f);
+    final mix = Curves.easeInOut.transform(((f - 0.35) / 0.3).clamp(0.0, 1.0));
+    return (
+      angle: (b + turn) * math.pi / 3,
+      scale: 1 + 0.3 * math.sin(math.pi * f),
+      color: Color.lerp(_colors[b % _colors.length], _colors[(b + 1) % _colors.length], mix)!,
+    );
+  }
 
   Future<void> _run() async {
     final state = context.read<AppState>();
@@ -112,7 +128,8 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    final c = _error != null ? GColors.inkFaint : GColors.red;
+    final pose = _pose;
+    final c = _error != null ? GColors.inkFaint : pose.color;
     return PopScope(
       canPop: _error != null,
       child: Scaffold(
@@ -127,8 +144,11 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
                   dimension: 120,
                   child: Center(
                     child: Transform.rotate(
-                      angle: _angle,
-                      child: BrandAsterisk(size: 84, color: c, legs: _error != null ? null : _legs),
+                      angle: _error != null ? 0 : pose.angle,
+                      child: Transform.scale(
+                        scale: _error != null ? 1 : pose.scale,
+                        child: BrandAsterisk(size: 76, color: c),
+                      ),
                     ),
                   ),
                 ),

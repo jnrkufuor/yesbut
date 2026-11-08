@@ -9,6 +9,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/ingestion/web_fetcher.dart';
 import '../widgets/common.dart';
+import '../widgets/fetch_dog.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
@@ -114,7 +115,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
             children: [
               RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
               const Spacer(),
-              const SniffLoader(height: 240),
+              const FetchLoader(height: 120),
               const SizedBox(height: 28),
               SizedBox(
                 height: 64,

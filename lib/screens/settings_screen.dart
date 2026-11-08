@@ -58,9 +58,7 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (v) => set(st.copyWith(engine: EngineChoice.values.byName(v))),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                child: Text(
+              _Note(
                   switch (st.engine) {
                     EngineChoice.offline => 'Quick and private. Your terms never leave your phone.',
                     EngineChoice.deepseek => AppState.readers[EngineChoice.deepseek]!.available
@@ -70,8 +68,6 @@ class SettingsScreen extends StatelessWidget {
                         ? 'Google’s free AI. Reads every document closely and fast.'
                         : 'Not switched on yet, so your phone reads for now.',
                   },
-                  style: const TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
-                ),
               ),
             ]),
 
@@ -94,13 +90,7 @@ class SettingsScreen extends StatelessWidget {
                   },
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(14, 0, 14, 12),
-                child: Text(
-                  'Translated on your phone. Each language downloads once (about 30 MB), then works offline.',
-                  style: TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
-                ),
-              ),
+              const _Note('Translated on your phone. Each language downloads once (about 30 MB), then works offline.'),
             ]),
 
             const _Label('ACCESSIBILITY'),
@@ -165,6 +155,21 @@ class _Label extends StatelessWidget {
 }
 
 /// Rounded group with hairline dividers between rows.
+/// Small grey explainer under a row, below the divider, aligned with the
+/// row titles.
+class _Note extends StatelessWidget {
+  const _Note(this.text);
+  final String text;
+  @override
+  Widget build(BuildContext context) => Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+          child: Text(text, textAlign: TextAlign.left, style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.inkSoft)),
+        ),
+      );
+}
+
 class _Group extends StatelessWidget {
   const _Group({required this.children});
   final List<Widget> children;

@@ -134,10 +134,16 @@ class _ResultScreenState extends State<ResultScreen> {
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
-            if (webUrlOf(r) != null) ...[
-              _TrackButton(result: r),
-              const SizedBox(width: 6),
-            ],
+            if (webUrlOf(r) != null)
+              _TrackButton(result: r)
+            else
+              // Files, scans and pasted text: see exactly what we read.
+              Semantics(
+                label: 'See the text we read',
+                button: true,
+                child: RoundIconButton(icon: 'doc', onTap: () => _menu('text')),
+              ),
+            const SizedBox(width: 6),
             Semantics(label: 'Share', button: true, child: RoundIconButton(icon: 'share', onTap: _share)),
             const SizedBox(width: 6),
             Semantics(
@@ -175,7 +181,7 @@ class _ResultScreenState extends State<ResultScreen> {
         SliverPadding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
         sliver: SliverList.list(children: staggered([
-          if (r.summary != null || r.audience != null || r.dealType != 'general' || r.industry != 'general') ...[
+          if (r.summary != null || r.audience != null) ...[
             const SizedBox(height: 6),
             _AboutCard(result: r),
           ],
@@ -1040,11 +1046,6 @@ class _AboutCard extends StatelessWidget {
             if (r.otherParty != null) _RoleChip(text: 'Also mentions ${r.otherParty}', primary: false),
           ]),
         ],
-        const SizedBox(height: 14),
-        label('HOW WE CHECKED IT'),
-        const SizedBox(height: 6),
-        Text('${ContextProfiler.weightingNote(r.dealType)} ${ContextProfiler.industryNote(r.industry)}'.trim(),
-            style: const TextStyle(fontSize: 14, height: 1.45)),
         if (r.language != 'en') ...[
           const SizedBox(height: 12),
           Text('Original language: ${ContextProfiler.languageNames[r.language] ?? r.language}',
@@ -1320,15 +1321,15 @@ class _TrackButton extends StatelessWidget {
     return Semantics(
       button: true,
       toggled: on,
-      label: on ? 'Tracking changes' : 'Track changes',
+      label: on ? 'Watching for changes' : 'Watch for changes',
       child: Pressable(
         onTap: () async {
           if (on) {
             await state.unwatch(result.sourceRef!);
-            if (context.mounted) showToast(context, 'Stopped tracking.');
+            if (context.mounted) showToast(context, 'Stopped watching.');
           } else {
             await state.watch(result);
-            if (context.mounted) showToast(context, 'Tracking. We’ll let you know if these terms change.');
+            if (context.mounted) showToast(context, 'Watching. We’ll let you know if these terms change.');
           }
         },
         child: AnimatedContainer(
@@ -1346,11 +1347,11 @@ class _TrackButton extends StatelessWidget {
             tween: Tween(begin: 0, end: 1),
             duration: const Duration(milliseconds: 520),
             builder: (_, v, child) => Transform.rotate(
-              angle: on ? 0.35 * (1 - v) * math.sin(v * math.pi * 4) : 0,
-              alignment: Alignment.topCenter,
+              angle: on ? 0.2 * (1 - v) * math.sin(v * math.pi * 4) : 0,
+              alignment: Alignment.center,
               child: child,
             ),
-            child: LoopyIcon('bell', size: 24, color: on ? GColors.white : GColors.ink, stroke: 2.4),
+            child: LoopyIcon('eye', size: 26, color: on ? GColors.white : GColors.ink, stroke: 2.4),
           ),
         ),
       ),
