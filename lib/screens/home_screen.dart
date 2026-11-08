@@ -73,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Row(children: [
               const Wordmark(size: 25),
               const Spacer(),
-              if (state.settings.aiReady)
+              if (AppState.aiEnabled && state.settings.aiReady)
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

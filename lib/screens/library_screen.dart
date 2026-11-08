@@ -91,8 +91,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ]),
               ),
               const SizedBox(height: 16),
-              for (var i = 0; i < items.length; i++)
-                FadeInUp(index: 4 + i, child: _Row(item: items[i], state: state)),
+              ..._sections(items, state),
               if (items.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 30),
@@ -108,6 +107,31 @@ class _LibraryScreenState extends State<LibraryScreen> {
       ),
     );
   }
+}
+
+/// Two groups: ones you've checked (tap to see, or check again) and the rest.
+List<Widget> _sections(List<CatalogItem> items, AppState state) {
+  final done = items.where((i) => state.cachedFor(i.url) != null).toList();
+  final todo = items.where((i) => state.cachedFor(i.url) == null).toList();
+  Widget head(String t, String sub) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(t, style: const TextStyle(fontFamily: AppTheme.display, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.6)),
+          const SizedBox(height: 2),
+          Text(sub, style: const TextStyle(fontSize: 13, color: GColors.inkSoft)),
+        ]),
+      );
+  var n = 4;
+  return [
+    if (done.isNotEmpty) ...[
+      FadeInUp(index: n++, child: head('Checked before', 'Tap to see your result, or check again for the latest terms.')),
+      for (final i in done) FadeInUp(index: n++, child: _Row(item: i, state: state)),
+    ],
+    if (todo.isNotEmpty) ...[
+      FadeInUp(index: n++, child: head(done.isEmpty ? 'Popular terms' : 'Not checked yet', 'Tap one and we’ll fetch and check its latest terms.')),
+      for (final i in todo) FadeInUp(index: n++, child: _Row(item: i, state: state)),
+    ],
+  ];
 }
 
 class _Row extends StatelessWidget {
@@ -127,7 +151,7 @@ class _Row extends StatelessWidget {
         decoration: BoxDecoration(
           color: GColors.white,
           borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: GColors.ink, width: 1),
+          border: Border.all(color: GColors.line, width: 1),
         ),
         child: Row(children: [
           LetterBadge(letter: item.initial, color: item.brandColor, size: 46),
@@ -147,7 +171,25 @@ class _Row extends StatelessWidget {
             ]),
           ),
           const SizedBox(width: 8),
-          if (cached != null)
+          if (cached != null) ...[
+            Pressable(
+              onTap: () => Flows.library(context, item),
+              child: Container(
+                height: 32,
+                padding: const EdgeInsets.symmetric(horizontal: 11),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: GColors.ink, width: 1),
+                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.refresh_rounded, size: 15),
+                  SizedBox(width: 4),
+                  Text('Check again', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 6),
             Container(
               width: 46,
               height: 46,
@@ -161,6 +203,7 @@ class _Row extends StatelessWidget {
                     color: GColors.onColor(GColors.forScore(cached.score)),
                   )),
             )
+          ]
           else
             // Not checked yet: just a greyed-out search icon.
             const SizedBox(

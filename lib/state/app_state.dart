@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/analysis.dart';
 import '../services/analysis/claude_analyzer.dart';
 import '../services/analysis/context_profile.dart';
+import '../services/analysis/offline_translator.dart';
 import '../services/analysis/rule_based_analyzer.dart';
 import '../services/catalog_repository.dart';
 import '../services/storage.dart';
@@ -44,51 +45,108 @@ class AppState extends ChangeNotifier {
 
   /// Runs the preferred engine and falls back to offline if AI fails, so
   /// the user always gets an answer.
+  /// The AI engine is switched off for now; everything runs on the phone.
+  static const aiEnabled = false;
+
   Future<AnalysisResult> analyze(ContractInput input) async {
     final offline = await RuleBasedAnalyzer.load();
-    final profile = ContextProfiler.profile(input);
-    final langName = ContextProfiler.languageNames[profile.language] ?? 'another language';
-    final english = profile.language == 'en';
+    final lang = ContextProfiler.detectLanguage(input.text);
+    final langName = ContextProfiler.languageNames[lang] ?? 'another language';
+
+    // Not English? Translate it on the phone first (works offline once the
+    // language pack is downloaded). If we can't, say so instead of guessing.
+    var work = input;
+    String? note;
+    if (lang != 'en') {
+      if (!OfflineTranslator.supports(lang)) throw UnsupportedLanguageException(langName);
+      try {
+        work = input.copyWith(text: await OfflineTranslator.translate(input.text, lang, 'en'));
+        note = 'Translated from $langName on your phone. Quotes are translated too, so check the original for exact wording.';
+      } on TranslationUnavailable {
+        throw UnsupportedLanguageException(langName, needsDownload: true);
+      }
+    }
+
+    final profile = ContextProfiler.profile(work);
+    work = work.copyWith(dealType: profile.dealType);
     AnalysisResult result;
-    if (_settings.aiReady) {
+    if (aiEnabled && _settings.aiReady) {
       try {
         result = await ClaudeAnalyzer(
           apiKey: _settings.apiKey.trim(),
           model: _settings.model.trim(),
           endpoint: _settings.endpoint.trim(),
-          outputLanguage: ContextProfiler.languageNames[_settings.resultLanguage] ?? 'English',
-        ).analyze(input);
-        if (!english) {
-          result = result.copyWith(note: 'Translated from $langName by the AI engine.');
-        }
+        ).analyze(work);
       } catch (e) {
-        // The offline reader can't read other languages: say so, don't guess.
-        if (!english) throw UnsupportedLanguageException(langName);
-        result = (await offline.analyze(input)).copyWith(
-          note: 'AI check unavailable ($e). Showing the offline check instead.',
-        );
+        result = await offline.analyze(work);
       }
     } else {
-      if (!english) throw UnsupportedLanguageException(langName);
-      result = await offline.analyze(input);
-      if (_settings.resultLanguage != 'en') {
-        result = result.copyWith(note: 'Results in other languages need the AI engine (Settings). Showing English.');
-      }
+      result = await offline.analyze(work);
     }
     result = result.copyWith(
+      note: note,
       dealType: profile.dealType,
       audience: result.audience ?? profile.audience,
       otherParty: result.otherParty ?? profile.otherParty,
       summary: result.summary ?? profile.summary,
-      language: profile.language,
-      focus: result.focus.isNotEmpty ? result.focus : profile.focus,
+      language: lang,
     );
+
+    // Results in another language: translate our English output on-device.
+    final target = _settings.resultLanguage;
+    if (target != 'en' && OfflineTranslator.supports(target)) {
+      try {
+        result = await _translateResult(result, target);
+      } on TranslationUnavailable {
+        result = result.copyWith(note: 'Couldn’t get the translation pack, so results are in English. Connect once and try again.');
+      }
+    }
     final dateNote = _dateNote(input.pageDate);
     if (dateNote != null) {
       result = result.copyWith(note: result.note == null ? dateNote : '$dateNote ${result.note}');
     }
     _save(result);
     return result;
+  }
+
+  Future<AnalysisResult> _translateResult(AnalysisResult r, String to) async {
+    final f = r.findings;
+    final items = <String>[
+      ...r.tldr,
+      for (final x in f) x.title,
+      for (final x in f) x.plain,
+      for (final k in r.keyFacts) k.value,
+      ...r.questions,
+      r.summary ?? '',
+      r.audience ?? '',
+      r.otherParty ?? '',
+    ];
+    final t = await OfflineTranslator.translateAll(items, 'en', to);
+    var i = 0;
+    List<String> take(int n) {
+      final out = t.sublist(i, i + n);
+      i += n;
+      return out;
+    }
+
+    final tldr = take(r.tldr.length);
+    final titles = take(f.length);
+    final plains = take(f.length);
+    final facts = take(r.keyFacts.length);
+    final qs = take(r.questions.length);
+    final rest = take(3);
+    return r.copyWith(
+      tldr: tldr,
+      findings: [
+        for (var k = 0; k < f.length; k++)
+          Finding(title: titles[k], plain: plains[k], severity: f[k].severity, category: f[k].category, quote: f[k].quote),
+      ],
+      keyFacts: [for (var k = 0; k < r.keyFacts.length; k++) KeyFact(r.keyFacts[k].label, facts[k])],
+      questions: qs,
+      summary: rest[0].isEmpty ? null : rest[0],
+      audience: rest[1].isEmpty ? null : rest[1],
+      otherParty: rest[2].isEmpty ? null : rest[2],
+    );
   }
 
   static const _months = [

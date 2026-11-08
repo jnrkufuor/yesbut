@@ -95,6 +95,22 @@ class ContextProfiler {
   static String describeType(String id) =>
       _types.where((d) => d.id == id).map((d) => d.label).firstOrNull ?? 'an agreement';
 
+  /// Plain-English line about how the deal type changed the check.
+  static String weightingNote(String id) => switch (id) {
+        'shopping' => 'We checked it as an online shop, so returns, refunds and fees count for more.',
+        'subscription' => 'We checked it as a subscription, so renewals, cancelling and price changes count for more.',
+        'rideshare' => 'We checked it as a ride or delivery app, so fees, safety and who’s responsible count for more.',
+        'social' => 'We checked it as a social app, so your posts, your data and AI training count for more.',
+        'lodging' => 'We checked it as a booking service, so cancellations and fees count for more.',
+        'rental' => 'We checked it as a rental, so deposits, penalties and rent changes count for more.',
+        'insurance' => 'We checked it as insurance, so exclusions, claims and cancelling count for more.',
+        'finance' => 'We checked it as a bank or payments service, so fees and rates count for more.',
+        'gym' => 'We checked it as a gym membership, so lock-ins and cancelling count for more.',
+        'software' => 'We checked it as an app or software, so your data and liability count for more.',
+        'phone' => 'We checked it as a phone plan, so contract length and exit fees count for more.',
+        _ => 'We used our standard checklist for this one.',
+      };
+
   static String typeTitle(String id) => switch (id) {
         'rideshare' => 'a ride or delivery app',
         'shopping' => 'an online shop',
@@ -266,8 +282,9 @@ class ContextProfiler {
     final (aud, other) = detectAudience(input.text, input.title, input.ref);
     final fromWeb = input.kind == SourceKind.link || input.kind == SourceKind.library;
     final site = fromWeb ? input.title.split(' · ').first.trim() : 'the company';
-    final summary = 'This reads like ${site == 'the company' ? 'a company' : site}’s rules for ${describeType(type) == 'an agreement' ? 'using its service' : 'using ${describeType(type)}'}. '
-        'It mostly speaks to $aud${other != null ? ', and also mentions $other' : ''}.';
+    String cap(String x) => x.isEmpty ? x : x[0].toUpperCase() + x.substring(1);
+    final who = site == 'the company' ? 'These are the rules for $aud.' : 'These are $site’s rules for $aud.';
+    final summary = other == null ? who : '$who ${cap(other)} are mentioned too.';
     return DocProfile(
       language: detectLanguage(input.text),
       dealType: type,
@@ -313,10 +330,12 @@ class _FocusRule {
 /// Thrown when a document isn't in a language the current engine can read.
 class UnsupportedLanguageException implements Exception {
   final String language;
-  UnsupportedLanguageException(this.language);
+  final bool needsDownload;
+  UnsupportedLanguageException(this.language, {this.needsDownload = false});
   @override
-  String toString() =>
-      'This looks like $language. Our offline reader only understands English, so rather than guess we didn’t '
-      'score it. Turn on the AI engine in Settings to read it and translate the results, or look for an English '
-      'version of the page.';
+  String toString() => needsDownload
+      ? 'This looks like $language. We translate it on your phone, but the $language language pack hasn’t '
+          'downloaded yet. Connect to the internet once and try again. After that it works offline.'
+      : 'This looks like $language, which we can’t read yet. Rather than guess, we didn’t score it. '
+          'Look for an English, French, Spanish, German, Portuguese or Italian version of the page.';
 }

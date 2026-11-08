@@ -131,9 +131,16 @@ class _ResultScreenState extends State<ResultScreen> {
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
+            // Read aloud is parked for now: shown greyed out and disabled.
             Semantics(
-              label: _speaking ? 'Stop reading aloud' : 'Read aloud',
-              child: RoundIconButton(icon: _speaking ? 'stop' : 'speaker', onTap: _toggleSpeak),
+              label: 'Read aloud (coming soon)',
+              enabled: false,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.35,
+                  child: RoundIconButton(icon: 'speaker', onTap: _toggleSpeak),
+                ),
+              ),
             ),
             const SizedBox(width: 6),
             RoundIconButton(icon: 'share', label: 'Share', onTap: _share),
@@ -162,7 +169,7 @@ class _ResultScreenState extends State<ResultScreen> {
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
           _ScoreCard(result: r),
-          if (r.summary != null || r.audience != null) ...[
+          if (r.summary != null || r.audience != null || r.dealType != 'general') ...[
             const SizedBox(height: 6),
             _AboutCard(result: r),
           ],
@@ -183,11 +190,7 @@ class _ResultScreenState extends State<ResultScreen> {
             const SectionTitle('Quick facts'),
             _KeyFacts(facts: r.keyFacts),
           ],
-          if (r.focus.isNotEmpty) ...[
-            const SizedBox(height: 26),
-            SectionTitle('What matters for ${ContextProfiler.typeTitle(r.dealType)}'),
-            _FocusList(items: r.focus),
-          ],
+
           if (r.tldr.isNotEmpty) ...[
             const SizedBox(height: 26),
             _Tldr(result: r),
@@ -538,17 +541,13 @@ class _ScoreCardState extends State<_ScoreCard> {
             Positioned(
               top: 14,
               right: 16,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                transitionBuilder: (c, a) => RotationTransition(
-                  turns: Tween(begin: 0.75, end: 1.0).animate(a),
-                  child: FadeTransition(opacity: a, child: c),
-                ),
-                child: Icon(
-                  _open ? Icons.close_fullscreen_rounded : Icons.open_in_full_rounded,
-                  key: ValueKey(_open),
-                  size: 18,
-                  color: _open ? GColors.white : fg,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(end: _open ? 1 : 0),
+                duration: const Duration(milliseconds: 520),
+                curve: Curves.easeInOutCubic,
+                builder: (context, t, _) => CustomPaint(
+                  size: const Size(18, 18),
+                  painter: _ExpandArrows(t, Color.lerp(fg, GColors.white, t)!),
                 ),
               ),
             ),
@@ -1097,6 +1096,10 @@ class _AboutCard extends StatelessWidget {
             if (r.otherParty != null) _RoleChip(text: 'Also mentions ${r.otherParty}', primary: false),
           ]),
         ],
+        const SizedBox(height: 14),
+        label('HOW WE CHECKED IT'),
+        const SizedBox(height: 6),
+        Text(ContextProfiler.weightingNote(r.dealType), style: const TextStyle(fontSize: 14, height: 1.45)),
         if (r.language != 'en') ...[
           const SizedBox(height: 12),
           Text('Original language: ${ContextProfiler.languageNames[r.language] ?? r.language}',
@@ -1180,4 +1183,49 @@ class _FocusList extends StatelessWidget {
             ]),
           ),
       ]);
+}
+
+
+/// Two neckless corner arrowheads. t=0: pointing out (expand). As t goes to
+/// 1 each one slides toward the centre and flips, so they point in (contract).
+class _ExpandArrows extends CustomPainter {
+  _ExpandArrows(this.t, this.color);
+  final double t;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final s = size.width;
+    final arm = s * 0.36;
+    // Corners in the "expand" pose.
+    final tr = Offset(s * 0.9, s * 0.1);
+    final bl = Offset(s * 0.1, s * 0.9);
+    // In the "contract" pose the corners sit nearer the middle.
+    final trIn = Offset(s * 0.6, s * 0.4);
+    final blIn = Offset(s * 0.4, s * 0.6);
+    void corner(Offset a, Offset b, double sign) {
+      final c = Offset.lerp(a, b, t)!;
+      canvas.save();
+      canvas.translate(c.dx, c.dy);
+      canvas.rotate(3.14159265 * t);
+      final path = Path()
+        ..moveTo(-arm * sign, 0)
+        ..lineTo(0, 0)
+        ..lineTo(0, arm * sign);
+      canvas.drawPath(path, p);
+      canvas.restore();
+    }
+
+    corner(tr, trIn, 1);
+    corner(bl, blIn, -1);
+  }
+
+  @override
+  bool shouldRepaint(_ExpandArrows old) => old.t != t || old.color != color;
 }

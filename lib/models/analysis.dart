@@ -181,6 +181,10 @@ class AnalysisResult {
     String? summary,
     String? language,
     List<FocusItem>? focus,
+    List<String>? tldr,
+    List<Finding>? findings,
+    List<KeyFact>? keyFacts,
+    List<String>? questions,
   }) =>
       AnalysisResult(
         id: id,
@@ -190,11 +194,11 @@ class AnalysisResult {
         analyzedAt: analyzedAt,
         engine: engine,
         score: score,
-        tldr: tldr,
-        findings: findings,
+        tldr: tldr ?? this.tldr,
+        findings: findings ?? this.findings,
         jargon: jargon,
-        keyFacts: keyFacts,
-        questions: questions,
+        keyFacts: keyFacts ?? this.keyFacts,
+        questions: questions ?? this.questions,
         wordCount: wordCount,
         text: text,
         note: note ?? this.note,
@@ -302,11 +306,23 @@ class ContractInput {
   final String? ref;
   /// "Last updated" date found on the page itself, if any.
   final DateTime? pageDate;
+  /// What kind of deal this is ("shopping", "rideshare"…); tunes the criteria.
+  final String dealType;
   const ContractInput({
     required this.text,
     required this.title,
     required this.kind,
     this.ref,
     this.pageDate,
+    this.dealType = 'general',
   });
+
+  ContractInput copyWith({String? text, String? dealType}) => ContractInput(
+        text: text ?? this.text,
+        title: title,
+        kind: kind,
+        ref: ref,
+        pageDate: pageDate,
+        dealType: dealType ?? this.dealType,
+      );
 }
