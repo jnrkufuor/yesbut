@@ -10,6 +10,9 @@ import 'history_screen.dart';
 import 'home_screen.dart';
 import 'live_screen.dart';
 import 'search_screen.dart';
+import 'flows.dart';
+import 'upload_screen.dart';
+import '../services/incoming.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -21,6 +24,40 @@ class _RootShellState extends State<RootShell> {
   int _index = 0;
 
   void _go(int i) => setState(() => _index = i);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => IncomingService.listen(_handle));
+  }
+
+  /// Widget taps and things shared from other apps.
+  Future<void> _handle(Incoming inc) async {
+    if (!mounted) return;
+    final nav = Navigator.of(context);
+    nav.popUntil((r) => r.isFirst);
+    switch (inc.action) {
+      case 'scan':
+        await Flows.scan(context);
+        return;
+      case 'upload':
+        nav.push(MaterialPageRoute(builder: (_) => const UploadScreen()));
+        return;
+      case 'paste':
+        await Flows.paste(context);
+        return;
+      case 'link':
+        await Flows.link(context);
+        return;
+      case 'history':
+        _go(3);
+        return;
+      case 'home':
+        _go(0);
+        return;
+    }
+    await shareIn(context, inc);
+  }
 
   @override
   Widget build(BuildContext context) {

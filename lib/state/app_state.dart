@@ -11,6 +11,8 @@ import '../services/catalog_repository.dart';
 import '../i18n/translations.dart';
 import '../services/storage.dart';
 import '../services/watch_service.dart';
+import '../services/incoming.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._storage);
@@ -65,6 +67,15 @@ class AppState extends ChangeNotifier {
   }
   AppSettings get settings => _settings;
   bool get onboarded => _onboarded;
+
+  /// The home-screen widget shows your latest check.
+  Future<void> _updateWidget(AnalysisResult r) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('widget_last', 'Last check: ${r.title} · ${r.score}/100');
+      await IncomingService.refreshWidget();
+    } catch (_) {}
+  }
 
   Future<void> init() async {
     await _storage.init();
@@ -237,6 +248,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _save(AnalysisResult r) {
+    _updateWidget(r);
     final i = _watch.indexWhere((w) => w.url == r.sourceRef);
     if (i != -1) {
       _watch[i] = WatchItem(

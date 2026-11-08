@@ -11,7 +11,9 @@ import 'home_screen.dart' show RoundIconButton;
 import 'flows.dart';
 
 class PasteScreen extends StatefulWidget {
-  const PasteScreen({super.key});
+  const PasteScreen({super.key, this.initialText, this.initialTitle});
+  final String? initialText;
+  final String? initialTitle;
   @override
   State<PasteScreen> createState() => _PasteScreenState();
 }
@@ -23,6 +25,8 @@ class _PasteScreenState extends State<PasteScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialText != null) _text.text = widget.initialText!;
+    if (widget.initialTitle != null) _title.text = widget.initialTitle!;
     _text.addListener(() => setState(() {}));
   }
 
