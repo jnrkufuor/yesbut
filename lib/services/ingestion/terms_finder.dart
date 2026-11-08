@@ -67,7 +67,8 @@ class TermsFinder {
     '/terms', '/terms-of-service', '/terms-of-use', '/legal/terms', '/tos', '/legal', '/policies/terms',
   ];
 
-  Future<List<TermsCandidate>> find(String query, {void Function(FinderProgress)? onProgress}) async {
+  /// [lang] is the app language: we search in it and prefer pages in it.
+  Future<List<TermsCandidate>> find(String query, {String lang = 'en', void Function(FinderProgress)? onProgress}) async {
     final q = query.trim();
     if (q.isEmpty) return const [];
     onProgress?.call(const FinderProgress(FinderStage.searching));
@@ -76,7 +77,7 @@ class TermsFinder {
     String? domain = _domainFromQuery(q);
 
     // 1. Web search.
-    final found = await _search('$q terms of service');
+    final found = await _search('$q ${_termsWord[lang] ?? 'terms of service'}', lang);
     if (domain == null && found.isNotEmpty) domain = _pickDomain(q, found);
     domain ??= '${q.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}.com';
     final base = _registrable(domain);
@@ -134,10 +135,23 @@ class TermsFinder {
 
   // ---------------------------------------------------------------------------
 
-  Future<List<String>> _search(String q) async {
+  static const _termsWord = {
+    'en': 'terms of service',
+    'fr': 'conditions générales d’utilisation',
+    'es': 'términos y condiciones',
+    'de': 'AGB Nutzungsbedingungen',
+    'pt': 'termos de uso',
+    'it': 'termini e condizioni',
+  };
+  static const _region = {'fr': 'fr-fr', 'es': 'es-es', 'de': 'de-de', 'pt': 'br-pt', 'it': 'it-it'};
+
+  Future<List<String>> _search(String q, String lang) async {
     try {
-      final uri = Uri.https('html.duckduckgo.com', '/html/', {'q': q});
-      final res = await _client.get(uri, headers: _headers).timeout(const Duration(seconds: 12));
+      final params = {'q': q, if (_region[lang] != null) 'kl': _region[lang]!};
+      final uri = Uri.https('html.duckduckgo.com', '/html/', params);
+      final res = await _client
+          .get(uri, headers: {..._headers, 'Accept-Language': '$lang,en;q=0.6'})
+          .timeout(const Duration(seconds: 12));
       if (res.statusCode != 200) return const [];
       final doc = html_parser.parse(WebFetcher.decode(res));
       final out = <String>[];

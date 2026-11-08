@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 
 import '../services/storage.dart';
@@ -35,12 +36,12 @@ class SettingsScreen extends StatelessWidget {
           children: staggered([
             Row(children: [
               RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
-              const SizedBox(width: 12),
-              const LoopyIcon('settings', size: 26, stroke: 2.6),
-              const SizedBox(width: 8),
+              const Spacer(),
               const Text('Settings',
                   style: TextStyle(
-                      fontFamily: AppTheme.display, fontSize: 25, fontWeight: FontWeight.w700, letterSpacing: -1, height: 1)),
+                      fontFamily: AppTheme.display, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1)),
+              const SizedBox(width: 8),
+              const LoopyIcon('settings', size: 28, stroke: 2.6),
             ]),
             const SizedBox(height: 28),
             const HeadingText('Make it ', serif: 'yours', size: 36),
@@ -63,23 +64,21 @@ class SettingsScreen extends StatelessWidget {
               ),
             ]),
 
-            const _Label('RESULTS LANGUAGE'),
+            const _Label('LANGUAGE'),
             _Group(children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                child: Wrap(spacing: 6, runSpacing: 6, children: [
-                  for (final e in _langs.entries)
-                    _Pill(
-                      text: e.value,
-                      selected: st.resultLanguage == e.key,
-                      onTap: () => set(st.copyWith(resultLanguage: e.key)),
-                    ),
-                ]),
+              _Row(
+                title: 'App language',
+                body: 'Changes the whole app, results and searches.',
+                trailing: _Dropdown(
+                  value: st.resultLanguage,
+                  items: _langs,
+                  onChanged: (v) => set(st.copyWith(resultLanguage: v)),
+                ),
               ),
               const Padding(
-                padding: EdgeInsets.fromLTRB(14, 6, 14, 12),
+                padding: EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: Text(
-                  'Terms in these languages are translated on your phone. Each language downloads once (about 30 MB), then works offline.',
+                  'Translated on your phone. Each language downloads once (about 30 MB), then works offline.',
                   style: TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
                 ),
               ),
@@ -195,16 +194,80 @@ class _Row extends StatelessWidget {
       );
 }
 
+/// Brand toggle: always a white track. On = charcoal border + charcoal knob
+/// on the right; off = grey border + grey knob on the left.
 class _Switch extends StatelessWidget {
   const _Switch(this.value, this.onChanged);
   final bool value;
   final ValueChanged<bool> onChanged;
   @override
-  Widget build(BuildContext context) => Switch(
-        value: value,
-        onChanged: onChanged,
-        activeThumbColor: GColors.white,
-        activeTrackColor: GColors.ink,
+  Widget build(BuildContext context) => Semantics(
+        toggled: value,
+        child: GestureDetector(
+          onTap: () => onChanged(!value),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 50,
+            height: 30,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: GColors.white,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: value ? GColors.ink : GColors.line, width: 1.2),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutBack,
+              alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 20,
+                height: 20,
+                decoration: BoxDecoration(color: value ? GColors.ink : GColors.line, shape: BoxShape.circle),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// Compact outlined dropdown in the brand style.
+class _Dropdown extends StatelessWidget {
+  const _Dropdown({required this.value, required this.items, required this.onChanged});
+  final String value;
+  final Map<String, String> items;
+  final ValueChanged<String> onChanged;
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+        initialValue: value,
+        onSelected: onChanged,
+        color: GColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: GColors.line),
+        ),
+        itemBuilder: (_) => [
+          for (final e in items.entries)
+            PopupMenuItem(
+              value: e.key,
+              child: Row(children: [
+                Expanded(child: Text(e.value, style: const TextStyle(fontSize: 14))),
+                if (e.key == value) const Icon(Icons.check_rounded, size: 18),
+              ]),
+            ),
+        ],
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.fromLTRB(13, 0, 8, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: GColors.ink, width: 1),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(items[value] ?? value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+            const Icon(Icons.expand_more_rounded, size: 18),
+          ]),
+        ),
       );
 }
 

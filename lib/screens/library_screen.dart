@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 
 import '../services/catalog_repository.dart';
@@ -50,14 +51,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
               ]),
               const SizedBox(height: 20),
-              TextField(
+              FadeInUp(index: 4, child: TextField(
                 onChanged: (v) => setState(() => _q = v),
                 textInputAction: TextInputAction.search,
                 onSubmitted: (v) {
                   if (v.trim().isNotEmpty) Flows.search(context, query: v.trim());
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search Netflix, Spotify, or any company…',
+                  hintText: context.tr('Search Netflix, Spotify, or any company…'),
                   prefixIcon: const Padding(
                     padding: EdgeInsets.all(13),
                     child: LoopyIcon('search', size: 22, stroke: 2.6),
@@ -75,20 +76,23 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     borderSide: const BorderSide(color: GColors.ink, width: 1),
                   ),
                 ),
-              ),
+              )),
               if (_q.trim().length > 1) ...[
                 const SizedBox(height: 10),
                 _WebSearchRow(query: _q.trim()),
               ],
               const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(children: [
-                  _Cat(label: 'All', selected: _cat == null, onTap: () => setState(() => _cat = null)),
-                  for (final c in cats)
-                    _Cat(label: c, selected: _cat == c, onTap: () => setState(() => _cat = c)),
-                ]),
+              FadeInUp(
+                index: 5,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(children: [
+                    _Cat(label: 'All', selected: _cat == null, onTap: () => setState(() => _cat = null)),
+                    for (final c in cats)
+                      _Cat(label: c, selected: _cat == c, onTap: () => setState(() => _cat = c)),
+                  ]),
+                ),
               ),
               const SizedBox(height: 16),
               ..._sections(items, state),
@@ -121,10 +125,10 @@ List<Widget> _sections(List<CatalogItem> items, AppState state) {
           Text(sub, style: const TextStyle(fontSize: 13, color: GColors.inkSoft)),
         ]),
       );
-  var n = 4;
+  var n = 6;
   return [
     if (done.isNotEmpty) ...[
-      FadeInUp(index: n++, child: head('Checked before', 'Tap to see your result, or check again for the latest terms.')),
+      FadeInUp(index: n++, child: head('Checked before', 'Tap one to see your result. Search above to check something new.')),
       for (final i in done) FadeInUp(index: n++, child: _Row(item: i, state: state)),
     ],
     if (todo.isNotEmpty) ...[
@@ -172,24 +176,6 @@ class _Row extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           if (cached != null) ...[
-            Pressable(
-              onTap: () => Flows.library(context, item),
-              child: Container(
-                height: 32,
-                padding: const EdgeInsets.symmetric(horizontal: 11),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: GColors.ink, width: 1),
-                ),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.refresh_rounded, size: 15),
-                  SizedBox(width: 4),
-                  Text('Check again', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                ]),
-              ),
-            ),
-            const SizedBox(width: 6),
             Container(
               width: 46,
               height: 46,

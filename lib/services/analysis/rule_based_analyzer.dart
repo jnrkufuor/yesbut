@@ -92,10 +92,20 @@ class RuleBasedAnalyzer implements ContractAnalyzer {
     final questions = <String>[];
 
     final type = input.dealType;
-    final tweaks = _tweaks[type] ?? const <String, (String?, double)>{};
+    final ind = input.industry;
+    // Deal-type tweaks first, then industry tweaks on top (weights multiply).
+    final tweaks = <String, (String?, double)>{...?_tweaks[type]};
+    (_industryTweaks[ind] ?? const <String, _Tweak>{}).forEach((id, t) {
+      final prev = tweaks[id];
+      tweaks[id] = (t.$1 ?? prev?.$1, (prev?.$2 ?? 1.0) * t.$2);
+    });
     final skip = _skip[type] ?? const <String>{};
     final weights = <Finding, double>{};
-    final rules = [..._rules.where((r) => !skip.contains(r.id)), ...(_extra[type] ?? const <_Rule>[])];
+    final rules = [
+      ..._rules.where((r) => !skip.contains(r.id)),
+      ...(_extra[type] ?? const <_Rule>[]),
+      ...(_industryExtra[ind] ?? const <_Rule>[]),
+    ];
 
     for (final base in rules) {
       final tw = tweaks[base.id];
@@ -351,5 +361,142 @@ final Map<String, List<_Rule>> _extra = {
     _r('phone_throttle', 'Commitment', 'heads_up', 'They can slow your data',
         'After a certain amount of data, speeds can drop a lot.',
         [r'throttl', r'reduced speeds?', r'deprioriti']),
+  ],
+};
+
+
+// ---------------------------------------------------------------------------
+// Industry criteria. On top of the deal type, what someone who uses this kind
+// of product a lot would want pulled out.
+
+const Map<String, Map<String, _Tweak>> _industryTweaks = {
+  'beauty': {'no_refunds': ('red_flag', 1.3), 'auto_renewal': (null, 1.3), 'content_license': (null, 1.3), 'marketing': (null, 1.2)},
+  'food': {'extra_fees': ('red_flag', 1.4), 'no_refunds': (null, 1.3), 'liability_cap': (null, 1.2)},
+  'gaming': {'no_refunds': ('red_flag', 1.4), 'termination_by_them': ('red_flag', 1.4), 'unilateral_changes': (null, 1.2), 'age_requirement': (null, 1.2)},
+  'dating': {'content_license': ('red_flag', 1.3), 'termination_by_them': ('red_flag', 1.3), 'data_sharing': (null, 1.4), 'tracking': (null, 1.3), 'auto_renewal': (null, 1.3)},
+  'health': {'data_sharing': ('red_flag', 1.6), 'data_retention': (null, 1.4), 'liability_cap': (null, 1.3), 'ai_training': (null, 1.3)},
+  'travel': {'no_refunds': ('red_flag', 1.4), 'extra_fees': (null, 1.4), 'liability_cap': (null, 1.3), 'unilateral_changes': (null, 1.2)},
+  'education': {'no_refunds': ('red_flag', 1.4), 'content_license': (null, 1.2), 'auto_renewal': (null, 1.2)},
+  'crypto': {'liability_cap': ('red_flag', 1.5), 'termination_by_them': ('red_flag', 1.5), 'extra_fees': (null, 1.3), 'arbitration': (null, 1.3), 'data_sharing': (null, 1.2)},
+  'kids': {'data_sharing': ('red_flag', 1.6), 'tracking': ('red_flag', 1.5), 'marketing': (null, 1.4), 'ai_training': (null, 1.4)},
+  'auto': {'deposit': (null, 1.4), 'extra_fees': ('red_flag', 1.4), 'liability_cap': (null, 1.3), 'tracking': (null, 1.2)},
+  'electronics': {'as_is': ('red_flag', 1.4), 'liability_cap': (null, 1.2), 'no_refunds': (null, 1.2)},
+  'fashion': {'no_refunds': (null, 1.3), 'extra_fees': (null, 1.2)},
+};
+
+final Map<String, List<_Rule>> _industryExtra = {
+  'beauty': [
+    _r('beauty_reaction', 'Your rights', 'heads_up', 'Reactions are on you',
+        'If a product irritates your skin, they say it’s your job to patch test first. Check ingredients.',
+        [r'patch test', r'(allergic|adverse) reaction', r'skin (irritation|sensitivit)']),
+    _r('beauty_opened', 'Money', 'heads_up', 'Opened products can’t go back',
+        'Once you open or use it, you probably can’t return it.',
+        [r'(opened|used|unsealed) (products?|items?).{0,40}(not|cannot|can.t) be returned', r'unopened (and unused )?(condition|products?)']),
+    _r('beauty_autoship', 'Money', 'heads_up', 'Refills ship automatically',
+        'Auto-ship or subscribe-and-save keeps sending (and charging) until you stop it.',
+        [r'auto[- ]?(ship|replenish|refill)', r'subscribe (and|&) save']),
+    _r('beauty_reviews', 'Your data', 'heads_up', 'They can use your photos and reviews',
+        'Before-and-after photos or reviews you share can end up in their ads.',
+        [r'(reviews?|photos?|images?|testimonials?).{0,60}(advertis|marketing|promotional)']),
+  ],
+  'food': [
+    _r('food_allergen', 'Your rights', 'red_flag', 'Allergies are your risk',
+        'They don’t promise food is free of allergens. If you have allergies, check with the restaurant directly.',
+        [r'allergen', r'allerg(y|ies|ic)', r'cross[- ]contact|cross[- ]contamination']),
+    _r('food_missing', 'Money', 'heads_up', 'Missing or wrong orders',
+        'There are rules and time limits for getting money back if something’s missing or wrong.',
+        [r'(missing|incorrect|wrong) (items?|orders?)', r'order (issues?|problems?)']),
+    _r('food_service_fee', 'Money', 'heads_up', 'Extra service and delivery fees',
+        'Menu prices can be higher than in store, plus service, small-order and delivery fees.',
+        [r'service fee', r'small order fee', r'delivery fee', r'prices? (may|can) (be )?(higher|differ)']),
+  ],
+  'gaming': [
+    _r('game_virtual_money', 'Money', 'red_flag', 'Virtual money isn’t yours',
+        'Coins, gems and items have no real value, can’t be refunded and can vanish if your account goes.',
+        [r'virtual (currency|items?|goods)', r'no (real[- ]world|monetary|cash) value', r'in-?game (currency|purchases?)']),
+    _r('game_license', 'Your rights', 'heads_up', 'You rent the game, not own it',
+        'You get a licence to play. They can change or take away content.',
+        [r'licen[cs]e,? not (a )?sale', r'(you do not|don.t) own', r'limited,? (non-?exclusive|revocable) licen[cs]e']),
+    _r('game_lootbox', 'Money', 'heads_up', 'Random paid rewards',
+        'Loot boxes and random drops: you pay without knowing what you’ll get.',
+        [r'loot box', r'random(ized)? (rewards?|items?|drops?)', r'gacha']),
+  ],
+  'dating': [
+    _r('dating_no_checks', 'Your rights', 'red_flag', 'No background checks',
+        'They don’t screen members. Be careful meeting people in person.',
+        [r'(do not|don.t|does not) (conduct|perform|run) (criminal )?background checks?', r'not responsible for the conduct of']),
+    _r('dating_photos', 'Your data', 'heads_up', 'Your photos can be reused',
+        'Pictures and profile info you add can be used by them in broad ways.',
+        [r'(photos?|images?|profile).{0,60}(licen[cs]e|use|display)']),
+  ],
+  'health': [
+    _r('health_not_medical', 'Your rights', 'heads_up', 'Not medical advice',
+        'They say nothing here replaces a doctor, so they’re not responsible for decisions you make with it.',
+        [r'not (intended as |a substitute for )?(professional )?medical advice', r'not a substitute for']),
+    _r('health_data', 'Your data', 'red_flag', 'Your health data can be shared',
+        'Health and fitness data is sensitive. Check who they share it with.',
+        [r'health (data|information)', r'biometric', r'fitness data']),
+  ],
+  'travel': [
+    _r('travel_change_fee', 'Money', 'heads_up', 'Fees to change plans',
+        'Changing dates or names can cost extra, sometimes more than the ticket.',
+        [r'change fee', r'(change|modification) (charge|penalty)']),
+    _r('travel_overbook', 'Your rights', 'heads_up', 'They can overbook',
+        'You could be bumped if too many people show up.',
+        [r'overbook', r'denied boarding']),
+    _r('travel_baggage', 'Money', 'heads_up', 'Limited pay-out for lost bags',
+        'If they lose or damage your bags, what they pay is capped.',
+        [r'baggage', r'luggage']),
+  ],
+  'education': [
+    _r('edu_refund_start', 'Money', 'red_flag', 'No refunds once it starts',
+        'After the course begins (or you watch some of it) you may not get your money back.',
+        [r'(no|non-?)refund.{0,60}(after|once).{0,30}(start|begin|access)', r'refunds? (are|is) not (available|provided) (after|once)']),
+    _r('edu_cert', 'Your rights', 'heads_up', 'Certificates may not count',
+        'A certificate of completion isn’t necessarily recognised by schools or employers.',
+        [r'not (an )?accredited', r'certificate.{0,40}(does not|not) (constitute|represent)']),
+  ],
+  'crypto': [
+    _r('crypto_not_insured', 'Money', 'red_flag', 'Your money isn’t protected',
+        'Crypto isn’t covered by deposit insurance. If it’s lost or the company fails, you may not get it back.',
+        [r'not (insured|protected) by', r'(fdic|cdic|sipc)', r'no (deposit )?insurance']),
+    _r('crypto_freeze', 'Your rights', 'red_flag', 'They can freeze your account',
+        'They can lock or freeze your account and funds, sometimes without warning.',
+        [r'(freeze|suspend|restrict) (your )?(account|funds|assets)']),
+    _r('crypto_volatility', 'Money', 'heads_up', 'Prices can crash',
+        'Values swing a lot and you could lose everything you put in.',
+        [r'volatil', r'lose (all|the entire|some or all)']),
+  ],
+  'kids': [
+    _r('kids_data', 'Your data', 'red_flag', 'Collects children’s data',
+        'Information about kids is collected. Check what, and how parents can delete it.',
+        [r'(children|child|minors?).{0,40}(personal )?(information|data)', r'coppa']),
+    _r('kids_consent', 'Your rights', 'heads_up', 'Parents have to agree',
+        'Kids need a parent’s permission to use it.',
+        [r'parental consent', r'parent or (legal )?guardian']),
+  ],
+  'auto': [
+    _r('auto_damage', 'Money', 'red_flag', 'You pay for any damage',
+        'Scratches or dents can be charged to your card, sometimes with admin fees on top.',
+        [r'damage (to|of) the vehicle', r'collision damage', r'loss of use']),
+    _r('auto_mileage', 'Money', 'heads_up', 'Mileage limits',
+        'Drive over the limit and every extra kilometre or mile costs you.',
+        [r'mileage (limit|allowance|charge)', r'excess (mileage|kilometres?)']),
+    _r('auto_tolls', 'Money', 'heads_up', 'Toll and admin fees',
+        'Tolls and tickets come back to you with extra processing fees.',
+        [r'tolls?', r'administrative fee', r'parking (tickets?|violations?)']),
+  ],
+  'electronics': [
+    _r('elec_warranty', 'Money', 'heads_up', 'Warranty has limits',
+        'The warranty may not cover drops, water, or repairs by others.',
+        [r'limited warranty', r'warranty (does not|doesn.t) cover', r'void (the|your) warranty']),
+    _r('elec_updates', 'Your rights', 'heads_up', 'Updates can change your device',
+        'They can push software updates that change or remove features.',
+        [r'(software|firmware) updates?']),
+  ],
+  'fashion': [
+    _r('fashion_worn', 'Money', 'heads_up', 'Worn items can’t go back',
+        'Returns usually need tags on and no signs of wear.',
+        [r'(tags? (attached|on))', r'(worn|washed|altered)']),
   ],
 };

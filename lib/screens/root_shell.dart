@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/common.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'history_screen.dart';
@@ -38,7 +39,7 @@ class _RootShellState extends State<RootShell> {
                 child: child,
               ),
             ),
-            child: KeyedSubtree(
+            child: EntranceScope(
               key: ValueKey(_index),
               child: switch (_index) {
                 1 => const SearchScreen(embedded: true),

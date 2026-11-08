@@ -6,10 +6,14 @@ import '../services/analysis/context_profile.dart';
 import '../services/analysis/offline_translator.dart';
 import '../services/analysis/rule_based_analyzer.dart';
 import '../services/catalog_repository.dart';
+import '../i18n/translations.dart';
 import '../services/storage.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._storage);
+
+  /// Whole-app language (translated on the phone).
+  final i18n = Translations();
 
   final Storage _storage;
   final catalog = CatalogRepository();
@@ -26,6 +30,7 @@ class AppState extends ChangeNotifier {
     await _storage.init();
     _history = _storage.loadHistory();
     _settings = _storage.loadSettings();
+    await i18n.setLanguage(_settings.resultLanguage);
     _onboarded = _storage.onboarded;
     await RuleBasedAnalyzer.load();
     await catalog.load();
@@ -39,6 +44,7 @@ class AppState extends ChangeNotifier {
 
   Future<void> updateSettings(AppSettings s) async {
     _settings = s;
+    await i18n.setLanguage(s.resultLanguage);
     notifyListeners();
     await _storage.saveSettings(s);
   }
@@ -68,7 +74,7 @@ class AppState extends ChangeNotifier {
     }
 
     final profile = ContextProfiler.profile(work);
-    work = work.copyWith(dealType: profile.dealType);
+    work = work.copyWith(dealType: profile.dealType, industry: profile.industry);
     AnalysisResult result;
     if (aiEnabled && _settings.aiReady) {
       try {
@@ -86,21 +92,15 @@ class AppState extends ChangeNotifier {
     result = result.copyWith(
       note: note,
       dealType: profile.dealType,
+      industry: profile.industry,
       audience: result.audience ?? profile.audience,
       otherParty: result.otherParty ?? profile.otherParty,
       summary: result.summary ?? profile.summary,
       language: lang,
     );
 
-    // Results in another language: translate our English output on-device.
-    final target = _settings.resultLanguage;
-    if (target != 'en' && OfflineTranslator.supports(target)) {
-      try {
-        result = await _translateResult(result, target);
-      } on TranslationUnavailable {
-        result = result.copyWith(note: 'Couldn’t get the translation pack, so results are in English. Connect once and try again.');
-      }
-    }
+    // Results stay stored in English; the app-wide translator shows them in
+    // the app language (so switching language later re-translates history).
     final dateNote = _dateNote(input.pageDate);
     if (dateNote != null) {
       result = result.copyWith(note: result.note == null ? dateNote : '$dateNote ${result.note}');

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 import 'package:animations/animations.dart';
 import 'package:provider/provider.dart';
 
@@ -71,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           _stagger(
             0,
             Row(children: [
-              const Wordmark(size: 25),
+              const Wordmark(size: 28),
               const Spacer(),
               if (AppState.aiEnabled && state.settings.aiReady)
                 Container(
@@ -277,14 +278,14 @@ class PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        LoopyIcon(icon, size: 26, stroke: 2.6),
+        LoopyIcon(icon, size: 28, stroke: 2.6),
         const SizedBox(width: 8),
         Text(title,
             style: const TextStyle(
               fontFamily: AppTheme.display,
-              fontSize: 25,
+              fontSize: 28,
               fontWeight: FontWeight.w700,
-              letterSpacing: -1,
+              letterSpacing: -1.1,
               height: 1,
             )),
         const Spacer(),

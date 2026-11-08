@@ -126,6 +126,64 @@ class ContextProfiler {
         _ => 'this kind of deal',
       };
 
+  // ---------------------------------------------------------------- industry
+
+  /// The industry on top of the deal type: a beauty shop and an electronics
+  /// shop are both "shops", but people care about different things.
+  static const _industries = <(String, String, List<String>)>[
+    ('beauty', 'beauty and skincare', ['skincare', 'cosmetic', 'makeup', 'beauty', 'fragrance', 'serum', 'shade', 'patch test', 'skin type', 'hair care', 'nail']),
+    ('food', 'food and grocery', ['restaurant', 'meal', 'grocery', 'food', 'menu', 'allergen', 'recipe', 'dish', 'kitchen']),
+    ('gaming', 'games', ['game', 'gaming', 'player', 'in-game', 'virtual currency', 'virtual item', 'loot', 'gems', 'coins', 'esports']),
+    ('dating', 'dating', ['dating', 'match', 'matches', 'swipe', 'date', 'romance', 'singles']),
+    ('health', 'health and wellness', ['health', 'medical', 'wellness', 'therapy', 'symptom', 'prescription', 'clinician', 'workout', 'nutrition', 'mental health']),
+    ('travel', 'travel', ['flight', 'airline', 'baggage', 'itinerary', 'boarding', 'hotel', 'fare class', 'passport']),
+    ('education', 'learning and courses', ['course', 'student', 'tuition', 'lesson', 'certificate', 'enrollment', 'instructor', 'curriculum']),
+    ('crypto', 'crypto and investing', ['crypto', 'bitcoin', 'wallet', 'token', 'blockchain', 'trading', 'investment', 'securities', 'staking']),
+    ('kids', 'kids and family', ['child', 'children', 'parent', 'parental consent', 'under 13', 'minor', 'kids']),
+    ('auto', 'cars and vehicle rental', ['vehicle', 'car rental', 'mileage', 'fuel', 'toll', 'collision damage', 'renter']),
+    ('electronics', 'electronics and gadgets', ['device', 'battery', 'firmware', 'electronics', 'warranty repair', 'gadget', 'charger']),
+    ('fashion', 'clothing and fashion', ['clothing', 'apparel', 'size guide', 'fit', 'garment', 'fashion', 'shoes']),
+  ];
+
+  static String detectIndustry(String text, String title, String? url) {
+    final t = text.length > 60000 ? text.substring(0, 60000).toLowerCase() : text.toLowerCase();
+    final head = '${title.toLowerCase()} ${(url ?? '').toLowerCase()}';
+    String best = 'general';
+    var bestScore = 0;
+    for (final ind in _industries) {
+      var sc = 0;
+      for (final k in ind.$3) {
+        sc += RegExp('\\b${RegExp.escape(k)}').allMatches(t).length.clamp(0, 25).toInt();
+        if (head.contains(k)) sc += 30;
+      }
+      if (sc > bestScore) {
+        bestScore = sc;
+        best = ind.$1;
+      }
+    }
+    return bestScore < 10 ? 'general' : best;
+  }
+
+  static String industryLabel(String id) =>
+      _industries.where((i) => i.$1 == id).map((i) => i.$2).firstOrNull ?? '';
+
+  /// What the industry adds to the check, in plain words.
+  static String industryNote(String id) => switch (id) {
+        'beauty' => 'Because it’s beauty, we also look at reactions and allergies, returns on opened products, auto-ship refills and use of your photos or reviews.',
+        'food' => 'Because it’s food, we also look at allergies, missing or wrong orders, extra delivery and service fees, and tipping.',
+        'gaming' => 'Because it’s games, we also look at virtual money, loot boxes, bans and whether you really own what you buy.',
+        'dating' => 'Because it’s dating, we also look at safety checks, use of your photos, and bans without refunds.',
+        'health' => 'Because it’s health, we also look at your health data, “not medical advice” disclaimers and injury waivers.',
+        'travel' => 'Because it’s travel, we also look at change fees, overbooking, lost baggage limits and non-refundable fares.',
+        'education' => 'Because it’s learning, we also look at refunds after you start, recordings and whether certificates count.',
+        'crypto' => 'Because it’s crypto or investing, we also look at losses, frozen accounts and whether your money is protected.',
+        'kids' => 'Because it involves kids, we also look at children’s data and parental consent.',
+        'auto' => 'Because it’s vehicles, we also look at damage charges, mileage limits, tolls and admin fees.',
+        'electronics' => 'Because it’s electronics, we also look at warranties, repairs and software updates.',
+        'fashion' => 'Because it’s fashion, we also look at sizing, returns of worn items and final sales.',
+        _ => '',
+      };
+
   // ---------------------------------------------------------------- audience
 
   static const _roles = <(String, String, List<String>)>[
@@ -287,6 +345,7 @@ class ContextProfiler {
     final summary = other == null ? who : '$who ${cap(other)} are mentioned too.';
     return DocProfile(
       language: detectLanguage(input.text),
+      industry: detectIndustry(input.text, input.title, input.ref),
       dealType: type,
       audience: aud,
       otherParty: other,
@@ -298,6 +357,7 @@ class ContextProfiler {
 
 class DocProfile {
   final String language;
+  final String industry;
   final String dealType;
   final String audience;
   final String? otherParty;
@@ -305,6 +365,7 @@ class DocProfile {
   final List<FocusItem> focus;
   const DocProfile({
     required this.language,
+    this.industry = 'general',
     required this.dealType,
     required this.audience,
     required this.summary,

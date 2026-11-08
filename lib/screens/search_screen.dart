@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 
 import '../services/catalog_repository.dart';
@@ -65,7 +66,8 @@ class _SearchScreenState extends State<SearchScreen> {
       _progress = const FinderProgress(FinderStage.searching);
     });
     final minWait = Future<void>.delayed(const Duration(milliseconds: 1400));
-    final found = await TermsFinder().find(query, onProgress: (p) {
+    final lang = context.read<AppState>().settings.resultLanguage;
+    final found = await TermsFinder().find(query, lang: lang, onProgress: (p) {
       if (mounted && run == _run) setState(() => _progress = p);
     });
     await minWait;
@@ -173,8 +175,8 @@ class _SearchField extends StatelessWidget {
             autocorrect: false,
             onSubmitted: (_) => onSubmit(),
             style: const TextStyle(fontSize: 16),
-            decoration: const InputDecoration(
-              hintText: 'Netflix, gym name, netflix.com…',
+            decoration: InputDecoration(
+              hintText: context.tr('Netflix, gym name, netflix.com…'),
               filled: false,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,

@@ -128,6 +128,7 @@ class AnalysisResult {
   final String text; // original text (trimmed for storage)
   final String? note; // e.g. "AI unavailable, used offline engine"
   final String dealType; // "shopping", "rideshare"…
+  final String industry; // "beauty", "gaming"…
   final String? audience; // who the terms speak to
   final String? otherParty; // the other side also mentioned
   final String? summary; // one-line "what this is"
@@ -151,6 +152,7 @@ class AnalysisResult {
     this.sourceRef,
     this.note,
     this.dealType = 'general',
+    this.industry = 'general',
     this.audience,
     this.otherParty,
     this.summary,
@@ -176,6 +178,7 @@ class AnalysisResult {
     String? title,
     String? note,
     String? dealType,
+    String? industry,
     String? audience,
     String? otherParty,
     String? summary,
@@ -203,6 +206,7 @@ class AnalysisResult {
         text: text,
         note: note ?? this.note,
         dealType: dealType ?? this.dealType,
+        industry: industry ?? this.industry,
         audience: audience ?? this.audience,
         otherParty: otherParty ?? this.otherParty,
         summary: summary ?? this.summary,
@@ -252,6 +256,7 @@ class AnalysisResult {
         'text': text,
         'note': note,
         'dealType': dealType,
+        'industry': industry,
         'audience': audience,
         'otherParty': otherParty,
         'summary': summary,
@@ -289,6 +294,7 @@ class AnalysisResult {
       text: (j['text'] ?? '').toString(),
       note: j['note']?.toString(),
       dealType: (j['dealType'] ?? 'general').toString(),
+      industry: (j['industry'] ?? 'general').toString(),
       audience: j['audience']?.toString(),
       otherParty: j['otherParty']?.toString(),
       summary: j['summary']?.toString(),
@@ -308,6 +314,7 @@ class ContractInput {
   final DateTime? pageDate;
   /// What kind of deal this is ("shopping", "rideshare"…); tunes the criteria.
   final String dealType;
+  final String industry;
   const ContractInput({
     required this.text,
     required this.title,
@@ -315,14 +322,16 @@ class ContractInput {
     this.ref,
     this.pageDate,
     this.dealType = 'general',
+    this.industry = 'general',
   });
 
-  ContractInput copyWith({String? text, String? dealType}) => ContractInput(
+  ContractInput copyWith({String? text, String? dealType, String? industry}) => ContractInput(
         text: text ?? this.text,
         title: title,
         kind: kind,
         ref: ref,
         pageDate: pageDate,
         dealType: dealType ?? this.dealType,
+        industry: industry ?? this.industry,
       );
 }

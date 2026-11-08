@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_tts/flutter_tts.dart';
@@ -117,7 +118,6 @@ class _ResultScreenState extends State<ResultScreen> {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final shown = _filter == null ? r.findings : r.bySeverity(_filter!);
-    final jargon = _allJargon ? r.jargon : r.jargon.take(5).toList();
 
     final scoreColor = GColors.forScore(r.score);
     return Scaffold(
@@ -169,7 +169,7 @@ class _ResultScreenState extends State<ResultScreen> {
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
           _ScoreCard(result: r),
-          if (r.summary != null || r.audience != null || r.dealType != 'general') ...[
+          if (r.summary != null || r.audience != null || r.dealType != 'general' || r.industry != 'general') ...[
             const SizedBox(height: 6),
             _AboutCard(result: r),
           ],
@@ -255,19 +255,6 @@ class _ResultScreenState extends State<ResultScreen> {
                   ),
               ]),
             ),
-          ],
-          if (r.jargon.isNotEmpty) ...[
-            const SizedBox(height: 26),
-            const SectionTitle('Jargon decoder'),
-            for (final j in jargon) _JargonRow(term: j),
-            if (r.jargon.length > 5)
-              Center(
-                child: TextButton(
-                  onPressed: () => setState(() => _allJargon = !_allJargon),
-                  child: Text(_allJargon ? 'Show less' : 'Show all ${r.jargon.length} terms',
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
-                ),
-              ),
           ],
           const SizedBox(height: 26),
           Center(
@@ -665,6 +652,12 @@ class _Tldr extends StatelessWidget {
 
   /// Dot color = the severity of the catch the line talks about, so a red
   /// flag line always gets a red dot and good news always gets blue.
+  bool _isSummary(String line) {
+    final l = line.toLowerCase();
+    return l.startsWith('found ') || l.startsWith('no common') || l.startsWith('that was short') ||
+        !result.findings.any((f) => l.contains(f.title.toLowerCase()));
+  }
+
   Color _dotFor(String line) {
     final l = line.toLowerCase();
     for (final f in result.findings) {
@@ -698,12 +691,19 @@ class _Tldr extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                width: 9,
-                height: 9,
-                margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(color: _dotFor(lines[i]), shape: BoxShape.circle),
-              ),
+              // The opening summary line gets a light asterisk; the rest get a
+              // dot in the color of the catch they describe.
+              i == 0 && _isSummary(lines[i])
+                  ? const Padding(
+                      padding: EdgeInsets.only(top: 3),
+                      child: BrandAsterisk(size: 12, color: Color(0xFFD9D5D1)),
+                    )
+                  : Container(
+                      width: 9,
+                      height: 9,
+                      margin: const EdgeInsets.only(top: 6, left: 1.5, right: 1.5),
+                      decoration: BoxDecoration(color: _dotFor(lines[i]), shape: BoxShape.circle),
+                    ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(lines[i],
@@ -826,8 +826,17 @@ class _FindingCardState extends State<_FindingCard> {
           const SizedBox(height: 12),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final j in terms)
-              Pressable(
-                onTap: () => showJargon(context, j),
+              // A small tooltip right under the chip, not a full pop-up.
+              Tooltip(
+                message: j.meaning,
+                triggerMode: TooltipTriggerMode.tap,
+                showDuration: const Duration(seconds: 5),
+                preferBelow: true,
+                verticalOffset: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 28),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(16)),
+                textStyle: const TextStyle(color: GColors.white, fontSize: 13, height: 1.4),
                 child: Container(
                   height: 30,
                   padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
@@ -1099,7 +1108,8 @@ class _AboutCard extends StatelessWidget {
         const SizedBox(height: 14),
         label('HOW WE CHECKED IT'),
         const SizedBox(height: 6),
-        Text(ContextProfiler.weightingNote(r.dealType), style: const TextStyle(fontSize: 14, height: 1.45)),
+        Text('${ContextProfiler.weightingNote(r.dealType)} ${ContextProfiler.industryNote(r.industry)}'.trim(),
+            style: const TextStyle(fontSize: 14, height: 1.45)),
         if (r.language != 'en') ...[
           const SizedBox(height: 12),
           Text('Original language: ${ContextProfiler.languageNames[r.language] ?? r.language}',

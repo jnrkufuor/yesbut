@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'i18n/text.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -26,14 +27,16 @@ class _YesButAppState extends State<YesButApp> {
   // Show the animated splash for at least its full run, even if init is fast.
   late final Future<void> _ready = Future.wait([
     _state.init(),
-    Future<void>.delayed(const Duration(milliseconds: 1900)),
+    Future<void>.delayed(const Duration(milliseconds: 3000)), // let the splash breathe
   ]);
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider.value(
       value: _state,
-      child: MaterialApp(
+      child: ChangeNotifierProvider.value(
+        value: _state.i18n,
+        child: MaterialApp(
         title: 'YesBut',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
@@ -62,6 +65,7 @@ class _YesButAppState extends State<YesButApp> {
                   ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -113,7 +117,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   opacity: yesFade,
                   child: Transform.translate(
                     offset: Offset(0, (1 - yes) * 22),
-                    child: const Text('yes,',
+                    child: const Text('yes,', translate: false,
                         style: TextStyle(
                           fontFamily: AppTheme.display,
                           fontSize: size,
@@ -133,7 +137,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     child: Transform.scale(
                       scale: butScale,
                       alignment: const Alignment(-0.4, 0.5),
-                      child: const Text('but',
+                      child: const Text('but', translate: false,
                           style: TextStyle(
                             fontFamily: AppTheme.serif,
                             fontStyle: FontStyle.italic,

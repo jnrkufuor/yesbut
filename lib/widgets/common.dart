@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import '../i18n/text.dart';
 
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
@@ -51,6 +52,7 @@ class Wordmark extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text('yes,',
+            translate: false,
             style: TextStyle(
               fontFamily: AppTheme.display,
               fontSize: size,
@@ -61,6 +63,7 @@ class Wordmark extends StatelessWidget {
             )),
         SizedBox(width: size * 0.04),
         Text('but',
+            translate: false,
             style: TextStyle(
               fontFamily: AppTheme.serif,
               fontStyle: FontStyle.italic,
@@ -486,7 +489,9 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.disableAnimationsOf(context)) _c.value = 1; // reduce motion
+    // Reduce motion, or the screen already finished its entrance (e.g. this
+    // item is only now being built because you scrolled): just show it.
+    if (MediaQuery.disableAnimationsOf(context) || EntranceScope.done(context)) _c.value = 1;
   }
 
   @override
@@ -514,3 +519,42 @@ List<Widget> staggered(List<Widget> children, {int start = 0}) => [
       for (var i = 0; i < children.length; i++)
         children[i] is SizedBox ? children[i] : FadeInUp(index: start + i, child: children[i]),
     ];
+
+
+/// Marks one screen's entrance. Anything built inside it after the first
+/// second (like list items revealed by scrolling) skips the fade-in, so the
+/// animation plays once when the screen opens and never again.
+class EntranceScope extends StatefulWidget {
+  const EntranceScope({super.key, required this.child});
+  final Widget child;
+
+  static final _routeStart = Expando<DateTime>('entrance');
+
+  static bool done(BuildContext context) {
+    final s = context.getInheritedWidgetOfExactType<_EntranceData>();
+    DateTime? start = s?.start;
+    if (start == null) {
+      // No explicit scope: treat each pushed page (route) as one screen.
+      final route = ModalRoute.of(context);
+      if (route == null) return false;
+      start = _routeStart[route] ??= DateTime.now();
+    }
+    return DateTime.now().difference(start).inMilliseconds > 1100;
+  }
+
+  @override
+  State<EntranceScope> createState() => _EntranceScopeState();
+}
+
+class _EntranceScopeState extends State<EntranceScope> {
+  final DateTime _start = DateTime.now();
+  @override
+  Widget build(BuildContext context) => _EntranceData(start: _start, child: widget.child);
+}
+
+class _EntranceData extends InheritedWidget {
+  const _EntranceData({required this.start, required super.child});
+  final DateTime start;
+  @override
+  bool updateShouldNotify(_EntranceData old) => old.start != start;
+}
