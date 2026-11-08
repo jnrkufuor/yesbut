@@ -102,7 +102,7 @@ Order findings red_flag first. 5-12 findings. Never invent clauses that are not 
     ]..sort((a, b) => b.$2.compareTo(a.$2));
     for (final (i, score) in ranked) {
       if (score <= 0) break;
-      final len = paras[i].length.clamp(0, 3000);
+      final len = paras[i].length > 3000 ? 3000 : paras[i].length;
       if (used + len > budget) continue;
       keep.add(i);
       used += len;

@@ -74,17 +74,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Row(children: [
               const Wordmark(size: 28),
               const Spacer(),
-              if (AppState.aiEnabled && state.settings.aiReady)
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: GColors.line, width: 1),
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: const Text('AI on',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: GColors.blue)),
-                ),
               RoundIconButton(
                 icon: 'settings',
                 onTap: () => Navigator.of(context)

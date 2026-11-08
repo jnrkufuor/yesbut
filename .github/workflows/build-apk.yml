@@ -47,7 +47,10 @@ jobs:
           GRADLE_OPTS: -Dorg.gradle.internal.http.connectionTimeout=180000 -Dorg.gradle.internal.http.socketTimeout=180000 -Dorg.gradle.internal.repository.max.retries=8 -Dorg.gradle.internal.repository.initial.backoff=3000
         run: |
           for i in 1 2 3 4 5; do
-            flutter build apk --release --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} && exit 0
+            flutter build apk --release --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} 2>&1 | tee build.log
+            [ "${PIPESTATUS[0]}" = 0 ] && exit 0
+            # A code error won't fix itself; only retry download trouble.
+            grep -qE '\.dart:[0-9]+:[0-9]+: Error' build.log && exit 1
             echo "Build attempt $i failed; waiting before retry"; sleep $((i * 45))
           done
           exit 1
