@@ -61,8 +61,27 @@ class AppState extends ChangeNotifier {
     } else {
       result = await offline.analyze(input);
     }
+    final dateNote = _dateNote(input.pageDate);
+    if (dateNote != null) {
+      result = result.copyWith(note: result.note == null ? dateNote : '$dateNote ${result.note}');
+    }
     _save(result);
     return result;
+  }
+
+  static const _months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  /// "These terms were last updated March 2025." (+ a nudge if it's old).
+  static String? _dateNote(DateTime? d) {
+    if (d == null) return null;
+    final when = '${_months[d.month - 1]} ${d.year}';
+    final old = DateTime.now().difference(d).inDays > 425;
+    return old
+        ? 'These terms say they were last updated in $when. That’s over a year ago, so there may be a newer version.'
+        : 'These terms were last updated in $when.';
   }
 
   /// Most recent saved check for a library item, if any.

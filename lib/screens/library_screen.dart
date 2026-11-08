@@ -5,6 +5,8 @@ import '../services/catalog_repository.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/loopy.dart';
+import 'flows.dart';
 import 'home_screen.dart' show openLibraryItem;
 
 class LibraryScreen extends StatefulWidget {
@@ -37,20 +39,43 @@ class _LibraryScreenState extends State<LibraryScreen> {
           }).toList();
 
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 130),
             children: [
-              Text('The library', style: t.headlineLarge),
+              const HeadingText('The ', serif: 'library'),
               const SizedBox(height: 6),
               Text('Popular terms we can fetch and check live — always the latest version.',
                   style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
               const SizedBox(height: 18),
               TextField(
                 onChanged: (v) => setState(() => _q = v),
-                decoration: const InputDecoration(
-                  hintText: 'Search Netflix, Spotify, Uber…',
-                  prefixIcon: Icon(Icons.search_rounded, color: GColors.inkFaint),
+                textInputAction: TextInputAction.search,
+                onSubmitted: (v) {
+                  if (v.trim().isNotEmpty) Flows.search(context, query: v.trim());
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search Netflix, Spotify, or any company…',
+                  prefixIcon: const Padding(
+                    padding: EdgeInsets.all(13),
+                    child: LoopyIcon('search', size: 22, stroke: 2.6),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(99),
+                    borderSide: const BorderSide(color: GColors.ink, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(99),
+                    borderSide: const BorderSide(color: GColors.ink, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(99),
+                    borderSide: const BorderSide(color: GColors.ink, width: 1),
+                  ),
                 ),
               ),
+              if (_q.trim().length > 1) ...[
+                const SizedBox(height: 10),
+                _WebSearchRow(query: _q.trim()),
+              ],
               const SizedBox(height: 12),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -67,7 +92,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 30),
                   child: Center(
-                    child: Text('Not in the library yet — use "Drop a link" on the Check tab.',
+                    child: Text('Not in the library yet. Search the web above and we’ll sniff out their terms.',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: GColors.inkSoft, fontWeight: FontWeight.w600)),
                   ),
@@ -95,7 +120,7 @@ class _Row extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: GColors.line, width: 1.5),
+          border: Border.all(color: GColors.line, width: 1),
           borderRadius: BorderRadius.circular(GRadius.md),
         ),
         child: Row(children: [
@@ -147,16 +172,49 @@ class _Cat extends StatelessWidget {
             duration: const Duration(milliseconds: 160),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
-              color: selected ? GColors.blue : GColors.surface,
+              color: selected ? GColors.ink : GColors.white,
+              border: Border.all(color: selected ? GColors.ink : GColors.line, width: 1),
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text(label,
                 style: TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   fontSize: 13.5,
                   color: selected ? GColors.white : GColors.ink,
                 )),
           ),
+        ),
+      );
+}
+
+
+/// "Search the web for X" shortcut shown while typing in the library.
+class _WebSearchRow extends StatelessWidget {
+  const _WebSearchRow({required this.query});
+  final String query;
+  @override
+  Widget build(BuildContext context) => Pressable(
+        scale: 0.98,
+        onTap: () => Flows.search(context, query: query),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(99)),
+          child: Row(children: [
+            const LoopyIcon('search', size: 22, color: GColors.white, stroke: 2.6),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text.rich(
+                TextSpan(children: [
+                  const TextSpan(text: 'Search the web for '),
+                  TextSpan(text: '“$query”', style: const TextStyle(fontWeight: FontWeight.w700)),
+                ]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: GColors.white, fontSize: 14),
+              ),
+            ),
+            const Icon(Icons.arrow_outward_rounded, color: GColors.white, size: 20),
+          ]),
         ),
       );
 }

@@ -9,6 +9,7 @@ import 'link_screen.dart';
 import 'paste_screen.dart';
 import 'result_screen.dart';
 import 'scan_screen.dart';
+import 'search_screen.dart';
 
 /// Central place for "start a check" navigation so every entry point
 /// (home tiles, library, share intents later) behaves the same.
@@ -56,25 +57,30 @@ class Flows {
       ));
 
   static Future<void> analyzeUrl(BuildContext context, String url,
-          {String? title, SourceKind kind = SourceKind.link}) =>
+          {String? title, SourceKind kind = SourceKind.link, DateTime? pageDate}) =>
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => AnalyzingScreen(
           fetching: true,
           load: () async {
-            final page = await WebFetcher().fetch(url);
+            // One quiet retry for pages that build themselves with scripts.
+            final page = await WebFetcher().fetchWithRetry(url);
             return ContractInput(
               text: page.text,
-              title: title ?? _cleanTitle(page.title),
+              title: title ?? _cleanTitle(page.displayName),
               kind: kind,
               ref: kind == SourceKind.library ? url : page.url,
+              pageDate: page.updated ?? pageDate,
             );
           },
         ),
       ));
 
+  static Future<void> search(BuildContext context, {String? query}) => Navigator.of(context)
+      .push(MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: query)));
+
   static Future<void> library(BuildContext context, CatalogItem item) =>
       analyzeUrl(context, item.url,
-          title: '${item.name} ${item.kind}', kind: SourceKind.library);
+          title: '${item.name} · ${item.kind}', kind: SourceKind.library);
 
   static Future<void> open(BuildContext context, AnalysisResult r) =>
       Navigator.of(context)

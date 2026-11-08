@@ -4,11 +4,24 @@ import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
 
+import 'page_meta.dart';
+
 class FetchedPage {
   final String title;
   final String text;
   final String url;
-  const FetchedPage(this.title, this.text, this.url);
+  final String siteName;
+  final String? themeColor;
+  final DateTime? updated;
+  const FetchedPage(this.title, this.text, this.url,
+      {this.siteName = '', this.themeColor, this.updated});
+
+  /// "Netflix · Terms of Use" style name for saving the check.
+  String get displayName {
+    final kind = PageMeta.kindOf(title, Uri.tryParse(url)?.path ?? '');
+    final site = siteName.isEmpty ? PageMeta.siteFromHost(Uri.tryParse(url)?.host ?? '') : siteName;
+    return kind == 'Legal page' ? site : '$site · $kind';
+  }
 }
 
 class FetchException implements Exception {
@@ -16,6 +29,15 @@ class FetchException implements Exception {
   FetchException(this.message);
   @override
   String toString() => message;
+}
+
+/// The page came back as an empty shell that fills itself in with scripts.
+/// A second try often works (the site warms up or serves a cached copy).
+class ScriptPageException extends FetchException {
+  ScriptPageException()
+      : super('This site builds its page with scripts, so the first read can come back empty. '
+            'Trying again usually works. If it keeps happening, open the page in your browser, '
+            'copy the text and use Paste text.');
 }
 
 /// Downloads a terms page and turns its HTML into clean readable text.
@@ -66,11 +88,13 @@ class WebFetcher {
     final body = _decode(res);
     final type = res.headers['content-type'] ?? '';
     if (type.contains('text/plain')) {
-      return FetchedPage(uri.host, body, uri.toString());
+      return FetchedPage(uri.host, body, uri.toString(),
+          siteName: PageMeta.siteFromHost(uri.host), updated: PageMeta.findUpdatedDate(body));
     }
 
     final doc = html_parser.parse(body);
-    final title = (doc.querySelector('title')?.text ?? '').trim();
+    final meta = PageMeta.fromDocument(doc, uri);
+    final title = meta.pageTitle;
     for (final tag in _dropTags) {
       for (final el in doc.querySelectorAll(tag)) {
         el.remove();
@@ -90,15 +114,50 @@ class WebFetcher {
         .trim();
 
     if (text.split(RegExp(r'\s+')).length < 150) {
-      throw FetchException(
-          'This page loads its text with scripts, so we couldn\'t read it directly. Open it in your browser, select all, copy, and use "Paste text".');
+      throw ScriptPageException();
     }
     return FetchedPage(
       title.isEmpty ? uri.host : title,
       text,
       uri.toString(),
+      siteName: meta.siteName,
+      themeColor: meta.themeColor,
+      updated: PageMeta.findUpdatedDate(text),
     );
   }
+
+  /// Fetches with one automatic, quiet retry for script-built pages.
+  Future<FetchedPage> fetchWithRetry(String url) async {
+    try {
+      return await fetch(url);
+    } on ScriptPageException {
+      await Future<void>.delayed(const Duration(milliseconds: 1200));
+      return fetch(url);
+    }
+  }
+
+  /// Readable text of an already-parsed document (drops nav/script/etc).
+  static String extractText(dom.Document doc) {
+    for (final tag in _dropTags) {
+      for (final el in doc.querySelectorAll(tag)) {
+        el.remove();
+      }
+    }
+    final root = doc.querySelector('main') ??
+        doc.querySelector('article') ??
+        doc.querySelector('[role=main]') ??
+        doc.body;
+    final buf = StringBuffer();
+    if (root != null) _walk(root, buf);
+    return buf
+        .toString()
+        .replaceAll(RegExp(r'[ \t\u00a0]+'), ' ')
+        .replaceAll(RegExp(r' *\n *'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+        .trim();
+  }
+
+  static String decode(http.Response res) => _decode(res);
 
   static String _decode(http.Response res) {
     try {

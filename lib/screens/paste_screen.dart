@@ -89,7 +89,7 @@ class _PasteScreenState extends State<PasteScreen> {
                 decoration: BoxDecoration(
                   color: GColors.white,
                   borderRadius: BorderRadius.circular(99),
-                  border: Border.all(color: GColors.line, width: 1.5),
+                  border: Border.all(color: GColors.line, width: 1),
                 ),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.content_paste_go_rounded, size: 16, color: GColors.greenText),

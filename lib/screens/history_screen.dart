@@ -62,7 +62,7 @@ class HistoryScreen extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 130),
         children: [
           Text('History', style: t.headlineLarge),
           const SizedBox(height: 6),

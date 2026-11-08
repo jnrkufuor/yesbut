@@ -243,10 +243,13 @@ class ContractInput {
   final String title;
   final SourceKind kind;
   final String? ref;
+  /// "Last updated" date found on the page itself, if any.
+  final DateTime? pageDate;
   const ContractInput({
     required this.text,
     required this.title,
     required this.kind,
     this.ref,
+    this.pageDate,
   });
 }

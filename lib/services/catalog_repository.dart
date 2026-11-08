@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'dart:ui' show Color;
+
 import 'package:flutter/services.dart' show rootBundle;
 
 class CatalogItem {
@@ -9,6 +11,7 @@ class CatalogItem {
   final String category;
   final String color; // red | blue | green
   final String url;
+  final String brand; // "#RRGGBB" brand color for badges
 
   const CatalogItem({
     required this.id,
@@ -17,7 +20,14 @@ class CatalogItem {
     required this.category,
     required this.color,
     required this.url,
+    this.brand = '#232120',
   });
+
+  Color get brandColor {
+    final h = brand.replaceFirst('#', '');
+    final v = int.tryParse(h, radix: 16);
+    return v == null || h.length != 6 ? const Color(0xFF232120) : Color(0xFF000000 | v);
+  }
 
   String get initial => name.isEmpty ? '?' : String.fromCharCode(name.runes.first).toUpperCase();
 
@@ -28,6 +38,7 @@ class CatalogItem {
         category: (j['category'] ?? 'Other').toString(),
         color: (j['color'] ?? 'blue').toString(),
         url: j['url'].toString(),
+        brand: (j['brand'] ?? '#232120').toString(),
       );
 }
 

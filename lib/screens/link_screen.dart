@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/loopy.dart';
 import 'flows.dart';
 import 'paste_screen.dart';
 
@@ -77,18 +78,38 @@ class _LinkScreenState extends State<LinkScreen> {
         ),
         const SizedBox(height: 18),
         const SoftCard(
-          color: GColors.blueSoft,
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Icon(Icons.tips_and_updates_rounded, color: GColors.blue),
+            LoopyIcon('eye', size: 26, stroke: 2.2),
             SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Tip: look for "Terms", "Legal" or "Subscriber agreement" at the bottom of a site. '
-                'If a page won\'t load here, open it in your browser, copy the text and use Paste text.',
-                style: TextStyle(fontSize: 13.5, height: 1.45, fontWeight: FontWeight.w500),
+                'Heads up: some sites build their page with scripts, so the first try can come back empty. '
+                'We retry automatically, and tapping Try again usually does it. Still stuck? Open the page in '
+                'your browser, copy the text and use Paste text.',
+                style: TextStyle(fontSize: 13.5, height: 1.45),
               ),
             ),
           ]),
+        ),
+        const SizedBox(height: 10),
+        Pressable(
+          onTap: () => Flows.search(context),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(GRadius.lg),
+              border: Border.all(color: GColors.ink, width: 1),
+            ),
+            child: const Row(children: [
+              LoopyIcon('search', size: 26, stroke: 2.4),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text('Don’t have the link? Search for a company’s terms instead.',
+                    style: TextStyle(fontSize: 13.5, height: 1.45)),
+              ),
+              Icon(Icons.arrow_outward_rounded, size: 20),
+            ]),
+          ),
         ),
       ],
     );

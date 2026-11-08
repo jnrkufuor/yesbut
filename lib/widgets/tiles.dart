@@ -4,8 +4,9 @@ import '../models/analysis.dart';
 import '../services/catalog_repository.dart';
 import '../theme/app_theme.dart';
 import 'common.dart';
+import 'loopy.dart';
 
-/// Big colored entry-point tile on the home screen.
+/// Big colored entry-point card on the home screen (V2).
 class ActionTile extends StatelessWidget {
   const ActionTile({
     super.key,
@@ -17,7 +18,7 @@ class ActionTile extends StatelessWidget {
   });
   final String title;
   final String subtitle;
-  final IconData icon;
+  final String icon; // Loopy icon + accent name
   final Color color;
   final VoidCallback onTap;
 
@@ -27,56 +28,44 @@ class ActionTile extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       child: Container(
-        height: 156,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(GRadius.lg)),
+        height: 172,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(40)),
         clipBehavior: Clip.antiAlias,
         child: Stack(children: [
           Positioned(
-            right: -26,
-            bottom: -30,
-            child: Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                color: GColors.white.withValues(alpha: 0.13),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            right: 22,
-            top: 22,
-            child: Icon(Icons.arrow_outward_rounded,
-                color: fg.withValues(alpha: 0.7), size: 20),
+            right: -6,
+            bottom: -8,
+            child: LoopyAccent(icon, color: GColors.deep(color), size: 128, stroke: 2),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(22, 20, 20, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: GColors.white,
-                    borderRadius: BorderRadius.circular(15),
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Transform.translate(
+                    offset: const Offset(-8, -8),
+                    child: LoopyIcon(icon, size: 70, color: fg, stroke: 1.5),
                   ),
-                  child: Icon(icon, color: color == GColors.green ? GColors.greenText : color, size: 24),
-                ),
+                  const Spacer(),
+                  Icon(Icons.arrow_outward_rounded, color: fg, size: 22),
+                ]),
                 const Spacer(),
                 Text(title,
                     style: TextStyle(
+                      fontFamily: AppTheme.display,
                       color: fg,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.4,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.5,
+                      height: 1.1,
                     )),
-                const SizedBox(height: 2),
+                const SizedBox(height: 4),
                 Text(subtitle,
                     style: TextStyle(
-                      color: fg.withValues(alpha: 0.82),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
+                      color: fg.withValues(alpha: 0.85),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
                     )),
               ],
             ),
@@ -87,7 +76,44 @@ class ActionTile extends StatelessWidget {
   }
 }
 
-/// Small card for a library item.
+/// Outlined brand pill: colored letter circle + name.
+class BrandPill extends StatelessWidget {
+  const BrandPill({super.key, required this.letter, required this.name, required this.color, required this.onTap});
+  final String letter;
+  final String name;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        child: Container(
+          height: 42,
+          padding: const EdgeInsets.fromLTRB(5, 0, 13, 0),
+          decoration: BoxDecoration(
+            color: GColors.white,
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: GColors.ink, width: 1),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: Text(letter,
+                  style: TextStyle(
+                      color: color.computeLuminance() > 0.6 ? GColors.ink : GColors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13)),
+            ),
+            const SizedBox(width: 7),
+            Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w400)),
+          ]),
+        ),
+      );
+}
+
 class LibraryCard extends StatelessWidget {
   const LibraryCard({super.key, required this.item, required this.onTap, this.checked});
   final CatalogItem item;
@@ -102,14 +128,14 @@ class LibraryCard extends StatelessWidget {
         width: 140,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: GColors.softNamed(item.color),
+          color: GColors.surface,
           borderRadius: BorderRadius.circular(GRadius.lg),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              LetterBadge(letter: item.initial, color: GColors.named(item.color), size: 40),
+              LetterBadge(letter: item.initial, color: item.brandColor, size: 40),
               const Spacer(),
               if (checked != null)
                 Container(
@@ -159,27 +185,28 @@ class HistoryTile extends StatelessWidget {
         onTap: onTap,
         scale: 0.98,
         child: Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(10),
+          margin: const EdgeInsets.only(bottom: 6),
           decoration: BoxDecoration(
             color: GColors.white,
-            border: Border.all(color: GColors.line, width: 1.5),
-            borderRadius: BorderRadius.circular(GRadius.md),
+            border: Border.all(color: GColors.line, width: 1),
+            borderRadius: BorderRadius.circular(99),
           ),
           child: Row(children: [
             Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: GColors.softForScore(r.score),
-                borderRadius: BorderRadius.circular(15),
+                color: GColors.forScore(r.score),
+                shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: Text('${r.score}',
                   style: TextStyle(
+                    fontFamily: AppTheme.display,
                     fontSize: 19,
-                    fontWeight: FontWeight.w900,
-                    color: GColors.textForScore(r.score),
+                    fontWeight: FontWeight.w700,
+                    color: GColors.onColor(GColors.forScore(r.score)),
                     letterSpacing: -0.5,
                   )),
             ),
@@ -191,13 +218,14 @@ class HistoryTile extends StatelessWidget {
                   Text(r.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
+                      style: const TextStyle(
+                          fontFamily: AppTheme.display, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
                   const SizedBox(height: 3),
                   Text(
                     '${red == 0 ? 'No red flags' : '$red red flag${red == 1 ? '' : 's'}'} · ${r.sourceKind.label} · ${timeAgo(r.analyzedAt)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft, fontWeight: FontWeight.w500),
+                    style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft, fontWeight: FontWeight.w400),
                   ),
                 ],
               ),

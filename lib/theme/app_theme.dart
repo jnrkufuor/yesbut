@@ -3,55 +3,71 @@ import 'package:flutter/services.dart';
 
 import '../models/analysis.dart';
 
-/// Brand palette: white canvas, three loud colors, one ink.
+/// V2 palette: white canvas, cherry / sunflower / electric blue, charcoal ink.
+/// Scores and severities: cherry = bad, sunflower = careful, blue = fair.
 class GColors {
-  static const red = Color(0xFFFF2E57);
-  static const redSoft = Color(0xFFFFEAEE);
-  static const blue = Color(0xFF2B5BFF);
-  static const blueSoft = Color(0xFFE9EEFF);
-  static const green = Color(0xFF00C46A);
-  static const greenSoft = Color(0xFFE2F8EC);
+  static const red = Color(0xFFF51D3A); // cherry
+  static const redSoft = Color(0xFFFFE3E7);
+  static const redDeep = Color(0xFFC8102B);
+  static const blue = Color(0xFF4200FF); // electric blue
+  static const blueSoft = Color(0xFFECE6FF);
+  static const blueDeep = Color(0xFF3200C4);
+  static const blueOnDark = Color(0xFF8C73FF);
+  // "green" is kept as the name for the third brand color, now sunflower.
+  static const green = Color(0xFFFFD100); // sunflower
+  static const greenSoft = Color(0xFFFFF4C2);
+  static const greenDeep = Color(0xFFEBBD02);
+  static const sunflower = green;
 
-  static const ink = Color(0xFF0E1020);
-  static const inkSoft = Color(0xFF5D6178);
-  static const inkFaint = Color(0xFF767A90);
+  static const ink = Color(0xFF232120); // charcoal
+  static const inkLift = Color(0xFF302D2B);
+  static const inkSoft = Color(0xFF5E5852);
+  static const inkFaint = Color(0xFF857E78);
 
-  // Darker shades for small text on white/soft backgrounds (WCAG AA).
-  static const redText = Color(0xFFE0173F);
-  static const greenText = Color(0xFF008A4A);
+  // Darker shades for small text on white/soft backgrounds.
+  static const redText = Color(0xFFC8102B);
+  static const greenText = Color(0xFF7A6000);
 
   /// Readable foreground for content placed ON a brand color.
   static Color onColor(Color c) => c == green ? ink : white;
-  static const line = Color(0xFFECEEF4);
-  static const surface = Color(0xFFF5F6FA);
+  static const line = Color(0xFFE7E4E1);
+  static const surface = Color(0xFFF3F2F1);
   static const white = Color(0xFFFFFFFF);
 
   static Color forSeverity(Severity s) => switch (s) {
         Severity.redFlag => red,
-        Severity.headsUp => blue,
-        Severity.goodNews => green,
+        Severity.headsUp => green,
+        Severity.goodNews => blue,
       };
 
   static Color softForSeverity(Severity s) => switch (s) {
         Severity.redFlag => redSoft,
-        Severity.headsUp => blueSoft,
-        Severity.goodNews => greenSoft,
+        Severity.headsUp => greenSoft,
+        Severity.goodNews => blueSoft,
       };
 
   static Color textForSeverity(Severity s) => switch (s) {
         Severity.redFlag => redText,
-        Severity.headsUp => blue,
-        Severity.goodNews => greenText,
+        Severity.headsUp => greenText,
+        Severity.goodNews => blue,
       };
 
+  /// Deeper tone of a brand color, for line accents drawn on top of it.
+  static Color deep(Color c) {
+    if (c == red) return redDeep;
+    if (c == blue) return blueDeep;
+    if (c == green) return greenDeep;
+    return inkLift;
+  }
+
   static Color textForScore(int score) =>
-      score >= 70 ? greenText : (score >= 45 ? blue : redText);
+      score >= 70 ? blue : (score >= 45 ? greenText : redText);
 
   static Color forScore(int score) =>
-      score >= 70 ? green : (score >= 45 ? blue : red);
+      score >= 70 ? blue : (score >= 45 ? green : red);
 
   static Color softForScore(int score) =>
-      score >= 70 ? greenSoft : (score >= 45 ? blueSoft : redSoft);
+      score >= 70 ? blueSoft : (score >= 45 ? greenSoft : redSoft);
 
   static Color named(String name) => switch (name) {
         'red' => red,
@@ -64,13 +80,23 @@ class GColors {
         'green' => greenSoft,
         _ => blueSoft,
       };
+
+  /// Parses "#RRGGBB" (or "RRGGBB"); null if it isn't a usable color.
+  static Color? parseHex(String? hex) {
+    if (hex == null) return null;
+    var h = hex.trim().replaceFirst('#', '');
+    if (h.length == 3) h = h.split('').map((c) => '$c$c').join();
+    if (h.length != 6) return null;
+    final v = int.tryParse(h, radix: 16);
+    return v == null ? null : Color(0xFF000000 | v);
+  }
 }
 
 class GRadius {
-  static const sm = 12.0;
-  static const md = 18.0;
-  static const lg = 26.0;
-  static const xl = 34.0;
+  static const sm = 14.0;
+  static const md = 22.0;
+  static const lg = 30.0;
+  static const xl = 40.0;
 }
 
 IconData severityIcon(Severity s) => switch (s) {
@@ -81,6 +107,18 @@ IconData severityIcon(Severity s) => switch (s) {
 
 class AppTheme {
   static const font = 'GoogleSansFlex';
+  static const display = 'Bricolage';
+  static const serif = 'Newsreader';
+
+  /// The italic serif used for "but" moments inside headings.
+  static TextStyle serifOf(TextStyle? base) => (base ?? const TextStyle()).copyWith(
+        fontFamily: serif,
+        fontStyle: FontStyle.italic,
+        fontWeight: FontWeight.w400,
+        fontSize: (base?.fontSize ?? 16) * 1.1,
+        letterSpacing: -((base?.fontSize ?? 16) * 0.02),
+        height: base?.height,
+      );
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
@@ -95,20 +133,21 @@ class AppTheme {
       onSurface: GColors.ink,
     );
 
+    const d = AppTheme.display;
     const t = TextTheme(
-      displayLarge: TextStyle(fontSize: 52, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1.0),
-      displayMedium: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, letterSpacing: -1.5, height: 1.02),
-      headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -1.0, height: 1.08),
-      headlineMedium: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.7, height: 1.12),
-      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.4),
+      displayLarge: TextStyle(fontFamily: d, fontSize: 52, fontWeight: FontWeight.w700, letterSpacing: -2, height: 1.0),
+      displayMedium: TextStyle(fontFamily: d, fontSize: 40, fontWeight: FontWeight.w700, letterSpacing: -1.5, height: 1.02),
+      headlineLarge: TextStyle(fontFamily: d, fontSize: 34, fontWeight: FontWeight.w700, letterSpacing: -1.3, height: 1.04),
+      headlineMedium: TextStyle(fontFamily: d, fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.8, height: 1.1),
+      titleLarge: TextStyle(fontFamily: d, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.6),
       titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2),
       titleSmall: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-      bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, height: 1.45),
-      bodyMedium: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w400, height: 1.45),
-      bodySmall: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, height: 1.35),
+      bodyLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w400, height: 1.45),
+      bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, height: 1.45),
+      bodySmall: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w400, height: 1.35),
       labelLarge: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: -0.1),
-      labelMedium: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, letterSpacing: 0.2),
-      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.6),
+      labelMedium: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, letterSpacing: 0.2),
+      labelSmall: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 1.2),
     );
 
     return ThemeData(
@@ -116,7 +155,7 @@ class AppTheme {
       fontFamily: font,
       colorScheme: scheme,
       scaffoldBackgroundColor: GColors.white,
-      textTheme: t.apply(bodyColor: GColors.ink, displayColor: GColors.ink, fontFamily: font),
+      textTheme: t.apply(bodyColor: GColors.ink, displayColor: GColors.ink),
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: const AppBarTheme(
         backgroundColor: GColors.white,
@@ -132,8 +171,8 @@ class AppTheme {
           systemNavigationBarIconBrightness: Brightness.dark,
         ),
         titleTextStyle: TextStyle(
-          fontFamily: font, fontSize: 18, fontWeight: FontWeight.w800,
-          color: GColors.ink, letterSpacing: -0.3,
+          fontFamily: display, fontSize: 19, fontWeight: FontWeight.w700,
+          color: GColors.ink, letterSpacing: -0.4,
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
@@ -155,20 +194,20 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: GColors.surface,
-        hintStyle: const TextStyle(color: GColors.inkFaint, fontWeight: FontWeight.w500),
+        fillColor: GColors.white,
+        hintStyle: const TextStyle(color: GColors.inkFaint, fontWeight: FontWeight.w400),
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(GRadius.md),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: GColors.line, width: 1),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(GRadius.md),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: GColors.line, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(GRadius.md),
-          borderSide: const BorderSide(color: GColors.blue, width: 2),
+          borderSide: const BorderSide(color: GColors.ink, width: 1),
         ),
       ),
       snackBarTheme: SnackBarThemeData(

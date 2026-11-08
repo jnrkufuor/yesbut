@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
+import 'loopy.dart';
 
 /// Squishy press feedback used for every tappable card.
 class Pressable extends StatefulWidget {
@@ -37,35 +38,41 @@ class _PressableState extends State<Pressable> {
   }
 }
 
-/// The wordmark: "yes, but" + three brand dots as the ellipsis.
+/// The wordmark: "yes," (Bricolage) + "but" (Newsreader italic) + cherry asterisk.
 class Wordmark extends StatelessWidget {
-  const Wordmark({super.key, this.size = 30});
+  const Wordmark({super.key, this.size = 25, this.color = GColors.ink});
   final double size;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final dot = size * 0.26;
     return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('yes, but',
+        Text('yes,',
             style: TextStyle(
-              fontFamily: AppTheme.font,
+              fontFamily: AppTheme.display,
               fontSize: size,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -size * 0.05,
-              color: GColors.ink,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -size * 0.04,
+              color: color,
               height: 1,
             )),
-        SizedBox(width: size * 0.1),
-        for (final c in const [GColors.red, GColors.blue, GColors.green])
-          Container(
-            width: dot,
-            height: dot,
-            margin: EdgeInsets.only(left: dot * 0.3, bottom: size * 0.12),
-            decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-          ),
+        SizedBox(width: size * 0.04),
+        Text('but',
+            style: TextStyle(
+              fontFamily: AppTheme.serif,
+              fontStyle: FontStyle.italic,
+              fontSize: size * 1.1,
+              letterSpacing: -size * 0.02,
+              color: color,
+              height: 0.95,
+            )),
+        Padding(
+          padding: EdgeInsets.only(left: size * 0.04, top: 0),
+          child: BrandAsterisk(size: size * 0.48),
+        ),
       ],
     );
   }
@@ -97,8 +104,8 @@ class BigButton extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         height: 58,
         decoration: BoxDecoration(
-          color: enabled ? color : GColors.line,
-          borderRadius: BorderRadius.circular(GRadius.md),
+          color: enabled ? color : GColors.surface,
+          borderRadius: BorderRadius.circular(99),
         ),
         alignment: Alignment.center,
         child: busy
@@ -108,9 +115,10 @@ class BigButton extends StatelessWidget {
             : Row(mainAxisSize: MainAxisSize.min, children: [
                 Text(label,
                     style: TextStyle(
-                      fontFamily: AppTheme.font,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: AppTheme.display,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
                       color: fg,
                     )),
                 if (icon != null) ...[
@@ -232,7 +240,7 @@ class _HopDotsState extends State<HopDots> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    const colors = [GColors.red, GColors.blue, GColors.green];
+    const colors = [GColors.red, GColors.green, GColors.blue];
     return AnimatedBuilder(
       animation: _c,
       builder: (context, _) => Row(
@@ -310,12 +318,12 @@ class LetterBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(size * 0.34)),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         alignment: Alignment.center,
         child: Text(letter,
             style: TextStyle(
-              color: GColors.white,
-              fontWeight: FontWeight.w900,
+              color: GColors.onColor(color),
+              fontWeight: FontWeight.w800,
               fontSize: size * 0.46,
               height: 1,
             )),
@@ -335,4 +343,117 @@ void showToast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(msg)));
+}
+
+
+/// "Sniffing" loader: a loopy magnifier sweeps over lines of fine print and
+/// lights up the bits it finds. Used while searching and analyzing.
+class SniffLoader extends StatefulWidget {
+  const SniffLoader({super.key, this.height = 220, this.background = GColors.surface});
+  final double height;
+  final Color background;
+  @override
+  State<SniffLoader> createState() => _SniffLoaderState();
+}
+
+class _SniffLoaderState extends State<SniffLoader> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))..repeat();
+
+  static const _widths = [0.92, 0.74, 0.86, 0.6, 0.95, 0.7, 0.82, 0.55, 0.9];
+  static const _hits = {1: GColors.green, 4: GColors.red, 7: GColors.blue};
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: widget.height,
+      decoration: BoxDecoration(color: widget.background, borderRadius: BorderRadius.circular(32)),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(builder: (context, box) {
+        final w = box.maxWidth;
+        final h = box.maxHeight;
+        return AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) {
+            final t = _c.value;
+            // Figure-eight-ish path across the page.
+            final x = (math.sin(t * math.pi * 2) * 0.38 + 0.5) * w;
+            final y = (math.sin(t * math.pi * 4) * 0.28 + 0.48) * h;
+            final rows = <Widget>[];
+            final lineGap = (h - 48) / _widths.length;
+            for (var i = 0; i < _widths.length; i++) {
+              final ly = 24 + i * lineGap;
+              final near = (ly - y).abs() < 34;
+              final hit = _hits[i];
+              rows.add(Positioned(
+                left: 24,
+                top: ly,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 260),
+                  width: (w - 48) * _widths[i],
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: hit != null && near ? hit : GColors.line,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ));
+            }
+            final tilt = math.sin(t * math.pi * 2) * 0.18;
+            return Stack(children: [
+              ...rows,
+              Positioned(
+                left: x - 46,
+                top: y - 46,
+                child: Transform.rotate(
+                  angle: tilt,
+                  child: SizedBox(
+                    width: 104,
+                    height: 104,
+                    child: Stack(children: [
+                      Positioned(
+                        left: 18,
+                        top: 18,
+                        child: Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: GColors.white.withValues(alpha: 0.55),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                      const LoopyIcon('search', size: 104, stroke: 1.6),
+                    ]),
+                  ),
+                ),
+              ),
+            ]);
+          },
+        );
+      }),
+    );
+  }
+}
+
+/// Section heading in Bricolage, optionally with a trailing action.
+class HeadingText extends StatelessWidget {
+  const HeadingText(this.lead, {super.key, this.serif, this.size = 34});
+  final String lead;
+  final String? serif;
+  final double size;
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).textTheme.headlineLarge!.copyWith(fontSize: size);
+    return Text.rich(TextSpan(children: [
+      TextSpan(text: lead),
+      if (serif != null) TextSpan(text: serif, style: AppTheme.serifOf(base)),
+    ]), style: base);
+  }
 }
