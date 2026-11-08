@@ -32,11 +32,15 @@ jobs:
           path: |
             ~/.gradle/wrapper
             ~/.gradle/caches
+            ~/gradle-dl
           key: gradle-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'pubspec.yaml') }}
           restore-keys: gradle-${{ runner.os }}-
 
       - name: Generate platforms + apply overlay
         run: ./tool/setup_platforms.sh
+
+      - name: Use download mirrors
+        run: ./tool/ci_mirrors.sh
 
       - name: Build release APK (retries if downloads time out)
         env:
