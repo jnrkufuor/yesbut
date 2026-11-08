@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
 /// A home card that grows into its full-screen sheet (container transform),
 /// and shrinks back into place when you go back.
-class _GrowCard extends StatelessWidget {
+class _GrowCard extends StatefulWidget {
   const _GrowCard({
     required this.page,
     required this.title,
@@ -224,27 +224,34 @@ class _GrowCard extends StatelessWidget {
   final Color color;
 
   @override
+  State<_GrowCard> createState() => _GrowCardState();
+}
+
+class _GrowCardState extends State<_GrowCard> {
+  int _back = 0; // bumps when you return, so the card's icon draws itself again
+
+  @override
   Widget build(BuildContext context) => OpenContainer(
-        transitionDuration: const Duration(milliseconds: 420),
+        transitionDuration: const Duration(milliseconds: 340),
         transitionType: ContainerTransitionType.fade,
         closedElevation: 0,
         openElevation: 0,
-        closedColor: color,
+        closedColor: widget.color,
         openColor: GColors.white,
         middleColor: GColors.white,
         closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         openShape: const RoundedRectangleBorder(),
         tappable: false,
-        // Let the card's icon and arrow play their little move before the
-        // card grows into the page.
         closedBuilder: (context, open) => ActionTile(
-          title: title,
-          subtitle: subtitle,
-          icon: icon,
-          color: color,
-          onTap: () => Future.delayed(const Duration(milliseconds: 280), open),
+          title: widget.title,
+          subtitle: widget.subtitle,
+          icon: widget.icon,
+          color: widget.color,
+          onTap: open,
+          play: _back,
         ),
-        openBuilder: (context, _) => page,
+        onClosed: (_) => setState(() => _back++),
+        openBuilder: (context, _) => widget.page,
       );
 }
 
@@ -402,7 +409,8 @@ class _NudgeIconState extends TapReactiveState<_NudgeIcon> {
                   child: const LoopyIcon('share', size: 24, stroke: 2.4, only: [1, 2]),
                 ),
               ]),
-            'settings' => Transform.rotate(angle: Curves.easeOutBack.transform(v) * math.pi / 3, child: child),
+            // The two knobs slide across their lines and back.
+            'settings' => CustomPaint(size: const Size.square(24), painter: _SlidersPainter(Curves.easeInOut.transform(hump))),
             // The text lines inside are written out again, one after another.
             'doc' => tap.isAnimating
                 ? DrawnLoopy('doc', size: 24, stroke: 2.4, progress: {
@@ -414,6 +422,33 @@ class _NudgeIconState extends TapReactiveState<_NudgeIcon> {
             _ => Transform.scale(scale: 1 + 0.15 * hump, child: child),
           };
         },
-        child: LoopyIcon(widget.icon, size: 24, stroke: 2.4),
+        child: widget.icon == 'settings'
+            ? CustomPaint(size: const Size.square(24), painter: _SlidersPainter(0))
+            : LoopyIcon(widget.icon, size: 24, stroke: 2.4),
       );
+}
+
+/// Settings icon as two slider lines with knobs, so the knobs can move.
+class _SlidersPainter extends CustomPainter {
+  _SlidersPainter(this.t);
+  final double t; // 0 = knobs home, 1 = swapped sides
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / 40);
+    final line = Paint()
+      ..color = GColors.ink
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawPath(Path()..moveTo(6.4, 13)..quadraticBezierTo(20, 12.6, 33.6, 12.8), line);
+    canvas.drawPath(Path()..moveTo(6.4, 27.4)..quadraticBezierTo(20, 27.6, 33.6, 27), line);
+    final fill = Paint()..color = GColors.white;
+    for (final (x, y) in [(24.6 - 10.4 * t, 12.9), (14.2 + 10.4 * t, 27.2)]) {
+      canvas.drawCircle(Offset(x, y), 3.3, fill);
+      canvas.drawCircle(Offset(x, y), 3.3, line);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SlidersPainter o) => o.t != t;
 }

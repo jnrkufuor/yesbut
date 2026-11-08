@@ -57,13 +57,42 @@ class Translations extends ChangeNotifier {
   static bool worthTranslating(String s) =>
       s.length < 600 && _letters.hasMatch(s) && !_urlish.hasMatch(s.trim());
 
-  String tr(String s) {
-    if (_lang == 'en' || !worthTranslating(s)) return s;
+  String tr(String raw) {
+    if (_lang == 'en' || !worthTranslating(raw)) return raw;
+    // Translate the words, keep the spaces around them ("Make it " + "yours").
+    final s = raw.trim();
+    final lead = raw.substring(0, raw.indexOf(s));
+    final tail = raw.substring(raw.indexOf(s) + s.length);
     final hit = _cache[_lang]?[s];
-    if (hit != null) return hit;
+    if (hit != null) return '$lead$hit$tail';
     _pending.add(s);
     _flush ??= Timer(const Duration(milliseconds: 120), _translatePending);
-    return s;
+    return raw;
+  }
+
+  bool has(String s) => _lang == 'en' || _cache[_lang]?.containsKey(s.trim()) == true;
+
+  /// Translate a whole list up front (all the app's UI copy) so screens open
+  /// already in the new language instead of flashing English first.
+  Future<void> warm(Iterable<String> strings) async {
+    final lang = _lang;
+    if (lang == 'en') return;
+    final map = _cache.putIfAbsent(lang, () => {});
+    final todo = strings.map((e) => e.trim()).where((e) => worthTranslating(e) && !map.containsKey(e)).toSet().toList();
+    for (var i = 0; i < todo.length; i += 40) {
+      if (lang != _lang) return; // switched again meanwhile
+      final batch = todo.sublist(i, (i + 40).clamp(0, todo.length));
+      try {
+        final out = await OfflineTranslator.translateAll(batch, 'en', lang);
+        for (var k = 0; k < batch.length; k++) {
+          map[batch[k]] = out[k];
+        }
+      } catch (_) {
+        return; // no language pack yet: the on-demand path takes over
+      }
+    }
+    _scheduleSave(lang);
+    notifyListeners();
   }
 
   Future<void> _translatePending() async {

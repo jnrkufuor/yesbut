@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 
@@ -18,12 +16,15 @@ class ActionTile extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.play = 0,
   });
   final String title;
   final String subtitle;
   final String icon; // Loopy icon + accent name
   final Color color;
   final VoidCallback onTap;
+  /// Bump to replay the icon's little drawing move (e.g. when you come back).
+  final int play;
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +49,7 @@ class ActionTile extends StatelessWidget {
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Transform.translate(
                     offset: const Offset(-8, -8),
-                    child: _TileIcon(icon, color: fg),
+                    child: PenIcon(icon, size: 70, color: fg, stroke: 1.5, play: play),
                   ),
                   const Spacer(),
                   // Quiet, steady arrow: just a hint the card opens.
@@ -97,7 +98,7 @@ class BrandPill extends StatelessWidget {
           decoration: BoxDecoration(
             color: GColors.white,
             borderRadius: BorderRadius.circular(99),
-            border: Border.all(color: GColors.ink, width: 1),
+            border: Border.all(color: GColors.line, width: 1),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(
@@ -243,47 +244,3 @@ class HistoryTile extends StatelessWidget {
 }
 
 
-/// The big card icon does its own little move when the card is tapped:
-/// scan pinches in, upload lifts, paste wobbles, link swings.
-class _TileIcon extends TapReactive {
-  const _TileIcon(this.icon, {required this.color});
-  final String icon;
-  final Color color;
-  @override
-  State<_TileIcon> createState() => _TileIconState();
-}
-
-class _TileIconState extends TapReactiveState<_TileIcon> {
-  @override
-  Duration get tapDuration => const Duration(milliseconds: 620);
-
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-        animation: tap,
-        builder: (_, __) {
-          final v = tap.isAnimating ? Curves.easeInOut.transform(tap.value) : 1.0;
-          final moving = tap.isAnimating;
-          final progress = <int, double>{};
-          final shift = <int, Offset>{};
-          switch (widget.icon) {
-            case 'scan': // the circle in the middle is drawn again
-              if (moving) progress[4] = v;
-            case 'upload': // the arrow dips, then shoots up, then settles
-              if (moving) {
-                final t = tap.value;
-                final y = t < 0.3
-                    ? 5 * math.sin(t / 0.3 * math.pi / 2)
-                    : t < 0.7
-                        ? 5 - 12 * Curves.easeOut.transform((t - 0.3) / 0.4)
-                        : -7 * (1 - Curves.easeOut.transform((t - 0.7) / 0.3));
-                shift[1] = Offset(0, y);
-              }
-            case 'paste': // the scribble writes itself left to right
-              if (moving) progress[1] = v;
-            default: // link: the loop is drawn again
-              if (moving) progress[0] = v;
-          }
-          return DrawnLoopy(widget.icon, size: 70, color: widget.color, stroke: 1.5, progress: progress, shift: shift);
-        },
-      );
-}

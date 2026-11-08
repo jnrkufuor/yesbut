@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 
+import '../i18n/app_strings.g.dart';
 import '../services/analysis/offline_translator.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
@@ -117,6 +118,8 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
         await OfflineTranslator.prepare(widget.code);
       }
       await state.updateSettings(state.settings.copyWith(resultLanguage: widget.code));
+      // Translate all the app's own words now, so no screen opens in English.
+      await state.i18n.warm([...appStrings, ...await state.catalogWords()]);
       // Wait until the screens underneath have actually been translated.
       await Future<void>.delayed(const Duration(milliseconds: 250));
       await state.i18n.settle();

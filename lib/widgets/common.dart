@@ -589,14 +589,14 @@ class FadeInUp extends StatefulWidget {
 }
 
 class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 620));
-  late final Animation<double> _move = CurvedAnimation(parent: _c, curve: Curves.easeOutBack);
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 380));
+  late final Animation<double> _move = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
   late final Animation<double> _fade = CurvedAnimation(parent: _c, curve: const Interval(0, 0.6));
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration(milliseconds: 60 + 70 * widget.index.clamp(0, 10)), () {
+    Future.delayed(Duration(milliseconds: 20 + 35 * widget.index.clamp(0, 10)), () {
       if (mounted) _c.forward();
     });
   }

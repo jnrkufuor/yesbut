@@ -9,6 +9,7 @@ import '../services/analysis/offline_translator.dart';
 import '../services/analysis/rule_based_analyzer.dart';
 import '../services/catalog_repository.dart';
 import '../i18n/translations.dart';
+import '../i18n/app_strings.g.dart';
 import '../services/storage.dart';
 import '../services/watch_service.dart';
 import '../services/incoming.dart';
@@ -97,11 +98,25 @@ class AppState extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Words from the popular list (kinds and categories) worth translating.
+  Future<List<String>> catalogWords() async {
+    try {
+      final items = await catalog.load();
+      return {for (final i in items) ...[i.kind, i.category]}.toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> init() async {
     await _storage.init();
     _history = _storage.loadHistory();
     _settings = _storage.loadSettings();
     await i18n.setLanguage(_settings.resultLanguage);
+    // Fill in any of the app's words the language pack hasn't translated yet.
+    if (_settings.resultLanguage != 'en') {
+      catalogWords().then((w) => i18n.warm([...appStrings, ...w])).catchError((_) {});
+    }
     // The welcome screen shows once, ever: anyone who already has checks or
     // settings has seen it, and we mark it seen the first time it appears.
     _onboarded = _storage.onboarded || _history.isNotEmpty;

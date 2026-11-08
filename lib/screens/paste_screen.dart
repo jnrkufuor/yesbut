@@ -194,7 +194,7 @@ class InputScaffold extends StatelessWidget {
                         style: const TextStyle(
                             fontFamily: AppTheme.display, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1)),
                     const SizedBox(width: 8),
-                    IconBlob(_loopy, color: accent, iconColor: GColors.onColor(accent), size: 40),
+                    IconBlob(_loopy, color: accent, iconColor: GColors.onColor(accent), size: 40, pen: true),
                   ]),
                   const SizedBox(height: 28),
                   HeadingText(title, serif: titleSerif, size: 36),

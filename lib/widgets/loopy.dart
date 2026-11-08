@@ -152,8 +152,11 @@ class _AsteriskPainter extends CustomPainter {
 /// A loopy icon sitting in a hand-drawn, slightly lumpy bubble (not a
 /// perfect circle). The lumps differ per icon so headers don't look stamped.
 class IconBlob extends StatelessWidget {
-  const IconBlob(this.icon, {super.key, this.color = const Color(0xFF232120), this.iconColor = Colors.white, this.size = 42});
+  const IconBlob(this.icon,
+      {super.key, this.color = const Color(0xFF232120), this.iconColor = Colors.white, this.size = 42, this.pen = false});
   final String icon;
+  /// Draw the icon's little pen move once when the page opens.
+  final bool pen;
   final Color color;
   final Color iconColor;
   final double size;
@@ -162,7 +165,11 @@ class IconBlob extends StatelessWidget {
         dimension: size,
         child: CustomPaint(
           painter: _BlobPainter(color, icon.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff)),
-          child: Center(child: LoopyIcon(icon, size: size * 0.64, color: iconColor, stroke: 2.2)),
+          child: Center(
+            child: pen
+                ? PenIcon(icon, size: size * 0.64, color: iconColor, stroke: 2.2, onMount: true)
+                : LoopyIcon(icon, size: size * 0.64, color: iconColor, stroke: 2.2),
+          ),
         ),
       );
 }
@@ -362,4 +369,81 @@ class _DrawnPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DrawnPainter o) => true;
+}
+
+
+/// A loopy icon that re-draws part of itself like a pen whenever [play]
+/// changes (and once when it first appears, if [onMount]): scan's circle,
+/// upload's arrow dips and rises, paste's scribble writes left to right, the
+/// link loop, the settings knobs slide across.
+class PenIcon extends StatefulWidget {
+  const PenIcon(this.icon,
+      {super.key, this.size = 30, this.color = const Color(0xFF232120), this.stroke = 2.4, this.play = 0, this.onMount = false});
+  final String icon;
+  final double size;
+  final Color color;
+  final double stroke;
+  final int play;
+  final bool onMount;
+  @override
+  State<PenIcon> createState() => _PenIconState();
+}
+
+class _PenIconState extends State<PenIcon> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 560));
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.onMount) Future.delayed(const Duration(milliseconds: 220), () {
+      if (mounted) _go();
+    });
+  }
+
+  void _go() {
+    if (!MediaQuery.disableAnimationsOf(context)) _c.forward(from: 0);
+  }
+
+  @override
+  void didUpdateWidget(PenIcon old) {
+    super.didUpdateWidget(old);
+    if (old.play != widget.play) _go();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) {
+          final moving = _c.isAnimating;
+          final t = _c.value;
+          final v = Curves.easeInOut.transform(t);
+          final progress = <int, double>{};
+          final shift = <int, Offset>{};
+          if (moving) {
+            switch (widget.icon) {
+              case 'scan':
+                progress[4] = v;
+              case 'upload':
+                final y = t < 0.3
+                    ? 5 * math.sin(t / 0.3 * math.pi / 2)
+                    : t < 0.7
+                        ? 5 - 12 * Curves.easeOut.transform((t - 0.3) / 0.4)
+                        : -7 * (1 - Curves.easeOut.transform((t - 0.7) / 0.3));
+                shift[1] = Offset(0, y);
+              case 'paste':
+                progress[1] = v;
+              case 'link':
+                progress[0] = v;
+            }
+          }
+          return DrawnLoopy(widget.icon,
+              size: widget.size, color: widget.color, stroke: widget.stroke, progress: progress, shift: shift);
+        },
+      );
 }
