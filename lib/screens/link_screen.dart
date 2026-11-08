@@ -53,6 +53,7 @@ class _LinkScreenState extends State<LinkScreen> {
       bottom: BigButton(
         label: 'Read it for me',
         icon: Icons.arrow_forward_rounded,
+        color: GColors.white,
         onTap: ok ? _go : null,
       ),
       children: [
@@ -98,16 +99,16 @@ class _LinkScreenState extends State<LinkScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(GRadius.lg),
-              border: Border.all(color: GColors.ink, width: 1),
+              border: Border.all(color: GColors.white.withValues(alpha: 0.5), width: 1),
             ),
             child: const Row(children: [
-              LoopyIcon('search', size: 26, stroke: 2.4),
+              LoopyIcon('search', size: 26, color: GColors.white, stroke: 2.4),
               SizedBox(width: 12),
               Expanded(
                 child: Text('Don’t have the link? Search for a company’s terms instead.',
-                    style: TextStyle(fontSize: 13.5, height: 1.45)),
+                    style: TextStyle(fontSize: 13.5, height: 1.45, color: GColors.white)),
               ),
-              Icon(Icons.arrow_outward_rounded, size: 20),
+              Icon(Icons.arrow_outward_rounded, size: 20, color: GColors.white),
             ]),
           ),
         ),

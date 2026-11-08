@@ -16,8 +16,10 @@ import 'home_screen.dart' show RoundIconButton;
 /// "Find the fine print": search the web for a company's terms, show what we
 /// found with how fresh each page is, then check the one you pick.
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key, this.initialQuery});
+  const SearchScreen({super.key, this.initialQuery, this.embedded = false});
   final String? initialQuery;
+  /// True when shown as a tab in the nav bar (no back button, room for the nav).
+  final bool embedded;
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -86,10 +88,13 @@ class _SearchScreenState extends State<SearchScreen> {
     return Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
+          padding: EdgeInsets.fromLTRB(16, widget.embedded ? 18 : 14, 16, widget.embedded ? 130 : 40),
           children: [
-            Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())]),
-            const SizedBox(height: 22),
+            if (!widget.embedded) ...[
+              Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())]),
+              const SizedBox(height: 22),
+            ] else
+              const SizedBox(height: 10),
             const HeadingText('Find the\n', serif: 'fine print', size: 34),
             const SizedBox(height: 10),
             Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',
@@ -155,7 +160,7 @@ class _SearchField extends StatelessWidget {
           child: TextField(
             controller: controller,
             focusNode: focus,
-            autofocus: controller.text.isEmpty,
+            autofocus: false,
             textInputAction: TextInputAction.search,
             autocorrect: false,
             onSubmitted: (_) => onSubmit(),

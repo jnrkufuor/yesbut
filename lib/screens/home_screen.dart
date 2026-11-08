@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 import 'package:provider/provider.dart';
 
 import '../services/catalog_repository.dart';
@@ -8,12 +9,17 @@ import '../widgets/common.dart';
 import '../widgets/loopy.dart';
 import '../widgets/tiles.dart';
 import 'flows.dart';
+import 'link_screen.dart';
+import 'paste_screen.dart';
+import 'scan_screen.dart';
+import 'upload_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.onSeeLibrary, required this.onSeeHistory});
+  const HomeScreen({super.key, required this.onSeeLibrary, required this.onSeeHistory, this.onSearch});
   final VoidCallback onSeeLibrary;
   final VoidCallback onSeeHistory;
+  final VoidCallback? onSearch;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -97,13 +103,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(
               child: _stagger(
                 3,
-                ActionTile(
+                _GrowCard(
+                  page: const ScanScreen(),
                   title: 'Scan it',
                   subtitle: 'Paper in front of you',
                   icon: 'scan',
                   color: GColors.red,
-                  onTap: () => Flows.scan(context),
-                ),
+                                  ),
                 pop: true,
               ),
             ),
@@ -111,13 +117,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(
               child: _stagger(
                 4,
-                ActionTile(
+                _GrowCard(
+                  page: const UploadScreen(),
                   title: 'Upload',
                   subtitle: 'PDF or text file',
                   icon: 'upload',
                   color: GColors.blue,
-                  onTap: () => Flows.upload(context),
-                ),
+                                  ),
                 pop: true,
               ),
             ),
@@ -127,13 +133,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(
               child: _stagger(
                 5,
-                ActionTile(
+                _GrowCard(
+                  page: const PasteScreen(),
                   title: 'Paste text',
                   subtitle: 'Copy, paste, done',
                   icon: 'paste',
                   color: GColors.green,
-                  onTap: () => Flows.paste(context),
-                ),
+                                  ),
                 pop: true,
               ),
             ),
@@ -141,13 +147,13 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             Expanded(
               child: _stagger(
                 6,
-                ActionTile(
+                _GrowCard(
+                  page: const LinkScreen(),
                   title: 'Drop a link',
                   subtitle: 'Any T&C web page',
                   icon: 'link',
                   color: GColors.ink,
-                  onTap: () => Flows.link(context),
-                ),
+                                  ),
                 pop: true,
               ),
             ),
@@ -161,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ]),
           ),
           const SizedBox(height: 12),
-          _stagger(8, SearchBarButton(onTap: () => Flows.search(context))),
+          _stagger(8, SearchBarButton(onTap: widget.onSearch ?? () => Flows.search(context))),
           const SizedBox(height: 8),
           _stagger(
             9,
@@ -208,6 +214,45 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
     );
   }
+}
+
+/// A home card that grows into its full-screen sheet (container transform),
+/// and shrinks back into place when you go back.
+class _GrowCard extends StatelessWidget {
+  const _GrowCard({
+    required this.page,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+  });
+  final Widget page;
+  final String title;
+  final String subtitle;
+  final String icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => OpenContainer(
+        transitionDuration: const Duration(milliseconds: 560),
+        transitionType: ContainerTransitionType.fade,
+        closedElevation: 0,
+        openElevation: 0,
+        closedColor: color,
+        openColor: color,
+        middleColor: color,
+        closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
+        openShape: const RoundedRectangleBorder(),
+        tappable: false,
+        closedBuilder: (context, open) => ActionTile(
+          title: title,
+          subtitle: subtitle,
+          icon: icon,
+          color: color,
+          onTap: open,
+        ),
+        openBuilder: (context, _) => page,
+      );
 }
 
 /// Library items: reuse a fresh saved check (< 7 days) or fetch live.

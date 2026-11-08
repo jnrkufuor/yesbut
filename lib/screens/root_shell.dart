@@ -5,6 +5,7 @@ import '../widgets/loopy.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
 import 'library_screen.dart';
+import 'search_screen.dart';
 
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
@@ -36,9 +37,14 @@ class _RootShellState extends State<RootShell> {
             child: KeyedSubtree(
               key: ValueKey(_index),
               child: switch (_index) {
-                1 => const LibraryScreen(),
-                2 => const HistoryScreen(),
-                _ => HomeScreen(onSeeLibrary: () => _go(1), onSeeHistory: () => _go(2)),
+                1 => const SearchScreen(embedded: true),
+                2 => const LibraryScreen(),
+                3 => const HistoryScreen(),
+                _ => HomeScreen(
+                    onSeeLibrary: () => _go(2),
+                    onSeeHistory: () => _go(3),
+                    onSearch: () => _go(1),
+                  ),
               },
             ),
           ),
@@ -65,10 +71,12 @@ class PillNav extends StatefulWidget {
 }
 
 class _PillNavState extends State<PillNav> {
-  static const _icons = ['check', 'library', 'history'];
-  static const _labels = ['Check', 'Library', 'History'];
-  static const _w = 306.0;
+  static const _icons = ['check', 'search', 'library', 'history'];
+  static const _labels = ['Check', 'Search', 'Library', 'History'];
+  static const _w = 330.0;
+  static const _h = 70.0;
   static const _btn = 52.0;
+  static const _pad = 9.0; // same inset on every side so the circle sits dead centre
   bool _moving = false;
 
   @override
@@ -82,12 +90,16 @@ class _PillNavState extends State<PillNav> {
     }
   }
 
+  double _x(int i) {
+    const gap = (_w - _pad * 2 - _btn * 4) / 3;
+    return _pad + i * (_btn + gap);
+  }
+
   @override
   Widget build(BuildContext context) {
-    const gap = (_w - 20 - _btn * 3) / 2;
     return Container(
       width: _w,
-      height: 70,
+      height: _h,
       decoration: BoxDecoration(
         color: GColors.ink,
         borderRadius: BorderRadius.circular(99),
@@ -97,49 +109,46 @@ class _PillNavState extends State<PillNav> {
         AnimatedPositioned(
           duration: const Duration(milliseconds: 420),
           curve: const Cubic(0.3, 1.3, 0.5, 1),
-          left: 10 + widget.index * (_btn + gap),
-          top: 9,
+          left: _x(widget.index),
+          top: (_h - _btn) / 2,
+          width: _btn,
+          height: _btn,
           child: AnimatedScale(
             duration: const Duration(milliseconds: 200),
-            scale: _moving ? 1.12 : 1,
-            child: Container(
-              width: _btn,
-              height: _btn,
-              decoration: const BoxDecoration(color: GColors.white, shape: BoxShape.circle),
+            scale: _moving ? 1.1 : 1,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(color: GColors.white, shape: BoxShape.circle),
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            for (var i = 0; i < 3; i++)
-              Semantics(
-                button: true,
-                selected: i == widget.index,
-                label: _labels[i],
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => widget.onTap(i),
-                  child: SizedBox(
-                    width: _btn,
-                    height: _btn,
-                    child: Center(
-                      child: TweenAnimationBuilder<double>(
-                        tween: Tween(end: i == widget.index ? 1 : 0),
-                        duration: const Duration(milliseconds: 260),
-                        builder: (context, v, _) => LoopyIcon(
-                          _icons[i],
-                          size: 30,
-                          color: Color.lerp(GColors.white, GColors.ink, v)!,
-                          stroke: 2.4 + 0.9 * v,
-                        ),
-                      ),
+        for (var i = 0; i < 4; i++)
+          Positioned(
+            left: _x(i),
+            top: (_h - _btn) / 2,
+            width: _btn,
+            height: _btn,
+            child: Semantics(
+              button: true,
+              selected: i == widget.index,
+              label: _labels[i],
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => widget.onTap(i),
+                child: Center(
+                  child: TweenAnimationBuilder<double>(
+                    tween: Tween(end: i == widget.index ? 1 : 0),
+                    duration: const Duration(milliseconds: 260),
+                    builder: (context, v, _) => LoopyIcon(
+                      _icons[i],
+                      size: 28,
+                      color: Color.lerp(GColors.white, GColors.ink, v)!,
+                      stroke: 2.4 + 0.9 * v,
                     ),
                   ),
                 ),
               ),
-          ]),
-        ),
+            ),
+          ),
       ]),
     );
   }

@@ -29,7 +29,7 @@ class GColors {
   static const greenText = Color(0xFF7A6000);
 
   /// Readable foreground for content placed ON a brand color.
-  static Color onColor(Color c) => c == green ? ink : white;
+  static Color onColor(Color c) => (c == green || c == white) ? ink : white;
   static const line = Color(0xFFE7E4E1);
   static const surface = Color(0xFFF3F2F1);
   static const white = Color(0xFFFFFFFF);

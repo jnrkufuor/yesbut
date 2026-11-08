@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/analysis.dart';
 import '../state/app_state.dart';
@@ -134,7 +135,7 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
             )
           else
-            for (final f in shown) _FindingCard(finding: f),
+            for (final f in shown) _FindingCard(finding: f, sourceUrl: webUrlOf(r)),
           if (r.questions.isNotEmpty) ...[
             const SizedBox(height: 26),
             const SectionTitle('Ask before you sign'),
@@ -211,21 +212,38 @@ class _SourceChip extends StatelessWidget {
       final host = Uri.tryParse(ref)?.host ?? '';
       if (host.isNotEmpty) label = '$label · ${host.replaceFirst('www.', '')}';
     }
+    final url = webUrlOf(result);
+    final chip = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: url == null ? GColors.surface : GColors.white,
+        borderRadius: BorderRadius.circular(99),
+        border: url == null ? null : Border.all(color: GColors.ink, width: 1),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 14, color: url == null ? GColors.inkSoft : GColors.ink),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w600, color: url == null ? GColors.inkSoft : GColors.ink)),
+        ),
+        if (url != null) ...[
+          const SizedBox(width: 6),
+          const Icon(Icons.arrow_outward_rounded, size: 14, color: GColors.ink),
+        ],
+      ]),
+    );
     return Align(
       alignment: Alignment.centerLeft,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(color: GColors.surface, borderRadius: BorderRadius.circular(99)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: GColors.inkSoft),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Text(label,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: GColors.inkSoft)),
-          ),
-        ]),
-      ),
+      child: url == null
+          ? chip
+          : Semantics(
+              link: true,
+              label: 'Open the original page',
+              child: Pressable(onTap: () => openExternal(context, url), child: chip),
+            ),
     );
   }
 }
@@ -277,7 +295,8 @@ class _ScoreCardState extends State<_ScoreCard> {
               opacity: _open ? 0 : 1,
               child: SizedBox(
                 height: 168,
-                child: Stack(children: [
+                width: double.infinity,
+                child: Stack(alignment: Alignment.center, children: [
                   Positioned(
                     top: 15,
                     right: 17,
@@ -288,7 +307,10 @@ class _ScoreCardState extends State<_ScoreCard> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                       Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
                         TweenAnimationBuilder<double>(
                           tween: Tween(begin: 0, end: r.score.toDouble()),
@@ -300,7 +322,7 @@ class _ScoreCardState extends State<_ScoreCard> {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 92,
                                 letterSpacing: -5,
-                                height: 0.75,
+                                height: 0.82,
                                 color: fg,
                               )),
                         ),
@@ -545,8 +567,9 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _FindingCard extends StatefulWidget {
-  const _FindingCard({required this.finding});
+  const _FindingCard({required this.finding, this.sourceUrl});
   final Finding finding;
+  final Uri? sourceUrl;
 
   @override
   State<_FindingCard> createState() => _FindingCardState();
@@ -576,11 +599,6 @@ class _FindingCardState extends State<_FindingCard> {
         decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(30)),
         clipBehavior: Clip.antiAlias,
         child: Stack(children: [
-          Positioned(
-            right: -8,
-            bottom: -14,
-            child: LoopyAccent(_icon[f.severity]!, color: GColors.deep(bg), size: 132, stroke: 2),
-          ),
           Padding(
             padding: const EdgeInsets.all(18),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -625,16 +643,35 @@ class _FindingCardState extends State<_FindingCard> {
                     margin: const EdgeInsets.only(top: 12),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.circular(18)),
-                    child: Text.rich(
-                      TextSpan(children: [
-                        const TextSpan(text: 'The fine print* ', style: TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(
-                          text: '“${f.quote!.trim()}”',
-                          style: const TextStyle(fontFamily: AppTheme.serif, fontStyle: FontStyle.italic, fontSize: 14),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text.rich(
+                        TextSpan(children: [
+                          const TextSpan(text: 'The fine print* ', style: TextStyle(fontWeight: FontWeight.w700)),
+                          TextSpan(
+                            text: '“${f.quote!.trim()}”',
+                            style: const TextStyle(fontFamily: AppTheme.serif, fontStyle: FontStyle.italic, fontSize: 14),
+                          ),
+                        ]),
+                        style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.ink),
+                      ),
+                      if (widget.sourceUrl != null) ...[
+                        const SizedBox(height: 10),
+                        Pressable(
+                          onTap: () => openExternal(context, jumpToQuote(widget.sourceUrl!, f.quote!)),
+                          child: Container(
+                            height: 34,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(99)),
+                            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                              Text('See it on their page',
+                                  style: TextStyle(color: GColors.white, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                              SizedBox(width: 6),
+                              Icon(Icons.arrow_outward_rounded, size: 15, color: GColors.white),
+                            ]),
+                          ),
                         ),
-                      ]),
-                      style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.ink),
-                    ),
+                      ],
+                    ]),
                   ),
                 ),
             ]),
@@ -676,4 +713,39 @@ class _OriginalTextScreen extends StatelessWidget {
           child: SelectableText(text, style: const TextStyle(fontSize: 14.5, height: 1.6)),
         ),
       );
+}
+
+
+/// The web page a check came from, if it came from one.
+Uri? webUrlOf(AnalysisResult r) {
+  final ref = r.sourceRef;
+  if (ref == null) return null;
+  final u = Uri.tryParse(ref);
+  if (u == null || !(u.scheme == 'http' || u.scheme == 'https') || u.host.isEmpty) return null;
+  return u;
+}
+
+/// Link that opens the page and scrolls to (and highlights) the quoted
+/// sentence, using the browser's "scroll to text" fragment. Browsers that
+/// don't support it simply open the page.
+Uri jumpToQuote(Uri page, String quote) {
+  final words = quote
+      .replaceAll(RegExp(r'[…"“”]'), ' ')
+      .replaceAll(RegExp(r'\.{3,}'), ' ')
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .toList();
+  if (words.length < 3) return page;
+  String enc(List<String> ws) => Uri.encodeComponent(ws.join(' ')).replaceAll('-', '%2D').replaceAll(',', '%2C');
+  final frag = words.length > 12
+      ? '${enc(words.take(5).toList())},${enc(words.sublist(words.length - 4))}'
+      : enc(words);
+  final base = page.toString().split('#').first;
+  return Uri.parse('$base#:~:text=$frag');
+}
+
+Future<void> openExternal(BuildContext context, Uri url) async {
+  final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
+  if (!ok && context.mounted) showToast(context, 'Couldn’t open that page.');
 }

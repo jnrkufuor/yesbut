@@ -73,7 +73,7 @@ class _ScanScreenState extends State<ScanScreen> {
       bottom: BigButton(
         label: _pages.isEmpty ? 'Add a page to start' : 'Check ${_pages.length} page${_pages.length == 1 ? '' : 's'}',
         icon: Icons.arrow_forward_rounded,
-        color: GColors.red,
+        color: GColors.white,
         onTap: _pages.isEmpty ? null : _analyze,
       ),
       children: [
@@ -95,17 +95,18 @@ class _ScanScreenState extends State<ScanScreen> {
               onTap: _busy ? null : () => _add(),
               child: Container(
                 decoration: BoxDecoration(
-                  color: GColors.redSoft,
+                  color: GColors.white.withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(GRadius.md),
+                  border: Border.all(color: GColors.white.withValues(alpha: 0.5), width: 1),
                 ),
                 child: Center(
                   child: _busy
                       ? const HopDots(size: 9)
                       : const Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.add_a_photo_rounded, color: GColors.redText, size: 30),
+                          Icon(Icons.add_a_photo_rounded, color: GColors.white, size: 30),
                           SizedBox(height: 8),
                           Text('Snap page',
-                              style: TextStyle(color: GColors.redText, fontWeight: FontWeight.w800)),
+                              style: TextStyle(color: GColors.white, fontWeight: FontWeight.w600)),
                         ]),
                 ),
               ),
@@ -119,7 +120,7 @@ class _ScanScreenState extends State<ScanScreen> {
             icon: const Icon(Icons.photo_library_rounded, size: 18),
             label: const Text('Pick from photos instead'),
             style: TextButton.styleFrom(
-              foregroundColor: GColors.inkSoft,
+              foregroundColor: GColors.white,
               textStyle: const TextStyle(fontFamily: AppTheme.font, fontWeight: FontWeight.w700),
             ),
           ),

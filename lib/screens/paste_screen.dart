@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/loopy.dart';
+import 'home_screen.dart' show RoundIconButton;
 import 'flows.dart';
 
 class PasteScreen extends StatefulWidget {
@@ -49,9 +51,9 @@ class _PasteScreenState extends State<PasteScreen> {
       title: 'Paste the fine print',
       subtitle: 'Copy terms from an app, email or website and drop them here.',
       bottom: BigButton(
-        label: 'Find the gotchas',
+        label: 'Find the catches',
         icon: Icons.arrow_forward_rounded,
-        color: GColors.green,
+        color: GColors.ink,
         onTap: words < 15
             ? null
             : () => Flows.analyzeText(
@@ -111,8 +113,9 @@ class _PasteScreenState extends State<PasteScreen> {
   }
 }
 
-/// Shared layout for the input screens: colored icon, big title, content,
-/// and a sticky action button.
+/// Shared layout for the input screens: a full-screen sheet in the card's
+/// own color (so the home card can grow straight into it), loopy icon, big
+/// title, content, and a sticky action button.
 class InputScaffold extends StatelessWidget {
   const InputScaffold({
     super.key,
@@ -130,34 +133,47 @@ class InputScaffold extends StatelessWidget {
   final List<Widget> children;
   final Widget bottom;
 
+  String get _loopy {
+    if (accent == GColors.red) return 'scan';
+    if (accent == GColors.blue) return 'upload';
+    if (accent == GColors.green) return 'paste';
+    return 'link';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
+    final fg = GColors.onColor(accent);
     return Scaffold(
-      appBar: AppBar(leading: const BackButton()),
+      backgroundColor: accent,
       body: SafeArea(
-        top: false,
         child: Column(children: [
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(18)),
-                  child: Icon(icon, color: GColors.onColor(accent), size: 28),
-                ),
-                const SizedBox(height: 18),
-                Text(title, style: t.headlineMedium),
-                const SizedBox(height: 6),
-                Text(subtitle, style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
-                const SizedBox(height: 22),
+                Row(children: [
+                  RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
+                  const Spacer(),
+                  LoopyIcon(_loopy, size: 54, color: fg, stroke: 1.6),
+                ]),
+                const SizedBox(height: 28),
+                Text(title,
+                    style: TextStyle(
+                      fontFamily: AppTheme.display,
+                      fontSize: 34,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -1.3,
+                      height: 1.04,
+                      color: fg,
+                    )),
+                const SizedBox(height: 10),
+                Text(subtitle, style: TextStyle(fontSize: 15, height: 1.45, color: fg.withValues(alpha: 0.85))),
+                const SizedBox(height: 24),
                 ...children,
               ],
             ),
           ),
-          Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 16), child: bottom),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), child: bottom),
         ]),
       ),
     );
