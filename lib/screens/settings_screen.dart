@@ -54,8 +54,8 @@ class SettingsScreen extends StatelessWidget {
               _Row(
                 title: 'Who reads your terms',
                 trailing: _Dropdown(
-                  value: st.engine == EngineChoice.claude ? 'gemini' : st.engine.name,
-                  items: const {'gemini': 'Gemini', 'deepseek': 'DeepSeek', 'offline': 'On your phone'},
+                  value: st.engine == EngineChoice.claude ? 'deepseek' : st.engine.name,
+                  items: const {'deepseek': 'DeepSeek', 'gemini': 'Gemini', 'offline': 'On your phone'},
                   onChanged: (v) => set(st.copyWith(engine: EngineChoice.values.byName(v))),
                 ),
               ),

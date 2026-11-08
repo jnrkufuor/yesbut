@@ -9,11 +9,14 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/analysis.dart';
 import '../services/analysis/context_profile.dart';
+import '../services/ingestion/web_fetcher.dart';
+import '../services/storage.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
+import 'analyzing_screen.dart';
 import 'home_screen.dart' show RoundIconButton;
 
 class ResultScreen extends StatefulWidget {
@@ -98,6 +101,35 @@ class _ResultScreenState extends State<ResultScreen> {
     await tts.speak(_script());
   }
 
+  /// Read this check again (e.g. after switching reader). Web pages are
+  /// fetched fresh; everything else uses the text we kept.
+  void _reread() {
+    final url = webUrlOf(r);
+    if (url == null && r.text.trim().isEmpty) {
+      showToast(context, 'This one was marked sensitive, so there’s no saved text to read again.');
+      return;
+    }
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => AnalyzingScreen(
+        fetching: url != null,
+        replaces: r.id,
+        load: () async {
+          if (url != null) {
+            final page = await WebFetcher().fetchWithRetry(url.toString());
+            return ContractInput(
+              text: page.text,
+              title: r.title,
+              kind: r.sourceKind,
+              ref: r.sourceRef,
+              pageDate: page.updated,
+            );
+          }
+          return ContractInput(text: r.text, title: r.title, kind: r.sourceKind, ref: r.sourceRef);
+        },
+      ),
+    ));
+  }
+
   void _share() => SharePlus.instance.share(
         ShareParams(text: r.toShareText(), subject: 'YesBut: ${r.title}'),
       );
@@ -164,14 +196,16 @@ class _ResultScreenState extends State<ResultScreen> {
           _SourceChip(result: r),
           const SizedBox(height: 10),
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
+          const SizedBox(height: 10),
+          _ReaderRow(result: r, onReread: _reread),
           const SizedBox(height: 20),
           _ScoreCard(result: r),
           if (r.summary != null || r.audience != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
             _AboutCard(result: r),
           ],
           if (r.note != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             SoftCard(
               color: GColors.blueSoft,
               padding: const EdgeInsets.all(14),
@@ -184,7 +218,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ],
 
           if (r.tldr.isNotEmpty || r.keyFacts.isNotEmpty) ...[
-            const SizedBox(height: 26),
+            const SizedBox(height: 16),
             _Tldr(result: r),
           ],
           const SizedBox(height: 30),
@@ -387,27 +421,16 @@ class _SourceChip extends StatelessWidget {
         ],
       ]),
     );
-    final e = result.engine.toLowerCase();
-    final by = e.startsWith('gemini')
-        ? 'Read by Gemini'
-        : e.startsWith('deepseek')
-            ? 'Read by DeepSeek'
-            : e.startsWith('ai')
-                ? 'Read by AI'
-                : 'Read on your phone';
-    return Row(children: [
-      Flexible(
-        child: url == null
-            ? chip
-            : Semantics(
-                link: true,
-                label: 'Open the original page',
-                child: Pressable(onTap: () => openExternal(context, url), child: chip),
-              ),
-      ),
-      const SizedBox(width: 10),
-      Text(by, style: const TextStyle(fontSize: 12, color: GColors.inkFaint)),
-    ]);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: url == null
+          ? chip
+          : Semantics(
+              link: true,
+              label: 'Open the original page',
+              child: Pressable(onTap: () => openExternal(context, url), child: chip),
+            ),
+    );
   }
 }
 
@@ -665,38 +688,22 @@ class _Tldr extends StatelessWidget {
               fontFamily: AppTheme.display, color: GColors.white, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.4),
         ),
         const SizedBox(height: 14),
-        for (var i = 0; i < lines.length; i++) ...[
-          if (i == 1 && facts.isNotEmpty) _facts(facts),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // The opening summary line gets a light asterisk; the rest get a
-              // dot in the color of the catch they describe.
-              i == 0 && _isSummary(lines[i])
-                  ? const Padding(
-                      padding: EdgeInsets.only(top: 3),
-                      child: BrandAsterisk(size: 12, color: Color(0xFFD9D5D1)),
-                    )
-                  : Container(
-                      width: 9,
-                      height: 9,
-                      margin: const EdgeInsets.only(top: 6, left: 1.5, right: 1.5),
-                      decoration: BoxDecoration(color: _dotFor(lines[i]), shape: BoxShape.circle),
-                    ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(lines[i],
-                    style: TextStyle(
-                      color: GColors.white.withValues(alpha: 0.92),
-                      fontSize: 15,
-                      height: 1.45,
-                      fontWeight: FontWeight.w400,
-                    )),
-              ),
-            ]),
+        // 1. The one-line summary.
+        if (lines.isNotEmpty) _line(_isSummary(lines[0]) ? null : _dotFor(lines[0]), Text(lines[0], style: _body)),
+        // 2. The key facts, woven in as plain sentences ("Cancel: anytime…").
+        for (final f in facts)
+          _line(
+            const Color(0xFFD9D5D1),
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '${f.label}: ', style: const TextStyle(fontWeight: FontWeight.w700, color: GColors.white)),
+                TextSpan(text: _sentence(f.value)),
+              ]),
+              style: _body,
+            ),
           ),
-        ],
-        if (lines.length < 2 && facts.isNotEmpty) _facts(facts),
+        // 3. Anything else worth knowing that the facts didn't already say.
+        for (final l in lines.skip(1).where((l) => !_coveredBy(l, facts)).take(3)) _line(_dotFor(l), Text(l, style: _body)),
       ]),
     );
   }
@@ -727,40 +734,42 @@ class _Tldr extends StatelessWidget {
     return t.replaceAll(RegExp(r'[.,;]$'), '');
   }
 
-  Widget _facts(List<KeyFact> facts) {
-    Widget cell(KeyFact f) => Container(
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
-          decoration: BoxDecoration(
-            color: GColors.white.withValues(alpha: 0.07),
-            borderRadius: BorderRadius.circular(18),
-          ),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(f.label.toUpperCase(),
-                style: TextStyle(
-                    fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w600, color: GColors.white.withValues(alpha: 0.55))),
-            const SizedBox(height: 3),
-            Text(_short(f.value), style: const TextStyle(fontSize: 13.5, height: 1.3, color: GColors.white)),
-          ]),
-        );
-    final rows = <Widget>[];
-    for (var i = 0; i < facts.length; i += 2) {
-      rows.add(IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Expanded(child: cell(facts[i])),
-          const SizedBox(width: 8),
-          Expanded(child: i + 1 < facts.length ? cell(facts[i + 1]) : const SizedBox()),
+  static final _body = TextStyle(color: GColors.white.withValues(alpha: 0.92), fontSize: 15, height: 1.45, fontWeight: FontWeight.w400);
+
+  /// One row: a light asterisk (summary) or a coloured dot, then the text.
+  Widget _line(Color? dot, Widget text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          dot == null
+              ? const Padding(padding: EdgeInsets.only(top: 3), child: BrandAsterisk(size: 12, color: Color(0xFFD9D5D1)))
+              : Container(
+                  width: 9,
+                  height: 9,
+                  margin: const EdgeInsets.only(top: 6, left: 1.5, right: 1.5),
+                  decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
+                ),
+          const SizedBox(width: 12),
+          Expanded(child: text),
         ]),
-      ));
+      );
+
+  /// "Anytime via account page" -> "anytime via account page."
+  static String _sentence(String v) {
+    var t = _short(v);
+    if (t.length > 1 && t[0] != t[0].toLowerCase() && t[1] == t[1].toLowerCase()) {
+      t = t[0].toLowerCase() + t.substring(1);
     }
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(children: [
-        for (var k = 0; k < rows.length; k++) ...[
-          if (k > 0) const SizedBox(height: 8),
-          rows[k],
-        ],
-      ]),
-    );
+    return t.endsWith('.') || t.endsWith('…') ? t : '$t.';
+  }
+
+  /// A bullet that just repeats a fact we already listed.
+  static bool _coveredBy(String line, List<KeyFact> facts) {
+    final l = line.toLowerCase();
+    return facts.any((f) {
+      final key = f.label.toLowerCase();
+      final stem = key.length > 5 ? key.substring(0, 5) : key;
+      return l.contains(stem);
+    });
   }
 }
 
@@ -1460,5 +1469,82 @@ class _TrackButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+
+/// Under the title: which reader checked this (tap to pick another, which
+/// re-reads it) and a refresh button to read it again.
+class _ReaderRow extends StatelessWidget {
+  const _ReaderRow({required this.result, required this.onReread});
+  final AnalysisResult result;
+  final VoidCallback onReread;
+
+  static String nameOf(String engine) {
+    final e = engine.toLowerCase();
+    if (e.startsWith('gemini')) return 'Gemini';
+    if (e.startsWith('deepseek')) return 'DeepSeek';
+    if (e.startsWith('ai')) return 'AI reader';
+    return 'On your phone';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final st = state.settings;
+    final current = nameOf(result.engine);
+    final sensitiveOnly = webUrlOf(result) == null && result.text.trim().isEmpty;
+    return Row(children: [
+      PopupMenuButton<EngineChoice>(
+        enabled: !sensitiveOnly,
+        tooltip: 'Change reader',
+        color: GColors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: GColors.line)),
+        onSelected: (e) async {
+          await state.updateSettings(st.copyWith(engine: e));
+          onReread();
+        },
+        itemBuilder: (_) => [
+          for (final (e, name) in const [
+            (EngineChoice.deepseek, 'DeepSeek'),
+            (EngineChoice.gemini, 'Gemini'),
+            (EngineChoice.offline, 'On your phone'),
+          ])
+            PopupMenuItem(
+              value: e,
+              child: Row(children: [
+                Expanded(child: Text('Read with $name', style: const TextStyle(fontSize: 14))),
+                if (name == current) const Icon(Icons.check_rounded, size: 18),
+              ]),
+            ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const BrandAsterisk(size: 13),
+            const SizedBox(width: 7),
+            Text(current == 'On your phone' ? 'Read on your phone' : 'Read by $current',
+                style: const TextStyle(fontSize: 13.5, color: GColors.inkSoft)),
+            if (!sensitiveOnly) const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: GColors.inkSoft),
+          ]),
+        ),
+      ),
+      const Spacer(),
+      if (!sensitiveOnly)
+        Semantics(
+          button: true,
+          label: 'Read it again',
+          child: Pressable(
+            onTap: onReread,
+            child: Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: GColors.ink, shape: BoxShape.circle),
+              child: const LoopyIcon('refresh', size: 22, color: GColors.white, stroke: 2.4),
+            ),
+          ),
+        ),
+    ]);
   }
 }

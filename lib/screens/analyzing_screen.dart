@@ -18,9 +18,11 @@ import 'paste_screen.dart';
 import 'result_screen.dart';
 
 class AnalyzingScreen extends StatefulWidget {
-  const AnalyzingScreen({super.key, required this.load, this.fetching = false});
+  const AnalyzingScreen({super.key, required this.load, this.fetching = false, this.replaces});
   final Future<ContractInput> Function() load;
   final bool fetching;
+  /// Re-reading an existing check: remove the old one once the new is in.
+  final String? replaces;
 
   @override
   State<AnalyzingScreen> createState() => _AnalyzingScreenState();
@@ -72,6 +74,8 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       if (!mounted) return;
       setState(() => _step = 1);
       final result = await state.analyze(input);
+      final old = widget.replaces;
+      if (old != null && old != result.id && state.history.any((h) => h.id == old)) await state.delete(old);
       await minWait;
       if (!mounted) return;
       setState(() => _step = 2);
@@ -144,6 +148,23 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
               const SizedBox(height: 14),
               for (var i = 0; i < steps.length; i++)
                 _StepRow(label: steps[i], state: i < _step ? 2 : (i == _step ? 1 : 0)),
+              const SizedBox(height: 16),
+              Pressable(
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Container(
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(99),
+                    border: Border.all(color: GColors.ink, width: 1),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.close_rounded, size: 18, color: GColors.ink),
+                    SizedBox(width: 6),
+                    Text('Cancel', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400)),
+                  ]),
+                ),
+              ),
               const Spacer(),
             ],
           ),

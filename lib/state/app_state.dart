@@ -110,8 +110,8 @@ class AppState extends ChangeNotifier {
 
   /// AI readers available in this build, in the order to try them.
   static Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> get readers => {
-        EngineChoice.gemini: (name: 'Gemini', available: GeminiAnalyzer.available, run: (i) => GeminiAnalyzer().analyze(i)),
         EngineChoice.deepseek: (name: 'DeepSeek', available: DeepSeekAnalyzer.available, run: (i) => DeepSeekAnalyzer().analyze(i)),
+        EngineChoice.gemini: (name: 'Gemini', available: GeminiAnalyzer.available, run: (i) => GeminiAnalyzer().analyze(i)),
       };
 
   /// Chosen reader first, then the other AI, then the phone. Returns the

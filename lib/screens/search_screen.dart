@@ -80,6 +80,13 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
+  /// Stop the current search: its results are ignored when they arrive.
+  void _cancel() => setState(() {
+        _run++;
+        _busy = false;
+        _results = null;
+      });
+
   void _open(TermsCandidate c) => Flows.analyzeUrl(
         context,
         c.url,
@@ -129,7 +136,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               child: _busy
-                  ? _Sniffing(key: const ValueKey('busy'), query: _searched, progress: _progress)
+                  ? _Sniffing(key: const ValueKey('busy'), query: _searched, progress: _progress, onCancel: _cancel)
                   : _results == null
                       ? Column(
                           key: const ValueKey('idle'),
@@ -273,7 +280,8 @@ class _Suggestions extends StatelessWidget {
 
 /// Loading state: magnifier sweeping fine print + a live step list.
 class _Sniffing extends StatefulWidget {
-  const _Sniffing({super.key, required this.query, required this.progress});
+  const _Sniffing({super.key, required this.query, required this.progress, required this.onCancel});
+  final VoidCallback onCancel;
   final String query;
   final FinderProgress progress;
   @override
@@ -334,6 +342,8 @@ class _SniffingState extends State<_Sniffing> {
         state: step > 1 ? 2 : (step == 1 ? 1 : 0),
       ),
       _Step(label: 'Reading the dates', state: step > 2 ? 2 : (step == 2 ? 1 : 0)),
+      const SizedBox(height: 10),
+      _CancelPill(onTap: widget.onCancel),
     ]);
   }
 }
@@ -528,5 +538,29 @@ class _Chip extends StatelessWidget {
           ],
           Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg)),
         ]),
+      );
+}
+
+
+/// Quiet outlined "Cancel" pill for long-running steps.
+class _CancelPill extends StatelessWidget {
+  const _CancelPill({required this.onTap});
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: GColors.ink, width: 1),
+          ),
+          child: const Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.close_rounded, size: 18, color: GColors.ink),
+            SizedBox(width: 6),
+            Text('Cancel search', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400)),
+          ]),
+        ),
       );
 }

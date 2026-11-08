@@ -61,8 +61,15 @@ class _ScenePainter extends CustomPainter {
     final white = Paint()..color = Colors.white;
 
     // Soft blob behind everything.
-    canvas.drawOval(Rect.fromCenter(center: const Offset(100, 62), width: 168, height: 100),
-        Paint()..color = _blue.withValues(alpha: 0.06));
+    // A lopsided egg rather than a neat circle: fuller on the left, tipped.
+    final egg = Path()
+      ..moveTo(28, 70)
+      ..cubicTo(18, 36, 62, 8, 112, 14)
+      ..cubicTo(160, 20, 190, 46, 178, 78)
+      ..cubicTo(168, 106, 120, 118, 78, 110)
+      ..cubicTo(46, 104, 34, 92, 28, 70)
+      ..close();
+    canvas.drawPath(egg, Paint()..color = _blue.withValues(alpha: 0.06));
 
     double f(int i) => math.sin(t * 1.3 + i * 1.7) * 2;
 

@@ -19,7 +19,7 @@ class AppSettings {
   final bool reduceMotion;
 
   const AppSettings({
-    this.engine = EngineChoice.gemini,
+    this.engine = EngineChoice.deepseek,
     this.apiKey = '',
     this.model = 'claude-sonnet-5-5',
     this.endpoint = 'https://api.anthropic.com/v1/messages',
@@ -91,10 +91,10 @@ class Storage {
   AppSettings loadSettings() {
     const d = AppSettings();
     return AppSettings(
-      engine: switch (_prefs.getString('reader_v2')) {
+      engine: switch (_prefs.getString('reader_v3')) {
         'offline' => EngineChoice.offline,
-        'deepseek' => EngineChoice.deepseek,
-        _ => EngineChoice.gemini,
+        'gemini' => EngineChoice.gemini,
+        _ => EngineChoice.deepseek,
       },
       apiKey: _prefs.getString(_apiKeyKey) ?? '',
       model: _prefs.getString(_modelKey) ?? d.model,
@@ -107,7 +107,7 @@ class Storage {
   }
 
   Future<void> saveSettings(AppSettings s) async {
-    await _prefs.setString('reader_v2', s.engine.name);
+    await _prefs.setString('reader_v3', s.engine.name);
     await _prefs.setString(_apiKeyKey, s.apiKey);
     await _prefs.setString(_modelKey, s.model);
     await _prefs.setString(_endpointKey, s.endpoint);

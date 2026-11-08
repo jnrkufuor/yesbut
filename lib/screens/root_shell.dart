@@ -180,26 +180,28 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
         animation: _c,
         builder: (context, _) {
           final to = _x(widget.index);
-          // One bubble, always there. While it travels it gets squashed as
-          // if pressed from the top (wider, flatter), then springs back into
-          // a circle when it lands, with a small wobble.
+          // The bubble slides over like before, but moves like a drop of
+          // water: it stretches a tapering tail behind it while it travels
+          // and pulls back into a round drop when it lands. Never fades.
           final m = _move;
           final x = reduce ? to : _bubbleX();
-          final press = reduce ? 0.0 : math.sin(math.pi * m);
+          final dist = (to - _from).abs();
+          final tail = reduce ? 0.0 : math.sin(math.pi * m) * math.min(34.0, dist * 0.3);
           final j = ((_c.value - 0.55) / 0.45).clamp(0.0, 1.0);
-          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.08;
+          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.06;
           final jiggle = reduce ? 0.0 : 0.26 * math.sin(j * math.pi * 3) * (1 - j);
           final bump = reduce ? 1.0 : 1 + 0.12 * math.sin(j * math.pi);
-          final bw = _btn * (1 + 0.3 * press + wob);
-          final bh = _btn * (1 - 0.24 * press - wob);
           return Stack(children: [
-            Positioned(
-              left: x + _btn / 2 - bw / 2,
-              top: (_h - bh) / 2 + 0.24 * press * _btn * 0.25, // pressed down a touch
-              width: bw,
-              height: bh,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.all(Radius.circular(99))),
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _DropPainter(
+                  cx: x + _btn / 2,
+                  cy: _h / 2,
+                  r: _btn / 2,
+                  tail: tail,
+                  dir: to >= _from ? 1 : -1,
+                  wobble: wob,
+                ),
               ),
             ),
             for (var i = 0; i < 4; i++)
@@ -243,3 +245,33 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   }
 }
 
+
+/// The white bubble: a round drop with a tapering tail trailing behind it
+/// while it moves (tail = 0 when it's resting).
+class _DropPainter extends CustomPainter {
+  _DropPainter({required this.cx, required this.cy, required this.r, required this.tail, required this.dir, required this.wobble});
+  final double cx, cy, r, tail, wobble;
+  final int dir;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = GColors.white;
+    final s = tail / 34; // 0..1 how stretched
+    final rx = r * (1 + 0.05 * s + wobble), ry = r * (1 - 0.06 * s - wobble);
+    canvas.drawOval(Rect.fromCenter(center: Offset(cx, cy), width: rx * 2, height: ry * 2), paint);
+    if (tail < 0.5) return;
+    final d = dir.toDouble();
+    final tip = Offset(cx - d * (rx + tail), cy);
+    final path = Path()
+      ..moveTo(tip.dx, tip.dy)
+      ..cubicTo(tip.dx + d * tail * 0.55, cy - ry * 0.25, cx - d * rx * 0.75, cy - ry, cx, cy - ry)
+      ..lineTo(cx, cy + ry)
+      ..cubicTo(cx - d * rx * 0.75, cy + ry, tip.dx + d * tail * 0.55, cy + ry * 0.25, tip.dx, tip.dy)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_DropPainter o) =>
+      o.cx != cx || o.tail != tail || o.wobble != wobble || o.r != r || o.cy != cy || o.dir != dir;
+}
