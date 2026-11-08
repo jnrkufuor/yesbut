@@ -6,9 +6,9 @@ import '../models/analysis.dart';
 /// V2 palette: white canvas, cherry / sunflower / electric blue, charcoal ink.
 /// Scores and severities: cherry = bad, sunflower = careful, blue = fair.
 class GColors {
-  static const red = Color(0xFFF51D3A); // cherry
+  static const red = Color(0xFFDF1538); // cherry, deepened a touch so white text reads easily
   static const redSoft = Color(0xFFFFE3E7);
-  static const redDeep = Color(0xFFC8102B);
+  static const redDeep = Color(0xFFB00F2B);
   static const blue = Color(0xFF4200FF); // electric blue
   static const blueSoft = Color(0xFFECE6FF);
   static const blueDeep = Color(0xFF3200C4);
@@ -25,7 +25,7 @@ class GColors {
   static const inkFaint = Color(0xFF857E78);
 
   // Darker shades for small text on white/soft backgrounds.
-  static const redText = Color(0xFFC8102B);
+  static const redText = Color(0xFFB8102C);
   static const greenText = Color(0xFF7A6000);
 
   /// Readable foreground for content placed ON a brand color.

@@ -9,9 +9,10 @@ import '../services/ingestion/terms_finder.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
-import 'home_screen.dart' show RoundIconButton;
+import 'home_screen.dart' show RoundIconButton, PageHeader;
 
 /// "Find the fine print": search the web for a company's terms, show what we
 /// found with how fresh each page is, then check the one you pick.
@@ -85,27 +86,33 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return Scaffold(
+    final page = Scaffold(
       body: SafeArea(
         child: ListView(
-          padding: EdgeInsets.fromLTRB(16, widget.embedded ? 18 : 14, 16, widget.embedded ? 130 : 40),
+          padding: EdgeInsets.fromLTRB(16, 18, 16, widget.embedded ? 130 : 40),
           children: [
-            if (!widget.embedded) ...[
-              Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())]),
-              const SizedBox(height: 22),
-            ] else
+            ...staggered([
+              if (!widget.embedded)
+                Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())])
+              else
+                const PageHeader(title: 'Search', icon: 'search'),
+              const SizedBox(height: 28),
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: HeadingText('Find the ', serif: 'fine print', size: 36),
+              ),
               const SizedBox(height: 10),
-            const HeadingText('Find the\n', serif: 'fine print', size: 34),
-            const SizedBox(height: 10),
-            Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',
-                style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
-            const SizedBox(height: 20),
-            _SearchField(
-              controller: _q,
-              focus: _focus,
-              busy: _busy,
-              onSubmit: () => _go(),
-            ),
+              Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',
+                  style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
+              const SizedBox(height: 20),
+              _SearchField(
+                controller: _q,
+                focus: _focus,
+                busy: _busy,
+                onSubmit: () => _go(),
+              ),
+            ]),
             const SizedBox(height: 22),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 320),
@@ -133,6 +140,7 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
       ),
     );
+    return widget.embedded ? page : LeaveGuard(child: page);
   }
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../models/analysis.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
 import 'flows.dart';
@@ -143,7 +144,8 @@ class InputScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fg = GColors.onColor(accent);
-    return Scaffold(
+    return LeaveGuard(
+      child: Scaffold(
       backgroundColor: accent,
       body: SafeArea(
         child: Column(children: [
@@ -169,13 +171,14 @@ class InputScaffold extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(subtitle, style: TextStyle(fontSize: 15, height: 1.45, color: fg.withValues(alpha: 0.85))),
                 const SizedBox(height: 24),
-                ...children,
+                ...staggered(children, start: 2),
               ],
             ),
           ),
           Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 16), child: bottom),
         ]),
       ),
+    ),
     );
   }
 }

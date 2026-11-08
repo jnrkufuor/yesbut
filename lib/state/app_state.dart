@@ -114,7 +114,21 @@ class AppState extends ChangeNotifier {
     await _storage.saveHistory(_history);
   }
 
-  Future<void> clearHistory() async {
+  /// How many checks were made within [within] (null = all of them).
+  int countWithin(Duration? within) {
+    if (within == null) return _history.length;
+    final cut = DateTime.now().subtract(within);
+    return _history.where((h) => h.analyzedAt.isAfter(cut)).length;
+  }
+
+  Future<void> clearHistory({Duration? within}) async {
+    if (within != null) {
+      final cut = DateTime.now().subtract(within);
+      _history.removeWhere((h) => h.analyzedAt.isAfter(cut));
+      notifyListeners();
+      await _storage.saveHistory(_history);
+      return;
+    }
     _history.clear();
     notifyListeners();
     await _storage.saveHistory(_history);

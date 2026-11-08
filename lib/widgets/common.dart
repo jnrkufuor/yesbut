@@ -457,3 +457,54 @@ class HeadingText extends StatelessWidget {
     ]), style: base);
   }
 }
+
+/// The home screen's load-in, reusable: fades + rises in after a short
+/// stagger based on [index]. Wrap each block of a page in one.
+class FadeInUp extends StatefulWidget {
+  const FadeInUp({super.key, required this.index, required this.child, this.rise = 14, this.pop = false});
+  final int index;
+  final Widget child;
+  final double rise;
+  final bool pop;
+  @override
+  State<FadeInUp> createState() => _FadeInUpState();
+}
+
+class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 620));
+  late final Animation<double> _move = CurvedAnimation(parent: _c, curve: Curves.easeOutBack);
+  late final Animation<double> _fade = CurvedAnimation(parent: _c, curve: const Interval(0, 0.6));
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: 60 + 70 * widget.index.clamp(0, 10)), () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (context, child) => Opacity(
+          opacity: _fade.value,
+          child: Transform.translate(
+            offset: Offset(0, (1 - _move.value) * (widget.pop ? 26 : widget.rise)),
+            child: Transform.scale(scale: widget.pop ? 0.9 + 0.1 * _move.value : 1, child: child),
+          ),
+        ),
+        child: widget.child,
+      );
+}
+
+/// Wraps each item of [children] in a [FadeInUp] with increasing delay.
+List<Widget> staggered(List<Widget> children, {int start = 0}) => [
+      for (var i = 0; i < children.length; i++)
+        children[i] is SizedBox ? children[i] : FadeInUp(index: start + i, child: children[i]),
+    ];

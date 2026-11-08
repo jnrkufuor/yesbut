@@ -167,8 +167,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ]),
           ),
           const SizedBox(height: 12),
-          _stagger(8, SearchBarButton(onTap: widget.onSearch ?? () => Flows.search(context))),
-          const SizedBox(height: 8),
           _stagger(
             9,
             SizedBox(
@@ -234,7 +232,7 @@ class _GrowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => OpenContainer(
-        transitionDuration: const Duration(milliseconds: 560),
+        transitionDuration: const Duration(milliseconds: 420),
         transitionType: ContainerTransitionType.fade,
         closedElevation: 0,
         openElevation: 0,
@@ -267,6 +265,34 @@ void _openLibrary(BuildContext context, AppState state, CatalogItem item) {
 
 void openLibraryItem(BuildContext context, AppState state, CatalogItem item) =>
     _openLibrary(context, state, item);
+
+/// Top row shared by every main tab: page icon + name at the same size as the
+/// home logo, settings on the right. Keeps the big heading at the same height
+/// on every screen.
+class PageHeader extends StatelessWidget {
+  const PageHeader({super.key, required this.title, required this.icon});
+  final String title;
+  final String icon;
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        LoopyIcon(icon, size: 26, stroke: 2.6),
+        const SizedBox(width: 8),
+        Text(title,
+            style: const TextStyle(
+              fontFamily: AppTheme.display,
+              fontSize: 25,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -1,
+              height: 1,
+            )),
+        const Spacer(),
+        RoundIconButton(
+          icon: 'settings',
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen())),
+        ),
+      ]);
+}
 
 /// 50px circle with a hairline border and a loopy icon (settings, back, share).
 class RoundIconButton extends StatelessWidget {

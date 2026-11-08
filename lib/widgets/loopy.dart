@@ -76,7 +76,7 @@ class LoopyAccent extends StatelessWidget {
 
 /// The cherry hand-drawn asterisk from the logo.
 class BrandAsterisk extends StatelessWidget {
-  const BrandAsterisk({super.key, this.size = 12, this.color = const Color(0xFFF51D3A)});
+  const BrandAsterisk({super.key, this.size = 12, this.color = const Color(0xFFDF1538)});
   final double size;
   final Color color;
   @override

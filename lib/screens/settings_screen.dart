@@ -5,6 +5,7 @@ import '../services/storage.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -128,11 +129,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Clear history', style: TextStyle(fontWeight: FontWeight.w700)),
                   subtitle: Text('${_state.history.length} saved checks'),
                   onTap: () async {
-                    await _state.clearHistory();
-                    if (context.mounted) {
-                      setState(() {});
-                      showToast(context, 'History cleared');
-                    }
+                    await showClearHistorySheet(context);
+                    if (mounted) setState(() {});
                   },
                 ),
                 const SizedBox(height: 20),

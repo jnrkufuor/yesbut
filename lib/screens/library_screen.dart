@@ -7,7 +7,7 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
-import 'home_screen.dart' show openLibraryItem;
+import 'home_screen.dart' show openLibraryItem, PageHeader;
 
 class LibraryScreen extends StatefulWidget {
   const LibraryScreen({super.key});
@@ -41,11 +41,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 130),
             children: [
-              const HeadingText('The ', serif: 'library'),
-              const SizedBox(height: 6),
-              Text('Popular terms we can fetch and check live — always the latest version.',
-                  style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
-              const SizedBox(height: 18),
+              ...staggered([
+                const PageHeader(title: 'Library', icon: 'library'),
+                const SizedBox(height: 28),
+                const HeadingText('Terms you’ve\n', serif: 'probably agreed to', size: 36),
+                const SizedBox(height: 10),
+                Text('Popular apps and services. We fetch their latest terms live and check them for you.',
+                    style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
+              ]),
+              const SizedBox(height: 20),
               TextField(
                 onChanged: (v) => setState(() => _q = v),
                 textInputAction: TextInputAction.search,
@@ -87,7 +91,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 ]),
               ),
               const SizedBox(height: 16),
-              for (final item in items) _Row(item: item, state: state),
+              for (var i = 0; i < items.length; i++)
+                FadeInUp(index: 4 + i, child: _Row(item: items[i], state: state)),
               if (items.isEmpty)
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 30),
@@ -117,39 +122,53 @@ class _Row extends StatelessWidget {
       scale: 0.98,
       onTap: () => openLibraryItem(context, state, item),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
         decoration: BoxDecoration(
-          border: Border.all(color: GColors.line, width: 1),
-          borderRadius: BorderRadius.circular(GRadius.md),
+          color: GColors.white,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: GColors.ink, width: 1),
         ),
         child: Row(children: [
-          LetterBadge(letter: item.initial, color: GColors.named(item.color)),
-          const SizedBox(width: 14),
+          LetterBadge(letter: item.initial, color: item.brandColor, size: 46),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(item.name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -0.2)),
-              const SizedBox(height: 2),
+              Text(item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontFamily: AppTheme.display, fontSize: 17, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+              const SizedBox(height: 1),
               Text('${item.kind} · ${item.category}',
-                  style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft, fontWeight: FontWeight.w500)),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft)),
             ]),
           ),
+          const SizedBox(width: 8),
           if (cached != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: GColors.softForScore(cached.score),
-                borderRadius: BorderRadius.circular(99),
-              ),
+              width: 46,
+              height: 46,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: GColors.forScore(cached.score), shape: BoxShape.circle),
               child: Text('${cached.score}',
-                  style: TextStyle(fontWeight: FontWeight.w900, color: GColors.textForScore(cached.score))),
+                  style: TextStyle(
+                    fontFamily: AppTheme.display,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: GColors.onColor(GColors.forScore(cached.score)),
+                  )),
             )
           else
+            // Not checked yet: a greyed-out search circle.
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-              decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(99)),
-              child: const Text('Check',
-                  style: TextStyle(color: GColors.white, fontWeight: FontWeight.w800, fontSize: 13)),
+              width: 46,
+              height: 46,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(color: GColors.surface, shape: BoxShape.circle),
+              child: const LoopyIcon('search', size: 22, color: GColors.inkFaint, stroke: 2.6),
             ),
         ]),
       ),
@@ -173,7 +192,7 @@ class _Cat extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
               color: selected ? GColors.ink : GColors.white,
-              border: Border.all(color: selected ? GColors.ink : GColors.line, width: 1),
+              border: Border.all(color: GColors.ink, width: 1),
               borderRadius: BorderRadius.circular(99),
             ),
             child: Text(label,

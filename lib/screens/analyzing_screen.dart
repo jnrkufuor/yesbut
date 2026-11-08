@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/ingestion/web_fetcher.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
 import 'paste_screen.dart';
@@ -103,7 +104,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       'Writing it in plain English',
     ];
 
-    return Scaffold(
+    return LeaveGuard(
+      message: 'We’ll stop checking this one.',
+      child: Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
@@ -143,6 +146,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

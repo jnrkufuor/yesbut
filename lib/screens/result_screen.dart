@@ -7,6 +7,7 @@ import '../models/analysis.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
 
@@ -36,6 +37,8 @@ class _ResultScreenState extends State<ResultScreen> {
           builder: (_) => _OriginalTextScreen(title: r.title, text: r.text),
         ));
       case 'delete':
+        if (!await confirmDeleteOne(context, r.title)) return;
+        if (!mounted) return;
         await context.read<AppState>().delete(r.id);
         if (mounted) Navigator.of(context).pop();
     }
@@ -47,12 +50,13 @@ class _ResultScreenState extends State<ResultScreen> {
     final shown = _filter == null ? r.findings : r.bySeverity(_filter!);
     final jargon = _allJargon ? r.jargon : r.jargon.take(5).toList();
 
-    return Scaffold(
+    return LeaveGuard(
+      child: Scaffold(
       body: SafeArea(
         bottom: false,
         child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
-        children: [
+        children: staggered([
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
@@ -101,7 +105,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ],
           if (r.tldr.isNotEmpty) ...[
             const SizedBox(height: 26),
-            _Tldr(lines: r.tldr),
+            _Tldr(result: r),
           ],
           const SizedBox(height: 30),
           SectionTitle('The catches', trailing: Text('${r.findings.length}', style: t.titleLarge?.copyWith(color: GColors.inkFaint))),
@@ -186,9 +190,10 @@ class _ResultScreenState extends State<ResultScreen> {
               style: t.bodySmall?.copyWith(color: GColors.inkFaint),
             ),
           ),
-        ],
+        ]),
       ),
       ),
+    ),
     );
   }
 }
@@ -415,7 +420,7 @@ class _ScoreExplainer extends StatelessWidget {
           style: TextStyle(color: w.withValues(alpha: 0.85), fontSize: 13, height: 1.4)),
       const Spacer(),
       Wrap(spacing: 14, runSpacing: 6, children: [
-        range(GColors.blueOnDark, '70+', 'fair'),
+        range(GColors.blue, '70+', 'fair'),
         range(GColors.green, '45–69', 'careful'),
         range(GColors.red, '0–44', 'yikes'),
       ]),
@@ -432,7 +437,7 @@ class _MiniCount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dot = severity == Severity.goodNews ? GColors.blueOnDark : GColors.forSeverity(severity);
+    final dot = GColors.forSeverity(severity);
     return Container(
       height: 26,
       padding: const EdgeInsets.fromLTRB(9, 0, 10, 0),
@@ -477,12 +482,24 @@ class _KeyFacts extends StatelessWidget {
 }
 
 class _Tldr extends StatelessWidget {
-  const _Tldr({required this.lines});
-  final List<String> lines;
+  const _Tldr({required this.result});
+  final AnalysisResult result;
+
+  /// Dot color = the severity of the catch the line talks about, so a red
+  /// flag line always gets a red dot and good news always gets blue.
+  Color _dotFor(String line) {
+    final l = line.toLowerCase();
+    for (final f in result.findings) {
+      final t = f.title.toLowerCase();
+      if (t.isNotEmpty && (l.startsWith(t) || l.contains(t))) return GColors.forSeverity(f.severity);
+    }
+    if (l.startsWith('on the plus side') || l.contains('good news')) return GColors.blue;
+    return GColors.forScore(result.score);
+  }
 
   @override
   Widget build(BuildContext context) {
-    const dots = [GColors.red, GColors.green, GColors.blueOnDark];
+    final lines = result.tldr;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(32)),
@@ -507,7 +524,7 @@ class _Tldr extends StatelessWidget {
                 width: 9,
                 height: 9,
                 margin: const EdgeInsets.only(top: 6),
-                decoration: BoxDecoration(color: dots[i % 3], shape: BoxShape.circle),
+                decoration: BoxDecoration(color: _dotFor(lines[i]), shape: BoxShape.circle),
               ),
               const SizedBox(width: 12),
               Expanded(

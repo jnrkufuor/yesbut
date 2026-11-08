@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
@@ -21,7 +22,9 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).padding.bottom;
-    return Scaffold(
+    return LeaveGuard(
+      exitApp: true,
+      child: Scaffold(
       body: Stack(children: [
         Positioned.fill(
           child: AnimatedSwitcher(
@@ -56,6 +59,7 @@ class _RootShellState extends State<RootShell> {
           child: Center(child: PillNav(index: _index, onTap: _go)),
         ),
       ]),
+    ),
     );
   }
 }

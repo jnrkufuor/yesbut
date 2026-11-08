@@ -5,7 +5,9 @@ import '../models/analysis.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/tiles.dart';
+import 'home_screen.dart' show PageHeader, TextLink;
 import 'flows.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -33,7 +35,7 @@ class HistoryScreen extends StatelessWidget {
       ),
     );
     if (!context.mounted) return;
-    if (v == 'delete') await state.delete(r.id);
+    if (v == 'delete' && await confirmDeleteOne(context, r.title)) await state.delete(r.id);
     if (v == 'rename') {
       if (!context.mounted) return;
       final c = TextEditingController(text: r.title);
@@ -64,30 +66,52 @@ class HistoryScreen extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 130),
         children: [
-          Text('History', style: t.headlineLarge),
-          const SizedBox(height: 6),
-          Text('Everything you\'ve checked, saved on this phone. Long-press to rename or delete.',
-              style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
-          const SizedBox(height: 20),
-          if (items.isEmpty)
-            const SoftCard(
-              child: Column(children: [
-                SizedBox(height: 10),
-                HopDots(size: 14),
-                SizedBox(height: 22),
-                Text('No checks yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                SizedBox(height: 4),
-                Text('Scan, upload, paste or link something to get started.',
-                    textAlign: TextAlign.center, style: TextStyle(color: GColors.inkSoft)),
-                SizedBox(height: 10),
+          ...staggered([
+            const PageHeader(title: 'History', icon: 'history'),
+            const SizedBox(height: 28),
+            const HeadingText('Everything you’ve\n', serif: 'checked', size: 36),
+            const SizedBox(height: 10),
+            Text('Saved on this phone. Long-press a check to rename or delete it.',
+                style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
+            const SizedBox(height: 20),
+            if (items.isNotEmpty)
+              Row(children: [
+                Text('${items.length} CHECK${items.length == 1 ? '' : 'S'}',
+                    style: const TextStyle(
+                        fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: GColors.inkSoft)),
+                const Spacer(),
+                TextLink('Clear history', onTap: () => showClearHistorySheet(context)),
               ]),
+          ]),
+          const SizedBox(height: 10),
+          if (items.isEmpty)
+            FadeInUp(
+              index: 5,
+              child: Container(
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(color: GColors.surface, borderRadius: BorderRadius.circular(30)),
+                child: const Column(children: [
+                  SizedBox(height: 6),
+                  HopDots(size: 14),
+                  SizedBox(height: 22),
+                  Text('No checks yet',
+                      style: TextStyle(fontFamily: AppTheme.display, fontSize: 20, fontWeight: FontWeight.w700)),
+                  SizedBox(height: 4),
+                  Text('Scan, upload, paste or link something to get started.',
+                      textAlign: TextAlign.center, style: TextStyle(color: GColors.inkSoft)),
+                  SizedBox(height: 6),
+                ]),
+              ),
             )
           else
-            for (final r in items)
-              HistoryTile(
-                result: r,
-                onTap: () => Flows.open(context, r),
-                onLongPress: () => _actions(context, state, r),
+            for (var i = 0; i < items.length; i++)
+              FadeInUp(
+                index: 5 + i,
+                child: HistoryTile(
+                  result: items[i],
+                  onTap: () => Flows.open(context, items[i]),
+                  onLongPress: () => _actions(context, state, items[i]),
+                ),
               ),
         ],
       ),
