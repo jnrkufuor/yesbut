@@ -12,6 +12,7 @@ import '../services/watch_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
 import 'home_screen.dart' show PageHeader, TextLink;
