@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/analysis.dart';
-import '../services/analysis/claude_analyzer.dart';
+import '../services/analysis/ai_prompt.dart';
 import '../services/analysis/context_profile.dart';
+import '../services/analysis/deepseek_analyzer.dart';
 import '../services/analysis/gemini_analyzer.dart';
 import '../services/analysis/offline_translator.dart';
 import '../services/analysis/rule_based_analyzer.dart';
@@ -92,8 +93,38 @@ class AppState extends ChangeNotifier {
 
   /// Runs the preferred engine and falls back to offline if AI fails, so
   /// the user always gets an answer.
-  /// The AI engine is switched off for now; everything runs on the phone.
-  static const aiEnabled = false;
+
+  /// AI readers available in this build, in the order to try them.
+  static Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> get readers => {
+        EngineChoice.gemini: (name: 'Gemini', available: GeminiAnalyzer.available, run: (i) => GeminiAnalyzer().analyze(i)),
+        EngineChoice.deepseek: (name: 'DeepSeek', available: DeepSeekAnalyzer.available, run: (i) => DeepSeekAnalyzer().analyze(i)),
+      };
+
+  /// Chosen reader first, then the other AI, then the phone. Returns the
+  /// result and a note explaining any fallback.
+  Future<(AnalysisResult, String?)> _read(ContractInput work, RuleBasedAnalyzer offline) async {
+    final choice = _settings.engine;
+    if (choice == EngineChoice.offline) return (await offline.analyze(work), null);
+    final order = [choice, ...readers.keys.where((k) => k != choice)];
+    final misses = <String>[];
+    for (final k in order) {
+      final r = readers[k];
+      if (r == null) continue;
+      if (!r.available) {
+        if (k == choice) misses.add('${r.name} isn’t set up in this build');
+        continue;
+      }
+      try {
+        final res = await r.run(work);
+        final note = misses.isEmpty ? null : '${misses.join('; ')}, so ${r.name} read this instead.';
+        return (res, note);
+      } catch (e) {
+        misses.add('${r.name} couldn’t answer (${AiPrompt.reasonFor(e)})');
+      }
+    }
+    final res = await offline.analyze(work);
+    return (res, misses.isEmpty ? null : '${misses.join('; ')}, so this is the offline check on your phone.');
+  }
 
   Future<AnalysisResult> analyze(ContractInput input) async {
     final offline = await RuleBasedAnalyzer.load();
@@ -116,31 +147,11 @@ class AppState extends ChangeNotifier {
 
     final profile = ContextProfiler.profile(work);
     work = work.copyWith(dealType: profile.dealType, industry: profile.industry);
-    AnalysisResult result;
-    if (GeminiAnalyzer.available) {
-      // Free Gemini model reads it against this industry's guide; if it's
-      // unreachable or over its free quota, fall back to the offline reader.
-      try {
-        result = await GeminiAnalyzer().analyze(work);
-      } catch (e) {
-        result = (await offline.analyze(work))
-            .copyWith(note: 'The AI reader was busy, so this is the quicker offline check.');
-      }
-    } else if (aiEnabled && _settings.aiReady) {
-      try {
-        result = await ClaudeAnalyzer(
-          apiKey: _settings.apiKey.trim(),
-          model: _settings.model.trim(),
-          endpoint: _settings.endpoint.trim(),
-        ).analyze(work);
-      } catch (e) {
-        result = await offline.analyze(work);
-      }
-    } else {
-      result = await offline.analyze(work);
-    }
+    final result0 = await _read(work, offline);
+    var result = result0.$1;
+    if (result0.$2 != null) note = note == null ? result0.$2 : '${result0.$2} $note';
     result = result.copyWith(
-      note: note,
+      note: note ?? result.note,
       dealType: profile.dealType,
       industry: profile.industry,
       audience: result.audience ?? profile.audience,

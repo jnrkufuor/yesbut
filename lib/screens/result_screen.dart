@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 import 'package:provider/provider.dart';
@@ -131,19 +133,29 @@ class _ResultScreenState extends State<ResultScreen> {
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
-            RoundIconButton(icon: 'share', label: 'Share', onTap: _share),
+            if (webUrlOf(r) != null) ...[
+              _TrackButton(result: r),
+              const SizedBox(width: 6),
+            ],
+            Semantics(label: 'Share', button: true, child: RoundIconButton(icon: 'share', onTap: _share)),
             const SizedBox(width: 6),
             Semantics(
               label: 'Delete this check',
-              child: RoundIconButton(icon: 'trash', onTap: () => _menu('delete')),
+              button: true,
+              child: Pressable(
+                onTap: () => _menu('delete'),
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(color: GColors.red, shape: BoxShape.circle),
+                  child: const LoopyIcon('trash', size: 24, color: GColors.white, stroke: 2.4),
+                ),
+              ),
             ),
           ]),
           const SizedBox(height: 18),
           _SourceChip(result: r),
-          if (webUrlOf(r) != null) ...[
-            const SizedBox(height: 8),
-            _WatchButton(result: r),
-          ],
           const SizedBox(height: 10),
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
@@ -1215,26 +1227,34 @@ class _JargonChipState extends State<_JargonChip> with SingleTickerProviderState
 
   void _show() {
     final screenW = MediaQuery.sizeOf(context).width;
+    // Open toward the side with room, and never wider than that room.
+    final box = context.findRenderObject() as RenderBox?;
+    final left = box?.localToGlobal(Offset.zero).dx ?? 16;
+    final right = left + (box?.size.width ?? 0);
+    final toLeft = (left + right) / 2 > screenW / 2;
+    final room = (toLeft ? right - 16 : screenW - left - 16).clamp(140.0, screenW - 32);
+    final maxW = math.min(screenW * 0.72, room);
+    final anchor = toLeft ? Alignment.topRight : Alignment.topLeft;
     _entry = OverlayEntry(
       builder: (ctx) => Stack(children: [
         Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: _hide)),
         CompositedTransformFollower(
           link: _link,
           showWhenUnlinked: false,
-          targetAnchor: Alignment.bottomLeft,
-          followerAnchor: Alignment.topLeft,
+          targetAnchor: toLeft ? Alignment.bottomRight : Alignment.bottomLeft,
+          followerAnchor: anchor,
           offset: const Offset(0, 8),
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: anchor,
             child: ScaleTransition(
-              alignment: Alignment.topLeft,
+              alignment: anchor,
               scale: CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
               child: FadeTransition(
                 opacity: _c,
                 child: Material(
                   color: Colors.transparent,
                   child: Container(
-                    constraints: BoxConstraints(maxWidth: screenW * 0.72),
+                    constraints: BoxConstraints(maxWidth: maxW),
                     padding: const EdgeInsets.fromLTRB(14, 10, 14, 11),
                     decoration: BoxDecoration(
                       color: GColors.ink,
@@ -1295,7 +1315,10 @@ class _JargonChipState extends State<_JargonChip> with SingleTickerProviderState
               border: Border.all(color: fg, width: 1),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(widget.term.term, style: TextStyle(fontSize: 12.5, color: on ? bg : fg)),
+              Flexible(
+                child: Text(widget.term.term,
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12.5, color: on ? bg : fg)),
+              ),
               const SizedBox(width: 5),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -1315,44 +1338,49 @@ class _JargonChipState extends State<_JargonChip> with SingleTickerProviderState
 }
 
 
-/// "Watch for changes": re-checks this page in the background and sends a
-/// notification when the terms change.
-class _WatchButton extends StatelessWidget {
-  const _WatchButton({required this.result});
+/// Bell in the header: track this page. We re-check it in the background
+/// and send a notification when the terms change.
+class _TrackButton extends StatelessWidget {
+  const _TrackButton({required this.result});
   final AnalysisResult result;
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
     final on = state.isWatching(result.sourceRef);
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Semantics(
-        button: true,
-        toggled: on,
-        child: Pressable(
-          onTap: () async {
-            if (on) {
-              await state.unwatch(result.sourceRef!);
-              if (context.mounted) showToast(context, 'Stopped watching.');
-            } else {
-              await state.watch(result);
-              if (context.mounted) showToast(context, 'Watching. We’ll let you know if these terms change.');
-            }
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: BoxDecoration(
-              color: on ? GColors.ink : GColors.white,
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: GColors.ink, width: 1),
+    return Semantics(
+      button: true,
+      toggled: on,
+      label: on ? 'Tracking changes' : 'Track changes',
+      child: Pressable(
+        onTap: () async {
+          if (on) {
+            await state.unwatch(result.sourceRef!);
+            if (context.mounted) showToast(context, 'Stopped tracking.');
+          } else {
+            await state.watch(result);
+            if (context.mounted) showToast(context, 'Tracking. We’ll let you know if these terms change.');
+          }
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          width: 50,
+          height: 50,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: on ? GColors.ink : GColors.white,
+            shape: BoxShape.circle,
+            border: Border.all(color: on ? GColors.ink : GColors.line, width: 1),
+          ),
+          child: TweenAnimationBuilder<double>(
+            key: ValueKey(on),
+            tween: Tween(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 520),
+            builder: (_, v, child) => Transform.rotate(
+              angle: on ? 0.35 * (1 - v) * math.sin(v * math.pi * 4) : 0,
+              alignment: Alignment.topCenter,
+              child: child,
             ),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              LoopyIcon('eye', size: 18, color: on ? GColors.white : GColors.ink, stroke: 2.6),
-              const SizedBox(width: 6),
-              Text(on ? 'Watching for changes' : 'Watch for changes',
-                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: on ? GColors.white : GColors.ink)),
-            ]),
+            child: LoopyIcon('bell', size: 24, color: on ? GColors.white : GColors.ink, stroke: 2.4),
           ),
         ),
       ),

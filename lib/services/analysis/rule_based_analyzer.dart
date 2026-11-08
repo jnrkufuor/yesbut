@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -151,10 +152,12 @@ class RuleBasedAnalyzer implements ContractAnalyzer {
 
     findings.sort((a, b) => a.severity.index.compareTo(b.severity.index));
 
-    final jargon = <JargonTerm>[
+    // The words that actually show up most, capped so the list stays useful.
+    final counted = <(JargonTerm, int)>[
       for (final j in _jargon)
-        if (j.match.hasMatch(text)) JargonTerm(j.term, j.meaning),
-    ];
+        if (j.match.hasMatch(text)) (JargonTerm(j.term, j.meaning), j.match.allMatches(text).length),
+    ]..sort((a, b) => b.$2.compareTo(a.$2));
+    final jargon = counted.take(14).map((e) => e.$1).toList();
 
     final words = countWords(text);
     final red = findings.where((f) => f.severity == Severity.redFlag).length;
@@ -162,15 +165,22 @@ class RuleBasedAnalyzer implements ContractAnalyzer {
     final good = findings.where((f) => f.severity == Severity.goodNews).length;
     // Same criteria for everyone, but each flag is weighted by how much it
     // matters for this kind of deal (e.g. refunds matter more for a shop).
+    // Biggest problems count in full; each extra one counts a little less,
+    // so long documents with lots of small notes aren't sunk by volume.
+    final hits = [
+      for (final f in findings)
+        switch (f.severity) {
+          Severity.redFlag => 11 * (weights[f] ?? 1.0),
+          Severity.headsUp => 4 * (weights[f] ?? 1.0),
+          Severity.goodNews => -5 * (weights[f] ?? 1.0),
+        },
+    ];
+    final bad = hits.where((h) => h > 0).toList()..sort((a, b) => b.compareTo(a));
     var penalty = 0.0;
-    for (final f in findings) {
-      final w = weights[f] ?? 1.0;
-      penalty += switch (f.severity) {
-        Severity.redFlag => 11 * w,
-        Severity.headsUp => 4 * w,
-        Severity.goodNews => -5 * w,
-      };
+    for (var i = 0; i < bad.length; i++) {
+      penalty += bad[i] * math.pow(0.93, i);
     }
+    penalty += hits.where((h) => h < 0).fold(0.0, (a, b) => a + b);
     final score = (100 - penalty).round().clamp(5, 98).toInt();
 
     final tldr = <String>[];

@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/analysis.dart';
 
-enum EngineChoice { offline, claude }
+/// Which reader checks your terms. AI readers fall back to each other, then
+/// to the phone, so you always get an answer.
+enum EngineChoice { offline, gemini, deepseek, claude }
 
 class AppSettings {
   final EngineChoice engine;
@@ -17,7 +19,7 @@ class AppSettings {
   final bool reduceMotion;
 
   const AppSettings({
-    this.engine = EngineChoice.offline,
+    this.engine = EngineChoice.gemini,
     this.apiKey = '',
     this.model = 'claude-sonnet-5-5',
     this.endpoint = 'https://api.anthropic.com/v1/messages',
@@ -89,9 +91,11 @@ class Storage {
   AppSettings loadSettings() {
     const d = AppSettings();
     return AppSettings(
-      engine: _prefs.getString(_engineKey) == 'claude'
-          ? EngineChoice.claude
-          : EngineChoice.offline,
+      engine: switch (_prefs.getString('reader_v2')) {
+        'offline' => EngineChoice.offline,
+        'deepseek' => EngineChoice.deepseek,
+        _ => EngineChoice.gemini,
+      },
       apiKey: _prefs.getString(_apiKeyKey) ?? '',
       model: _prefs.getString(_modelKey) ?? d.model,
       endpoint: _prefs.getString(_endpointKey) ?? d.endpoint,
@@ -103,7 +107,7 @@ class Storage {
   }
 
   Future<void> saveSettings(AppSettings s) async {
-    await _prefs.setString(_engineKey, s.engine.name);
+    await _prefs.setString('reader_v2', s.engine.name);
     await _prefs.setString(_apiKeyKey, s.apiKey);
     await _prefs.setString(_modelKey, s.model);
     await _prefs.setString(_endpointKey, s.endpoint);

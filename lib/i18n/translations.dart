@@ -36,6 +36,21 @@ class Translations extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get _idle => _pending.isEmpty && !_busy && _flush == null;
+
+  /// Resolves once every string on screen has been translated (or after
+  /// [max]). Used by the language screen so the app has really switched
+  /// before it closes.
+  Future<void> settle({Duration max = const Duration(seconds: 12)}) async {
+    final end = DateTime.now().add(max);
+    var calm = 0;
+    while (DateTime.now().isBefore(end)) {
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      calm = _idle ? calm + 1 : 0;
+      if (calm >= 3) return; // idle across a few frames: nothing new queued
+    }
+  }
+
   static final _letters = RegExp(r'[A-Za-z]{2,}');
   static final _urlish = RegExp(r'(://|www\.|^\S+\.[a-z]{2,}(/\S*)?$)', caseSensitive: false);
 

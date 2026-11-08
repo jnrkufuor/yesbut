@@ -1,291 +1,2453 @@
 {
-  "version": 1,
-  "rules": [
-    {
-      "id": "auto_renewal", "category": "Money", "severity": "heads_up",
-      "title": "It renews on its own",
-      "plain": "You'll keep getting charged every period until you actively cancel. Set a reminder if you only want it for a while.",
-      "ask": "When exactly does it renew, and how do I turn auto-renew off?",
-      "fact": ["Renewal", "Automatic until you cancel"],
-      "patterns": ["auto(matic(ally)?)?[- ]?renew", "renews? automatically", "continu(e|ous)(ly)? (to be )?(billed|charged|subscription)", "recurring (billing|charges?|payments?)"]
-    },
-    {
-      "id": "cancel_notice", "category": "Money", "severity": "red_flag",
-      "title": "You have to cancel early",
-      "plain": "Cancelling isn't instant — you must give notice a set number of days before renewal, or you're charged for another round.",
-      "ask": "How many days' notice do I need to cancel, and how do I give it (online, email, in writing)?",
-      "fact": ["Cancel", "Needs advance notice"],
-      "patterns": ["\\b(\\d{1,3}|thirty|sixty|ninety|fourteen|seven|ten)\\s*(\\(\\d+\\)\\s*)?(calendar |business )?days?['’]?\\s+(prior |advance )?(written )?notice", "notice of (non-?)?renewal", "cancel(lation)? (must be|requests?) (received|submitted|made) .{0,40}(before|prior)"]
-    },
-    {
-      "id": "cancel_anytime", "category": "Money", "severity": "good_news",
-      "title": "You can cancel anytime",
-      "plain": "No lock-in: you can stop whenever you want (usually it ends at the close of the current billing period).",
-      "fact": ["Cancel", "Anytime"],
-      "patterns": ["cancel\\b.{0,40}\\bat any ?time", "cancel any ?time", "may (cancel|terminate) (your )?(subscription|membership|account) at any time"]
-    },
-    {
-      "id": "price_change", "category": "Money", "severity": "red_flag",
-      "title": "They can raise the price",
-      "plain": "The price isn't locked. They're allowed to change what you pay, sometimes with only a short notice.",
-      "ask": "Is my price locked in? How much notice do I get before an increase, and can I cancel without penalty if it goes up?",
-      "fact": ["Price", "Can change"],
-      "patterns": ["(change|increase|modify|adjust|revise)\\s+(our |the |its |any |subscription |membership )?(prices?|pricing|fees?|rates?|charges)", "(prices?|fees?|pricing) (are|is|may be) subject to change", "(prices?|fees?) may (change|increase)"]
-    },
-    {
-      "id": "no_refunds", "category": "Money", "severity": "red_flag",
-      "title": "No refunds",
-      "plain": "Once you pay, you're unlikely to get money back — even if you cancel partway through.",
-      "ask": "If I cancel early or I'm unhappy, do I get any of my money back?",
-      "fact": ["Refunds", "Generally none"],
-      "patterns": ["non-?refundable", "\\bno refunds?\\b", "(not|no) (be )?entitled to (a |any )?refunds?", "(will|do) not (provide |issue |give )?(any )?refunds?", "refunds? (will|shall) not be (provided|issued|given)"]
-    },
-    {
-      "id": "refund_ok", "category": "Money", "severity": "good_news",
-      "title": "There's a refund path",
-      "plain": "The terms mention refunds, a money-back guarantee, or a cooling-off period. Check the conditions and deadline.",
-      "fact": ["Refunds", "Available in some cases"],
-      "patterns": ["(full|pro-?rat(a|ed)|partial) refund", "money[- ]back guarantee", "cooling[- ]off (period|right)", "right (of|to) withdraw(al)?"]
-    },
-    {
-      "id": "termination_fee", "category": "Money", "severity": "red_flag",
-      "title": "It costs money to leave",
-      "plain": "Ending the contract early triggers a fee or makes you pay out the rest of the term.",
-      "ask": "What exactly would I owe if I end this early?",
-      "fact": ["Leaving early", "Fee applies"],
-      "patterns": ["early (termination|cancellation|exit) (fee|charge|penalt)", "cancellation (fee|charge|penalt)", "liquidated damages", "(pay|owe) (the )?(remaining|remainder|balance) of (the|your) (term|contract)"]
-    },
-    {
-      "id": "free_trial", "category": "Money", "severity": "red_flag",
-      "title": "Free trial turns into paid",
-      "plain": "When the trial ends you're switched to a paid plan automatically unless you cancel before it finishes.",
-      "ask": "What day does the trial end, and will I get a reminder before I'm charged?",
-      "patterns": ["(free )?trial.{0,80}(automatically|will) (convert|become|roll|be charged|begin|start)", "(end|expiration|conclusion) of (the|your|any) (free )?trial", "after (the|your) (free )?trial"]
-    },
-    {
-      "id": "extra_fees", "category": "Money", "severity": "heads_up",
-      "title": "Extra fees may apply",
-      "plain": "Beyond the headline price, there can be service, processing, admin, late or other fees. Budget for the real total.",
-      "ask": "What's the full price with every fee and tax included?",
-      "patterns": ["(service|processing|administrative|admin|activation|setup|set-up|convenience|booking|handling|late( payment)?) (fees?|charges?)", "interest (at|of) .{0,25}per (month|annum|year)"]
-    },
-    {
-      "id": "charge_card", "category": "Money", "severity": "heads_up",
-      "title": "They keep your card on file",
-      "plain": "You're giving them permission to charge your payment method again in the future without asking each time.",
-      "patterns": ["authori[sz]e (us|[a-z]+) to (charge|bill|debit)", "charge (your|the) (payment method|card|account) on file", "(charge|bill) (your|the) payment method"]
-    },
-    {
-      "id": "arbitration", "category": "Your rights", "severity": "red_flag",
-      "title": "You can't take them to court",
-      "plain": "Disputes go to a private arbitrator instead of a judge. It's usually faster but more favorable to companies, and you can't appeal much.",
-      "ask": "Can I opt out of arbitration, and how?",
-      "fact": ["Disputes", "Private arbitration, not court"],
-      "patterns": ["binding (individual )?arbitration", "\\barbitrat(e|ion|or)\\b"]
-    },
-    {
-      "id": "class_waiver", "category": "Your rights", "severity": "red_flag",
-      "title": "No joining a class action",
-      "plain": "If they wrong lots of people, you can't team up with them in a group lawsuit — you'd have to go it alone.",
-      "patterns": ["class[- ]action", "class[- ]wide", "representative (action|proceeding|capacity)", "consolidated (action|proceeding)"]
-    },
-    {
-      "id": "jury_waiver", "category": "Your rights", "severity": "red_flag",
-      "title": "You give up a jury trial",
-      "plain": "Even if a case does go to court, you agree a judge alone decides it.",
-      "patterns": ["waive.{0,60}(right to a )?(trial by )?jury", "jury trial waiver", "trial by jury"]
-    },
-    {
-      "id": "arb_opt_out", "category": "Your rights", "severity": "good_news",
-      "title": "You can opt out of arbitration",
-      "plain": "There's a window (often 30 days) to opt out of forced arbitration. Do it early if you want to keep your right to sue.",
-      "patterns": ["opt[- ]out of (this |the )?(agreement to )?arbitrat", "right to opt[- ]out", "arbitration opt[- ]out"]
-    },
-    {
-      "id": "small_claims", "category": "Your rights", "severity": "good_news",
-      "title": "Small claims court is allowed",
-      "plain": "You can still bring small disputes to small claims court — cheap and you don't need a lawyer.",
-      "patterns": ["small[- ]claims court"]
-    },
-    {
-      "id": "consumer_rights", "category": "Your rights", "severity": "good_news",
-      "title": "Your legal consumer rights still apply",
-      "plain": "The terms admit they can't override consumer protection laws where you live.",
-      "patterns": ["(statutory|mandatory|non-?waivable) (consumer )?rights", "consumer protection laws?.{0,40}(apply|not affect|remain)", "nothing in (these|this) (terms|agreement).{0,60}(affects?|limits?|excludes?).{0,40}rights"]
-    },
-    {
-      "id": "unilateral_changes", "category": "Your rights", "severity": "red_flag",
-      "title": "They can change the rules anytime",
-      "plain": "They can rewrite these terms later, and simply continuing to use the service counts as agreeing to the new version.",
-      "ask": "How will I be told about changes, and can I leave without penalty if I don't agree?",
-      "patterns": ["(we|company|[a-z]+) (may|can|reserve(s)? the right to) (modify|change|amend|update|revise) (these|this|the|our) (terms|agreement|policy|conditions)", "continued use.{0,80}(constitutes|means|deemed|signifies|indicates).{0,30}(accept|agree)", "(modify|change|amend).{0,40}at any time.{0,40}(without|with or without) (prior )?notice"]
-    },
-    {
-      "id": "change_notice", "category": "Your rights", "severity": "good_news",
-      "title": "You'll be warned before changes",
-      "plain": "They commit to notifying you ahead of time before important changes kick in.",
-      "patterns": ["(notify|notice to|tell|inform) you (in advance|before|at least \\d+ days|prior to)", "(\\d+|thirty|fifteen|fourteen) days['’]? (advance |prior )?notice (of|before) (any )?(material )?changes?"]
-    },
-    {
-      "id": "termination_by_them", "category": "Your rights", "severity": "heads_up",
-      "title": "They can shut your account",
-      "plain": "They can suspend or close your account on their own call, sometimes without warning — and you may lose what's in it.",
-      "patterns": ["(suspend|terminate|disable|close)\\s+(your )?(account|access|use|membership|service).{0,80}(at any time|for any reason|without (prior )?notice|sole discretion)", "(at|in) (our|its) sole (and absolute )?discretion"]
-    },
-    {
-      "id": "liability_cap", "category": "Your rights", "severity": "heads_up",
-      "title": "Their responsibility is capped",
-      "plain": "If something goes wrong, the most they'll pay you is limited — often just what you paid them, or a small fixed amount.",
-      "patterns": ["limitation of liability", "in no event (shall|will)", "(maximum|aggregate|total|entire) liability", "(shall|will) not be liable for any (indirect|incidental|consequential)"]
-    },
-    {
-      "id": "indemnify", "category": "Your rights", "severity": "red_flag",
-      "title": "You cover their legal costs",
-      "plain": "If someone sues them because of something you did, you agree to pay their legal bills and damages.",
-      "ask": "What situations would make me responsible for their legal costs?",
-      "patterns": ["indemnif(y|ies|ication)", "hold (us |[a-z]+ )?harmless", "defend,? indemnify"]
-    },
-    {
-      "id": "as_is", "category": "Your rights", "severity": "heads_up",
-      "title": "No promises it works",
-      "plain": "The product is provided 'as is' — they don't guarantee it'll be reliable, accurate, or available.",
-      "patterns": ["\\bas[- ]is\\b", "as available", "without (any )?warrant(y|ies) of any kind", "disclaim (all|any) warrant"]
-    },
-    {
-      "id": "jurisdiction", "category": "Your rights", "severity": "heads_up",
-      "title": "Disputes happen on their turf",
-      "plain": "The contract picks which country or state's laws apply and where cases are heard — which may be far from you.",
-      "patterns": ["governed by (and construed in accordance with )?the laws? of", "exclusive (jurisdiction|venue)", "submit to the (personal |exclusive )?jurisdiction"]
-    },
-    {
-      "id": "data_sharing", "category": "Your data", "severity": "red_flag",
-      "title": "Your data gets shared",
-      "plain": "Your personal information can be shared with or sold to other companies like partners, affiliates or advertisers.",
-      "ask": "Who exactly gets my data, and can I opt out of sharing or selling it?",
-      "patterns": ["(share|sell|disclose|transfer|provide)\\s+(your |such )?(personal |user )?(information|data).{0,40}(third[- ]part(y|ies)|affiliates|partners|advertisers|vendors)", "sell (your )?(personal )?(information|data)", "sale of (your )?personal (information|data)"]
-    },
-    {
-      "id": "tracking", "category": "Your data", "severity": "heads_up",
-      "title": "You're tracked for ads",
-      "plain": "They use cookies or similar tech to follow what you do and show you targeted ads.",
-      "patterns": ["cookies", "tracking technolog", "(targeted|interest-based|personali[sz]ed) (ads|advertising|advertisements)", "web beacons|pixels"]
-    },
-    {
-      "id": "content_license", "category": "Your data", "severity": "red_flag",
-      "title": "They can use your stuff",
-      "plain": "Anything you upload or post, they get a broad (often worldwide, free, forever) right to use, copy and share it.",
-      "ask": "What can they do with the content I upload, and does that stop if I delete it?",
-      "patterns": ["(worldwide|perpetual|irrevocable|royalty[- ]free|sub-?licens(e|able)|transferable)[^.]{0,120}licen[cs]e", "licen[cs]e[^.]{0,120}(perpetual|irrevocable|royalty[- ]free|worldwide|sub-?licens)"]
-    },
-    {
-      "id": "ai_training", "category": "Your data", "severity": "heads_up",
-      "title": "Your data may train their AI",
-      "plain": "What you share might be used to build or improve their algorithms or AI models.",
-      "patterns": ["(train|improve|develop)\\w*\\s+(our |their |its )?(models?|machine learning|artificial intelligence|ai\\b|algorithms)", "machine learning"]
-    },
-    {
-      "id": "monitoring", "category": "Your data", "severity": "heads_up",
-      "title": "They may look at your activity",
-      "plain": "They reserve the right to monitor, record or review your messages, calls or content.",
-      "patterns": ["(monitor|record|review|scan|analy[sz]e)\\s+(your )?(communications|calls|messages|content|usage|activity)", "calls may be (monitored|recorded)"]
-    },
-    {
-      "id": "data_retention", "category": "Your data", "severity": "heads_up",
-      "title": "They keep your data",
-      "plain": "Your information can be kept for a while — even after you close your account.",
-      "patterns": ["retain (your |such |the )?(personal )?(information|data|content)", "(after|following) (you )?(delete|close|terminat)\\w* (your )?account.{0,80}(retain|keep|store)"]
-    },
-    {
-      "id": "data_rights", "category": "Your data", "severity": "good_news",
-      "title": "You can get or delete your data",
-      "plain": "You have the right to access, download, correct or delete your information.",
-      "patterns": ["(right to|request to|you (can|may)) (access|delete|deletion|erase|correct|download|export) (your )?(personal )?(information|data)", "data portability"]
-    },
-    {
-      "id": "marketing", "category": "Your data", "severity": "heads_up",
-      "title": "Expect marketing messages",
-      "plain": "By agreeing you may be signing up for promotional emails, texts or calls. Look for an unsubscribe option.",
-      "patterns": ["(marketing|promotional) (emails?|messages|communications|texts?|calls|materials)", "consent to receive"]
-    },
-    {
-      "id": "min_term", "category": "Commitment", "severity": "red_flag",
-      "title": "You're locked in",
-      "plain": "There's a minimum period you must stay (and pay) for, even if you want out earlier.",
-      "ask": "What's the minimum commitment, and what happens if I need to leave before it ends?",
-      "fact": ["Commitment", "Minimum term"],
-      "patterns": ["minimum (term|commitment|contract|period|subscription)", "\\b(12|24|36|twelve|twenty-four|thirty-six)[- ]months?\\b.{0,20}(term|commitment|contract|agreement)", "lock[- ]in"]
-    },
-    {
-      "id": "personal_guarantee", "category": "Commitment", "severity": "red_flag",
-      "title": "You're personally on the hook",
-      "plain": "You personally guarantee the payments — your own money is at risk, not just a business's.",
-      "patterns": ["personal(ly)? guarant", "jointly and severally"]
-    },
-    {
-      "id": "non_compete", "category": "Commitment", "severity": "red_flag",
-      "title": "It limits what you can do next",
-      "plain": "There are restrictions on working for competitors, starting a similar business, or poaching clients/staff.",
-      "ask": "How long and how wide are the non-compete or non-solicit restrictions?",
-      "patterns": ["non-?compet(e|ition)", "non-?solicit", "shall not (directly or indirectly )?(compete|solicit|engage in any business)"]
-    },
-    {
-      "id": "assignment", "category": "Commitment", "severity": "heads_up",
-      "title": "They can hand the contract to someone else",
-      "plain": "They may transfer this agreement to another company (e.g. if they're bought) — you might not be able to do the same.",
-      "patterns": ["(may|can) (freely )?(assign|transfer) (this|these|the|its|our) (agreement|terms|rights)", "assign.{0,40}without (your )?(consent|notice)"]
-    },
-    {
-      "id": "deposit", "category": "Commitment", "severity": "heads_up",
-      "title": "Money held as a deposit",
-      "plain": "There's a deposit or security amount. Check exactly when and how you get it back.",
-      "ask": "Under what conditions is the deposit returned, and how quickly?",
-      "patterns": ["security deposit", "\\bdeposit\\b.{0,60}(non-?refundable|forfeit|withh[oe]ld)", "forfeit"]
-    },
-    {
-      "id": "age_requirement", "category": "Commitment", "severity": "heads_up",
-      "title": "There's an age requirement",
-      "plain": "You must be a certain age (or have a parent's permission) to use this.",
-      "patterns": ["(at least|must be|over|under) (the age of )?(13|16|18|21|thirteen|sixteen|eighteen)( years)?( of age| old)?"]
-    }
-  ],
-  "jargon": [
-    {"term": "Arbitration", "match": "arbitrat", "meaning": "A private referee settles disputes instead of a court. Usually binding, with little room to appeal."},
-    {"term": "Indemnify", "match": "indemnif", "meaning": "You promise to cover their losses or legal costs if your actions get them sued."},
-    {"term": "Hold harmless", "match": "hold harmless|harmless", "meaning": "You won't blame or sue them for certain problems."},
-    {"term": "Liability", "match": "liabilit", "meaning": "Legal responsibility to pay for harm or losses."},
-    {"term": "Limitation of liability", "match": "limitation of liability", "meaning": "A cap on how much they'd ever have to pay you."},
-    {"term": "Consequential damages", "match": "consequential", "meaning": "Knock-on losses (like lost income) caused indirectly. They usually refuse to pay these."},
-    {"term": "Liquidated damages", "match": "liquidated damages", "meaning": "A pre-set penalty amount you'd pay if you break the deal."},
-    {"term": "Warranty", "match": "warrant", "meaning": "A promise that something will work as described."},
-    {"term": "As is", "match": "as is|as-is", "meaning": "You get it in whatever state it's in — no guarantees."},
-    {"term": "Jurisdiction", "match": "jurisdiction", "meaning": "Which courts or region's laws get to decide disputes."},
-    {"term": "Governing law", "match": "governing law|governed by", "meaning": "The specific state or country whose laws apply to the contract."},
-    {"term": "Severability", "match": "severab", "meaning": "If one part is ruled invalid, the rest still counts."},
-    {"term": "Force majeure", "match": "force majeure", "meaning": "Nobody's to blame for things like disasters, wars or pandemics that stop the deal working."},
-    {"term": "Waiver", "match": "waive", "meaning": "Giving up a right you'd otherwise have."},
-    {"term": "Class action", "match": "class action|class-action", "meaning": "A lawsuit where many affected people sue together."},
-    {"term": "Perpetual", "match": "perpetual", "meaning": "Forever. It doesn't expire."},
-    {"term": "Irrevocable", "match": "irrevocable", "meaning": "Can't be taken back or cancelled once given."},
-    {"term": "Royalty-free", "match": "royalty-free|royalty free", "meaning": "They don't have to pay you anything for using it."},
-    {"term": "Sublicense", "match": "sublicens", "meaning": "They can pass the rights you gave them on to other companies."},
-    {"term": "Assign", "match": "assign", "meaning": "Transfer the contract or rights to someone else."},
-    {"term": "Terminate", "match": "terminat", "meaning": "End the agreement."},
-    {"term": "Breach", "match": "breach", "meaning": "Breaking a promise made in the contract."},
-    {"term": "Remedy", "match": "remed", "meaning": "What you can do or get if the other side breaks the deal."},
-    {"term": "Third party", "match": "third part", "meaning": "Anyone who isn't you or them — partners, vendors, advertisers."},
-    {"term": "Affiliates", "match": "affiliate", "meaning": "Companies related to them, like parent companies or sister brands."},
-    {"term": "Sole discretion", "match": "sole discretion", "meaning": "They decide, on their own, with no need to justify it."},
-    {"term": "Notwithstanding", "match": "notwithstanding", "meaning": "\"Despite\" — this part wins even if another part says otherwise."},
-    {"term": "Hereinafter", "match": "hereinafter", "meaning": "\"From now on in this document, called...\""},
-    {"term": "Pursuant to", "match": "pursuant to", "meaning": "\"According to\" or \"under\"."},
-    {"term": "In lieu of", "match": "in lieu of", "meaning": "\"Instead of\"."},
-    {"term": "Pro rata", "match": "pro rata|prorat", "meaning": "Split proportionally — e.g. only paying for the days you used."},
-    {"term": "Jointly and severally", "match": "jointly and severally", "meaning": "Each person can be made to pay the whole amount, not just their share."},
-    {"term": "Personal guarantee", "match": "personal guarant|personally guarant", "meaning": "You personally promise to pay if the business can't."},
-    {"term": "Entire agreement", "match": "entire agreement", "meaning": "Only what's written here counts — verbal promises don't."},
-    {"term": "Counterparts", "match": "counterpart", "meaning": "Copies signed separately still form one valid contract."},
-    {"term": "Escrow", "match": "escrow", "meaning": "Money held by a neutral party until conditions are met."},
-    {"term": "Lien", "match": "\\blien", "meaning": "A legal claim on your property until a debt is paid."},
-    {"term": "Covenant", "match": "covenant", "meaning": "A formal promise to do (or not do) something."}
-  ]
+ "version": 2,
+ "rules": [
+  {
+   "id": "auto_renewal",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "It renews on its own",
+   "plain": "You'll keep getting charged every period until you actively cancel. Set a reminder if you only want it for a while.",
+   "ask": "When exactly does it renew, and how do I turn auto-renew off?",
+   "fact": [
+    "Renewal",
+    "Automatic until you cancel"
+   ],
+   "patterns": [
+    "auto(matic(ally)?)?[- ]?renew",
+    "renews? automatically",
+    "continu(e|ous)(ly)? (to be )?(billed|charged|subscription)",
+    "recurring (billing|charges?|payments?)"
+   ]
+  },
+  {
+   "id": "cancel_notice",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "You have to cancel early",
+   "plain": "Cancelling isn't instant — you must give notice a set number of days before renewal, or you're charged for another round.",
+   "ask": "How many days' notice do I need to cancel, and how do I give it (online, email, in writing)?",
+   "fact": [
+    "Cancel",
+    "Needs advance notice"
+   ],
+   "patterns": [
+    "\\b(\\d{1,3}|thirty|sixty|ninety|fourteen|seven|ten)\\s*(\\(\\d+\\)\\s*)?(calendar |business )?days?['’]?\\s+(prior |advance )?(written )?notice",
+    "notice of (non-?)?renewal",
+    "cancel(lation)? (must be|requests?) (received|submitted|made) .{0,40}(before|prior)"
+   ]
+  },
+  {
+   "id": "cancel_anytime",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "You can cancel anytime",
+   "plain": "No lock-in: you can stop whenever you want (usually it ends at the close of the current billing period).",
+   "fact": [
+    "Cancel",
+    "Anytime"
+   ],
+   "patterns": [
+    "cancel\\b.{0,40}\\bat any ?time",
+    "cancel any ?time",
+    "may (cancel|terminate) (your )?(subscription|membership|account) at any time"
+   ]
+  },
+  {
+   "id": "price_change",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "They can raise the price",
+   "plain": "The price isn't locked. They're allowed to change what you pay, sometimes with only a short notice.",
+   "ask": "Is my price locked in? How much notice do I get before an increase, and can I cancel without penalty if it goes up?",
+   "fact": [
+    "Price",
+    "Can change"
+   ],
+   "patterns": [
+    "(change|increase|modify|adjust|revise)\\s+(our |the |its |any |subscription |membership )?(prices?|pricing|fees?|rates?|charges)",
+    "(prices?|fees?|pricing) (are|is|may be) subject to change",
+    "(prices?|fees?) may (change|increase)"
+   ]
+  },
+  {
+   "id": "no_refunds",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "No refunds",
+   "plain": "Once you pay, you're unlikely to get money back — even if you cancel partway through.",
+   "ask": "If I cancel early or I'm unhappy, do I get any of my money back?",
+   "fact": [
+    "Refunds",
+    "Generally none"
+   ],
+   "patterns": [
+    "non-?refundable",
+    "\\bno refunds?\\b",
+    "(not|no) (be )?entitled to (a |any )?refunds?",
+    "(will|do) not (provide |issue |give )?(any )?refunds?",
+    "refunds? (will|shall) not be (provided|issued|given)"
+   ]
+  },
+  {
+   "id": "refund_ok",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "There's a refund path",
+   "plain": "The terms mention refunds, a money-back guarantee, or a cooling-off period. Check the conditions and deadline.",
+   "fact": [
+    "Refunds",
+    "Available in some cases"
+   ],
+   "patterns": [
+    "(full|pro-?rat(a|ed)|partial) refund",
+    "money[- ]back guarantee",
+    "cooling[- ]off (period|right)",
+    "right (of|to) withdraw(al)?"
+   ]
+  },
+  {
+   "id": "termination_fee",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "It costs money to leave",
+   "plain": "Ending the contract early triggers a fee or makes you pay out the rest of the term.",
+   "ask": "What exactly would I owe if I end this early?",
+   "fact": [
+    "Leaving early",
+    "Fee applies"
+   ],
+   "patterns": [
+    "early (termination|cancellation|exit) (fee|charge|penalt)",
+    "cancellation (fee|charge|penalt)",
+    "liquidated damages",
+    "(pay|owe) (the )?(remaining|remainder|balance) of (the|your) (term|contract)"
+   ]
+  },
+  {
+   "id": "free_trial",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Free trial turns into paid",
+   "plain": "When the trial ends you're switched to a paid plan automatically unless you cancel before it finishes.",
+   "ask": "What day does the trial end, and will I get a reminder before I'm charged?",
+   "patterns": [
+    "(free )?trial.{0,80}(automatically|will) (convert|become|roll|be charged|begin|start)",
+    "(end|expiration|conclusion) of (the|your|any) (free )?trial",
+    "after (the|your) (free )?trial"
+   ]
+  },
+  {
+   "id": "extra_fees",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Extra fees may apply",
+   "plain": "Beyond the headline price, there can be service, processing, admin, late or other fees. Budget for the real total.",
+   "ask": "What's the full price with every fee and tax included?",
+   "patterns": [
+    "(service|processing|administrative|admin|activation|setup|set-up|convenience|booking|handling|late( payment)?) (fees?|charges?)",
+    "interest (at|of) .{0,25}per (month|annum|year)"
+   ]
+  },
+  {
+   "id": "charge_card",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "They keep your card on file",
+   "plain": "You're giving them permission to charge your payment method again in the future without asking each time.",
+   "patterns": [
+    "authori[sz]e (us|[a-z]+) to (charge|bill|debit)",
+    "charge (your|the) (payment method|card|account) on file",
+    "(charge|bill) (your|the) payment method"
+   ]
+  },
+  {
+   "id": "arbitration",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You can't take them to court",
+   "plain": "Disputes go to a private arbitrator instead of a judge. It's usually faster but more favorable to companies, and you can't appeal much.",
+   "ask": "Can I opt out of arbitration, and how?",
+   "fact": [
+    "Disputes",
+    "Private arbitration, not court"
+   ],
+   "patterns": [
+    "binding (individual )?arbitration",
+    "\\barbitrat(e|ion|or)\\b"
+   ]
+  },
+  {
+   "id": "class_waiver",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "No joining a class action",
+   "plain": "If they wrong lots of people, you can't team up with them in a group lawsuit — you'd have to go it alone.",
+   "patterns": [
+    "class[- ]action",
+    "class[- ]wide",
+    "representative (action|proceeding|capacity)",
+    "consolidated (action|proceeding)"
+   ]
+  },
+  {
+   "id": "jury_waiver",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You give up a jury trial",
+   "plain": "Even if a case does go to court, you agree a judge alone decides it.",
+   "patterns": [
+    "waive.{0,60}(right to a )?(trial by )?jury",
+    "jury trial waiver",
+    "trial by jury"
+   ]
+  },
+  {
+   "id": "arb_opt_out",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "You can opt out of arbitration",
+   "plain": "There's a window (often 30 days) to opt out of forced arbitration. Do it early if you want to keep your right to sue.",
+   "patterns": [
+    "opt[- ]out of (this |the )?(agreement to )?arbitrat",
+    "right to opt[- ]out",
+    "arbitration opt[- ]out"
+   ]
+  },
+  {
+   "id": "small_claims",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Small claims court is allowed",
+   "plain": "You can still bring small disputes to small claims court — cheap and you don't need a lawyer.",
+   "patterns": [
+    "small[- ]claims court"
+   ]
+  },
+  {
+   "id": "consumer_rights",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Your legal consumer rights still apply",
+   "plain": "The terms admit they can't override consumer protection laws where you live.",
+   "patterns": [
+    "(statutory|mandatory|non-?waivable) (consumer )?rights",
+    "consumer protection laws?.{0,40}(apply|not affect|remain)",
+    "nothing in (these|this) (terms|agreement).{0,60}(affects?|limits?|excludes?).{0,40}rights"
+   ]
+  },
+  {
+   "id": "unilateral_changes",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "They can change the rules anytime",
+   "plain": "They can rewrite these terms later, and simply continuing to use the service counts as agreeing to the new version.",
+   "ask": "How will I be told about changes, and can I leave without penalty if I don't agree?",
+   "patterns": [
+    "(we|company|[a-z]+) (may|can|reserve(s)? the right to) (modify|change|amend|update|revise) (these|this|the|our) (terms|agreement|policy|conditions)",
+    "continued use.{0,80}(constitutes|means|deemed|signifies|indicates).{0,30}(accept|agree)",
+    "(modify|change|amend).{0,40}at any time.{0,40}(without|with or without) (prior )?notice"
+   ]
+  },
+  {
+   "id": "change_notice",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "You'll be warned before changes",
+   "plain": "They commit to notifying you ahead of time before important changes kick in.",
+   "patterns": [
+    "(notify|notice to|tell|inform) you (in advance|before|at least \\d+ days|prior to)",
+    "(\\d+|thirty|fifteen|fourteen) days['’]? (advance |prior )?notice (of|before) (any )?(material )?changes?"
+   ]
+  },
+  {
+   "id": "termination_by_them",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "They can shut your account",
+   "plain": "They can suspend or close your account on their own call, sometimes without warning — and you may lose what's in it.",
+   "patterns": [
+    "(suspend|terminate|disable|close)\\s+(your )?(account|access|use|membership|service).{0,80}(at any time|for any reason|without (prior )?notice|sole discretion)",
+    "(at|in) (our|its) sole (and absolute )?discretion"
+   ]
+  },
+  {
+   "id": "liability_cap",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Their responsibility is capped",
+   "plain": "If something goes wrong, the most they'll pay you is limited — often just what you paid them, or a small fixed amount.",
+   "patterns": [
+    "limitation of liability",
+    "in no event (shall|will)",
+    "(maximum|aggregate|total|entire) liability",
+    "(shall|will) not be liable for any (indirect|incidental|consequential)"
+   ]
+  },
+  {
+   "id": "indemnify",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You cover their legal costs",
+   "plain": "If someone sues them because of something you did, you agree to pay their legal bills and damages.",
+   "ask": "What situations would make me responsible for their legal costs?",
+   "patterns": [
+    "indemnif(y|ies|ication)",
+    "hold (us |[a-z]+ )?harmless",
+    "defend,? indemnify"
+   ]
+  },
+  {
+   "id": "as_is",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "No promises it works",
+   "plain": "The product is provided 'as is' — they don't guarantee it'll be reliable, accurate, or available.",
+   "patterns": [
+    "\\bas[- ]is\\b",
+    "as available",
+    "without (any )?warrant(y|ies) of any kind",
+    "disclaim (all|any) warrant"
+   ]
+  },
+  {
+   "id": "jurisdiction",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Disputes happen on their turf",
+   "plain": "The contract picks which country or state's laws apply and where cases are heard — which may be far from you.",
+   "patterns": [
+    "governed by (and construed in accordance with )?the laws? of",
+    "exclusive (jurisdiction|venue)",
+    "submit to the (personal |exclusive )?jurisdiction"
+   ]
+  },
+  {
+   "id": "data_sharing",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "Your data gets shared",
+   "plain": "Your personal information can be shared with or sold to other companies like partners, affiliates or advertisers.",
+   "ask": "Who exactly gets my data, and can I opt out of sharing or selling it?",
+   "patterns": [
+    "(share|sell|disclose|transfer|provide)\\s+(your |such )?(personal |user )?(information|data).{0,40}(third[- ]part(y|ies)|affiliates|partners|advertisers|vendors)",
+    "sell (your )?(personal )?(information|data)",
+    "sale of (your )?personal (information|data)"
+   ]
+  },
+  {
+   "id": "tracking",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "You're tracked for ads",
+   "plain": "They use cookies or similar tech to follow what you do and show you targeted ads.",
+   "patterns": [
+    "cookies",
+    "tracking technolog",
+    "(targeted|interest-based|personali[sz]ed) (ads|advertising|advertisements)",
+    "web beacons|pixels"
+   ]
+  },
+  {
+   "id": "content_license",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "They can use your stuff",
+   "plain": "Anything you upload or post, they get a broad (often worldwide, free, forever) right to use, copy and share it.",
+   "ask": "What can they do with the content I upload, and does that stop if I delete it?",
+   "patterns": [
+    "(worldwide|perpetual|irrevocable|royalty[- ]free|sub-?licens(e|able)|transferable)[^.]{0,120}licen[cs]e",
+    "licen[cs]e[^.]{0,120}(perpetual|irrevocable|royalty[- ]free|worldwide|sub-?licens)"
+   ]
+  },
+  {
+   "id": "ai_training",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "Your data may train their AI",
+   "plain": "What you share might be used to build or improve their algorithms or AI models.",
+   "patterns": [
+    "(train|improve|develop)\\w*\\s+(our |their |its )?(models?|machine learning|artificial intelligence|ai\\b|algorithms)",
+    "machine learning"
+   ]
+  },
+  {
+   "id": "monitoring",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "They may look at your activity",
+   "plain": "They reserve the right to monitor, record or review your messages, calls or content.",
+   "patterns": [
+    "(monitor|record|review|scan|analy[sz]e)\\s+(your )?(communications|calls|messages|content|usage|activity)",
+    "calls may be (monitored|recorded)"
+   ]
+  },
+  {
+   "id": "data_retention",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "They keep your data",
+   "plain": "Your information can be kept for a while — even after you close your account.",
+   "patterns": [
+    "retain (your |such |the )?(personal )?(information|data|content)",
+    "(after|following) (you )?(delete|close|terminat)\\w* (your )?account.{0,80}(retain|keep|store)"
+   ]
+  },
+  {
+   "id": "data_rights",
+   "category": "Your data",
+   "severity": "good_news",
+   "title": "You can get or delete your data",
+   "plain": "You have the right to access, download, correct or delete your information.",
+   "patterns": [
+    "(right to|request to|you (can|may)) (access|delete|deletion|erase|correct|download|export) (your )?(personal )?(information|data)",
+    "data portability"
+   ]
+  },
+  {
+   "id": "marketing",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "Expect marketing messages",
+   "plain": "By agreeing you may be signing up for promotional emails, texts or calls. Look for an unsubscribe option.",
+   "patterns": [
+    "(marketing|promotional) (emails?|messages|communications|texts?|calls|materials)",
+    "consent to receive"
+   ]
+  },
+  {
+   "id": "min_term",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "You're locked in",
+   "plain": "There's a minimum period you must stay (and pay) for, even if you want out earlier.",
+   "ask": "What's the minimum commitment, and what happens if I need to leave before it ends?",
+   "fact": [
+    "Commitment",
+    "Minimum term"
+   ],
+   "patterns": [
+    "minimum (term|commitment|contract|period|subscription)",
+    "\\b(12|24|36|twelve|twenty-four|thirty-six)[- ]months?\\b.{0,20}(term|commitment|contract|agreement)",
+    "lock[- ]in"
+   ]
+  },
+  {
+   "id": "personal_guarantee",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "You're personally on the hook",
+   "plain": "You personally guarantee the payments — your own money is at risk, not just a business's.",
+   "patterns": [
+    "personal(ly)? guarant",
+    "jointly and severally"
+   ]
+  },
+  {
+   "id": "non_compete",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "It limits what you can do next",
+   "plain": "There are restrictions on working for competitors, starting a similar business, or poaching clients/staff.",
+   "ask": "How long and how wide are the non-compete or non-solicit restrictions?",
+   "patterns": [
+    "non-?compet(e|ition)",
+    "non-?solicit",
+    "shall not (directly or indirectly )?(compete|solicit|engage in any business)"
+   ]
+  },
+  {
+   "id": "assignment",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "They can hand the contract to someone else",
+   "plain": "They may transfer this agreement to another company (e.g. if they're bought) — you might not be able to do the same.",
+   "patterns": [
+    "(may|can) (freely )?(assign|transfer) (this|these|the|its|our) (agreement|terms|rights)",
+    "assign.{0,40}without (your )?(consent|notice)"
+   ]
+  },
+  {
+   "id": "deposit",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Money held as a deposit",
+   "plain": "There's a deposit or security amount. Check exactly when and how you get it back.",
+   "ask": "Under what conditions is the deposit returned, and how quickly?",
+   "patterns": [
+    "security deposit",
+    "\\bdeposit\\b.{0,60}(non-?refundable|forfeit|withh[oe]ld)",
+    "forfeit"
+   ]
+  },
+  {
+   "id": "age_requirement",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "There's an age requirement",
+   "plain": "You must be a certain age (or have a parent's permission) to use this.",
+   "patterns": [
+    "(at least|must be|over|under) (the age of )?(13|16|18|21|thirteen|sixteen|eighteen)( years)?( of age| old)?"
+   ]
+  },
+  {
+   "id": "collections",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Unpaid bills go to collections",
+   "plain": "If you don't pay, they can hand your debt to a collection agency and charge you their costs.",
+   "patterns": [
+    "collection (agency|agencies|costs?|fees?)",
+    "costs of collection",
+    "refer (your|the) (account|debt) to"
+   ],
+   "ask": "When would they send my account to collections?"
+  },
+  {
+   "id": "currency_fx",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Currency conversion fees",
+   "plain": "Paying in another currency can add conversion or foreign-transaction fees.",
+   "patterns": [
+    "(currency|foreign exchange|fx) (conversion|fees?|rates?)",
+    "foreign transaction fee",
+    "exchange rate (determined|set|chosen) by"
+   ]
+  },
+  {
+   "id": "taxes_extra",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Taxes on top",
+   "plain": "Prices shown may not include tax, so you'll pay more at checkout.",
+   "patterns": [
+    "(prices?|fees?) (do not|don't|does not) include (applicable )?(taxes|vat|gst|sales tax)",
+    "exclusive of (all )?(taxes|vat|gst)",
+    "plus applicable (taxes|vat)"
+   ]
+  },
+  {
+   "id": "price_lock",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "Price is locked in",
+   "plain": "They promise not to raise your price for a set time.",
+   "patterns": [
+    "price (is )?(locked|guaranteed|fixed) (for|until)",
+    "will not increase (the |your )?(price|fee|rate)",
+    "rate (lock|guarantee)"
+   ],
+   "fact": [
+    "Price",
+    "Locked for a while"
+   ]
+  },
+  {
+   "id": "chargeback_penalty",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Disputing a charge can get you punished",
+   "plain": "If you ask your bank to reverse a charge, they may suspend your account or charge fees.",
+   "patterns": [
+    "chargeback",
+    "dispute (a|any) (charge|payment) with your (bank|card issuer)",
+    "reverse (a |any )?(payment|charge)"
+   ],
+   "ask": "What happens if I dispute a charge with my bank?"
+  },
+  {
+   "id": "prepaid_nonrefundable",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Prepaid money won't come back",
+   "plain": "Credits, balances or prepaid amounts can't be cashed out or refunded.",
+   "patterns": [
+    "(credits?|balances?|prepaid amounts?|gift cards?) (are|is) (non-?refundable|not redeemable for cash)",
+    "no cash value",
+    "cannot be (exchanged|redeemed) for (cash|money)"
+   ],
+   "fact": [
+    "Credits",
+    "No refunds or cash out"
+   ]
+  },
+  {
+   "id": "expiring_credits",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Credits or points expire",
+   "plain": "Points, credits or balances vanish after a while if you don't use them.",
+   "patterns": [
+    "(points?|credits?|miles|rewards?|balances?) (will |shall |may )?(expire|be forfeited)",
+    "expir(e|y|ation) of (points|credits|rewards)",
+    "forfeit (any|all|your) (unused )?(points|credits|balance)"
+   ]
+  },
+  {
+   "id": "minimum_spend",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "There's a minimum to spend",
+   "plain": "You may need to spend or order a minimum amount, or pay a fee if you don't.",
+   "patterns": [
+    "minimum (order|purchase|spend|usage|monthly) (amount|value|fee|charge|requirement)",
+    "(minimum|inactivity) fee"
+   ]
+  },
+  {
+   "id": "inactivity_fee",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Fees if you don't use it",
+   "plain": "Leave the account idle and they start charging you.",
+   "patterns": [
+    "inactiv(e|ity|ity) (fee|charge|account fee)",
+    "dormant account (fee|charge)",
+    "dormancy fee"
+   ],
+   "ask": "Is there a fee if I stop using it for a while?"
+  },
+  {
+   "id": "tip_handling",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Where your tips go",
+   "plain": "Check how tips are handled; some platforms keep part or use them to cover pay.",
+   "patterns": [
+    "\\btips?\\b.{0,40}(go(es)? to|passed (on|to)|retain|keep)",
+    "gratuit(y|ies)"
+   ]
+  },
+  {
+   "id": "deposit_withheld",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Deductions from your deposit",
+   "plain": "They can keep part of your deposit for damage, cleaning or unpaid amounts.",
+   "patterns": [
+    "deduct(ed|ions?)? from (the |your )?(security )?deposit",
+    "(retain|keep|withhold) (all or part of )?(the |your )?deposit"
+   ],
+   "ask": "What exactly can they deduct from my deposit, and when do I get it back?"
+  },
+  {
+   "id": "price_match",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "They'll match prices",
+   "plain": "If you find it cheaper, they'll match or refund the difference.",
+   "patterns": [
+    "price (match|matching|protection|adjustment)",
+    "refund the difference"
+   ]
+  },
+  {
+   "id": "installments",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Pay-later plan rules",
+   "plain": "Paying in installments may come with fees, interest or credit checks.",
+   "patterns": [
+    "(pay later|buy now,? pay later|installments?|instalments?) (plan|payments?|fees?)",
+    "split (your )?payments?"
+   ],
+   "ask": "What happens if I miss an installment?"
+  },
+  {
+   "id": "interest_rate",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Interest charges",
+   "plain": "Borrowed or financed amounts collect interest, which can add up quickly.",
+   "patterns": [
+    "\\bapr\\b",
+    "annual percentage rate",
+    "interest (rate|charges?) (of|at|will)",
+    "variable (interest )?rate"
+   ],
+   "ask": "What's the APR and can it change?",
+   "fact": [
+    "Interest",
+    "Charged"
+   ]
+  },
+  {
+   "id": "hidden_renewal_price",
+   "category": "Money",
+   "severity": "red_flag",
+   "title": "Intro price, then it goes up",
+   "plain": "The low price is only for the first period; after that you pay the regular rate.",
+   "patterns": [
+    "(introductory|promotional|intro|discounted) (price|rate|period|offer).{0,80}(then|after|thereafter|revert)",
+    "after the (promotional|introductory) period",
+    "regular (price|rate) (will )?appl"
+   ],
+   "ask": "What will I pay after the intro price ends?",
+   "fact": [
+    "Price",
+    "Goes up after intro"
+   ]
+  },
+  {
+   "id": "auto_upgrade",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "They can move you to a pricier plan",
+   "plain": "Go over your limit and they may bump you up a plan or bill overages.",
+   "patterns": [
+    "overage (charges?|fees?)",
+    "(automatically )?(upgrade|move) (you|your (account|plan)) to",
+    "exceed(s|ing)? (your|the) (plan|usage) limit"
+   ]
+  },
+  {
+   "id": "refund_store_credit",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Refunds as store credit only",
+   "plain": "You may get credit to spend with them instead of your money back.",
+   "patterns": [
+    "refunds? (will be |are )?(issued |given )?(as|in the form of) (store |account )?credit",
+    "store credit only"
+   ],
+   "fact": [
+    "Refunds",
+    "Store credit"
+   ]
+  },
+  {
+   "id": "restocking_fee",
+   "category": "Money",
+   "severity": "heads_up",
+   "title": "Returns cost a restocking fee",
+   "plain": "Send something back and they keep part of the price.",
+   "patterns": [
+    "restocking fee"
+   ],
+   "ask": "How much does a return cost me?"
+  },
+  {
+   "id": "cooling_off",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "Cooling-off period",
+   "plain": "You get a short window to change your mind and cancel for a full refund.",
+   "patterns": [
+    "cooling[- ]off (period|right)",
+    "right (of|to) (withdrawal|withdraw|cancel) within \\d+",
+    "\\d+[- ]day (money[- ]back|return|cancellation) (guarantee|period|window)"
+   ],
+   "fact": [
+    "Change of mind",
+    "Cooling-off period"
+   ]
+  },
+  {
+   "id": "waive_rights",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You give up legal rights",
+   "plain": "You agree to waive rights you'd normally have by law.",
+   "patterns": [
+    "you (hereby )?waive (any|all)",
+    "waiver of (rights|claims)",
+    "release (us|the company) from (any|all) claims"
+   ],
+   "ask": "Which rights am I waiving exactly?"
+  },
+  {
+   "id": "short_claim_window",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "Short deadline to make a claim",
+   "plain": "You only have a short time to bring a claim, after which you lose the right.",
+   "patterns": [
+    "(within|no later than) (one|1|two|2|six|6|three|3) (\\(\\d+\\) )?(year|months?) (after|of|from)",
+    "claims? (must|shall) be (filed|brought|commenced) within",
+    "forever barred"
+   ],
+   "ask": "How long do I have to raise a problem?"
+  },
+  {
+   "id": "no_reviews_gag",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "Limits on bad reviews",
+   "plain": "They try to stop you from posting negative reviews or comments.",
+   "patterns": [
+    "(negative|disparaging|defamatory) (reviews?|comments?|statements?)",
+    "non-?disparagement",
+    "agree not to (post|publish) (any )?(negative|critical)"
+   ]
+  },
+  {
+   "id": "governing_foreign",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Disputes handled far away",
+   "plain": "Any legal fight happens under another place's laws or courts, which can be costly for you.",
+   "patterns": [
+    "exclusive jurisdiction of the courts? (of|in)",
+    "governed by the laws of (the state of |the )?(delaware|california|new york|england|ireland|singapore|luxembourg|the netherlands)",
+    "venue (shall|will) (be|lie) (exclusively )?in"
+   ]
+  },
+  {
+   "id": "content_removal",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "They can remove your stuff",
+   "plain": "Your posts, files or listings can be removed at their discretion.",
+   "patterns": [
+    "(remove|delete|take down) (any )?(content|listings?|posts?|materials?) (at any time|for any reason|in our (sole )?discretion|without notice)"
+   ]
+  },
+  {
+   "id": "lose_purchases",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You may lose what you bought",
+   "plain": "If your account closes, you can lose access to purchases, games, music or credits.",
+   "patterns": [
+    "(lose|forfeit|loss of) (access to )?(any|all|your) (purchased |digital )?(content|items|purchases|games|licen[cs]es|credits)",
+    "no (refund|compensation) for (any )?(unused|lost|forfeited)"
+   ],
+   "ask": "What happens to what I bought if my account is closed?"
+  },
+  {
+   "id": "license_not_own",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "You're renting, not owning",
+   "plain": "Digital things you 'buy' are a licence to use, which they can limit or take back.",
+   "patterns": [
+    "(you|purchaser) (do not|don't) (own|acquire ownership)",
+    "licen[cs]ed,? not sold",
+    "(limited|revocable),? (non-?exclusive,? )?licen[cs]e to (use|access)"
+   ],
+   "fact": [
+    "Purchases",
+    "Licence, not ownership"
+   ]
+  },
+  {
+   "id": "no_resale",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "You can't resell or transfer",
+   "plain": "Tickets, accounts or items can't be resold or given to someone else.",
+   "patterns": [
+    "(may|shall) not (be )?(resell|resold|transfer|sublicense|sell)",
+    "non-?transferable",
+    "not (be )?transferable"
+   ]
+  },
+  {
+   "id": "customer_support_limited",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Limited support promises",
+   "plain": "They don't promise any level of support or response time.",
+   "patterns": [
+    "no obligation to (provide|offer) (any )?(support|maintenance|updates)",
+    "support is provided (on an )?['\\\"]?as available"
+   ]
+  },
+  {
+   "id": "uptime_none",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "No promise it'll work",
+   "plain": "They don't guarantee the service will be available, fast or error-free.",
+   "patterns": [
+    "(not|no) (guarantee|warrant)(y|ies)? (that )?(the service|it) will be (uninterrupted|error-?free|available)",
+    "uninterrupted or error-?free"
+   ]
+  },
+  {
+   "id": "sla_credit",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Credits when it goes down",
+   "plain": "If the service is down too long, you get credit back.",
+   "patterns": [
+    "service level (agreement|credit)",
+    "\\bsla\\b",
+    "uptime (commitment|guarantee) of"
+   ]
+  },
+  {
+   "id": "warranty_period",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "There's a warranty",
+   "plain": "Faulty products are covered for a set time.",
+   "patterns": [
+    "(limited )?warranty (period )?(of|for) (\\d+|one|two|three|twelve)",
+    "warrant(s|y) (that )?(the )?products? (will be|are) free (from|of) defects"
+   ],
+   "fact": [
+    "Warranty",
+    "Covered for a while"
+   ]
+  },
+  {
+   "id": "warranty_void",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Easy ways to void the warranty",
+   "plain": "Opening, repairing or modifying it yourself can void the warranty.",
+   "patterns": [
+    "(void|voids|invalidate) (the|this|any) warranty",
+    "warranty (is |will be )?(void|invalid)"
+   ]
+  },
+  {
+   "id": "right_to_repair",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Repairs only through them",
+   "plain": "You must use their repair service or parts, or lose coverage.",
+   "patterns": [
+    "(authori[sz]ed|approved) (service|repair) (centers?|centres?|providers?)",
+    "repairs? (must|shall) be (performed|carried out) by"
+   ]
+  },
+  {
+   "id": "third_party_terms",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Other companies' rules apply too",
+   "plain": "Using parts of the service means agreeing to other companies' terms as well.",
+   "patterns": [
+    "third[- ]party (terms|services|providers?) (are|is) (subject|governed)",
+    "subject to (the|their) (own )?(terms|policies) of (any|the) third"
+   ]
+  },
+  {
+   "id": "emergency_safety",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Safety and emergency info",
+   "plain": "They explain what to do in an emergency or how they handle safety issues.",
+   "patterns": [
+    "in (case of|an) emergency",
+    "safety (features|policy|team|incident)",
+    "report (a )?(safety|security) (issue|incident|concern)"
+   ]
+  },
+  {
+   "id": "accessibility",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Accessibility commitment",
+   "plain": "They commit to making the service usable for people with disabilities.",
+   "patterns": [
+    "accessibility (statement|commitment|standards?)",
+    "\\bwcag\\b",
+    "reasonable accommodations?"
+   ]
+  },
+  {
+   "id": "parental_consent",
+   "category": "Your rights",
+   "severity": "heads_up",
+   "title": "Rules for kids",
+   "plain": "Children need a parent's permission or can't use it at all.",
+   "patterns": [
+    "parental (consent|permission|supervision)",
+    "under the age of (13|16|18)",
+    "\\bcoppa\\b",
+    "minors? (may not|must have)"
+   ]
+  },
+  {
+   "id": "moderation_appeal",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "You can appeal decisions",
+   "plain": "If they remove content or ban you, there's a way to appeal.",
+   "patterns": [
+    "(right to |you (may|can) )?appeal (the|this|our|any) (decision|removal|suspension)",
+    "appeals? process"
+   ]
+  },
+  {
+   "id": "liquidated_damages",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "Set penalties in advance",
+   "plain": "The contract names fixed amounts you'll owe if you break it, whatever the real cost.",
+   "patterns": [
+    "liquidated damages",
+    "agreed (sum|damages)",
+    "pre-?estimate of (loss|damages)"
+   ],
+   "ask": "How much would I owe if I broke this early?"
+  },
+  {
+   "id": "attorney_fees",
+   "category": "Your rights",
+   "severity": "red_flag",
+   "title": "You might pay their lawyers",
+   "plain": "If there's a legal fight, you could be on the hook for their legal costs.",
+   "patterns": [
+    "(attorneys?'?|lawyers?'?|legal) (fees|costs) (and costs )?(shall|will|incurred)",
+    "prevailing party (shall|will) be entitled"
+   ],
+   "ask": "Who pays legal costs if there's a dispute?"
+  },
+  {
+   "id": "biometric",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "Face, voice or fingerprint data",
+   "plain": "They collect biometric data like face scans, voiceprints or fingerprints.",
+   "patterns": [
+    "biometric",
+    "face(print| scan|ial (recognition|geometry))",
+    "voice ?print",
+    "fingerprints?"
+   ],
+   "ask": "How is my biometric data stored and when is it deleted?"
+  },
+  {
+   "id": "precise_location",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "They track where you are",
+   "plain": "They collect your precise location, sometimes even in the background.",
+   "patterns": [
+    "precise (geo)?location",
+    "(gps|geolocation) data",
+    "location (data|information) (even )?when (the app is )?(closed|not in use|in the background)"
+   ],
+   "ask": "Can I use it without sharing my location?"
+  },
+  {
+   "id": "health_data",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "Health information",
+   "plain": "They collect health or medical details, which are very sensitive.",
+   "patterns": [
+    "health (data|information|records)",
+    "medical (data|information|history|conditions?)",
+    "(skin|hair) (type|concerns?|conditions?)",
+    "menstrual|fertility|pregnan"
+   ],
+   "ask": "Who can see my health information?"
+  },
+  {
+   "id": "contacts_upload",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "They read your contacts",
+   "plain": "The app may upload your phone contacts or address book.",
+   "patterns": [
+    "(access|upload|collect) (your )?(contacts|address book|contact list)",
+    "contact (list|information) (of|from) your (device|phone)"
+   ]
+  },
+  {
+   "id": "cross_device",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "They link your devices",
+   "plain": "They connect your activity across phones, laptops and other devices.",
+   "patterns": [
+    "cross[- ]device",
+    "(link|associate|connect) (your )?(devices|browsers)",
+    "device graph"
+   ]
+  },
+  {
+   "id": "data_brokers",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "Data from brokers",
+   "plain": "They buy extra information about you from data brokers or other sources.",
+   "patterns": [
+    "data brokers?",
+    "(obtain|receive|collect) (information|data) (about you )?from (third[- ]part(y|ies)|other sources|partners)"
+   ]
+  },
+  {
+   "id": "data_transfer_abroad",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "Your data goes abroad",
+   "plain": "Your information may be stored or processed in other countries with different protections.",
+   "patterns": [
+    "(transfer|store|process)(ed|ing)? (your )?(personal )?(data|information) (outside|to (other )?countries)",
+    "international (data )?transfers?",
+    "standard contractual clauses"
+   ]
+  },
+  {
+   "id": "data_breach_notice",
+   "category": "Your data",
+   "severity": "good_news",
+   "title": "They'll tell you about breaches",
+   "plain": "If your data is exposed, they commit to letting you know.",
+   "patterns": [
+    "(notify|inform) you (of|about|in the event of) (a |any )?(data |security )?breach",
+    "breach notification"
+   ]
+  },
+  {
+   "id": "camera_mic",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "Camera and microphone access",
+   "plain": "The app asks to use your camera or microphone.",
+   "patterns": [
+    "(access|use) (to )?(your )?(camera|microphone|photos|photo library)",
+    "audio recordings?"
+   ]
+  },
+  {
+   "id": "children_data",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "Children's data",
+   "plain": "They explain how they handle information from kids.",
+   "patterns": [
+    "children'?s (privacy|data|personal information)",
+    "information from children under"
+   ]
+  },
+  {
+   "id": "anonymized_data",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "'Anonymous' data is theirs to use",
+   "plain": "Data with your name removed can be used or sold freely, and isn't always truly anonymous.",
+   "patterns": [
+    "(anonymi[sz]ed|de-?identified|aggregated) (data|information)",
+    "aggregate(d)? (and|or) (anonymous|de-?identified)"
+   ]
+  },
+  {
+   "id": "sensitive_data",
+   "category": "Your data",
+   "severity": "red_flag",
+   "title": "Sensitive personal details",
+   "plain": "They may collect sensitive details like race, religion, sexual orientation or finances.",
+   "patterns": [
+    "sensitive (personal )?(data|information)",
+    "(racial|ethnic) origin",
+    "sexual orientation",
+    "religious (or philosophical )?beliefs",
+    "financial (account|information) (numbers|details)"
+   ]
+  },
+  {
+   "id": "credit_check",
+   "category": "Your data",
+   "severity": "heads_up",
+   "title": "They may check your credit",
+   "plain": "They can run a credit check, which may show up on your credit file.",
+   "patterns": [
+    "credit (check|report|history|bureau|reference agenc)",
+    "consumer report"
+   ],
+   "ask": "Is it a soft or hard credit check?"
+  },
+  {
+   "id": "cancel_by_phone",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Cancelling is a hassle",
+   "plain": "You can't just cancel online; you must call, write, or go in person.",
+   "patterns": [
+    "cancel(lation)? (requests? )?(must|can only) be (made|submitted) (by|in|via) (phone|telephone|mail|post|writing|person)",
+    "(call|contact) (us|customer service) to cancel"
+   ],
+   "ask": "Can I cancel online?"
+  },
+  {
+   "id": "auto_ship",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Repeat deliveries",
+   "plain": "You'll get regular shipments and charges until you stop them.",
+   "patterns": [
+    "auto[- ]?(ship|delivery|replenish)",
+    "subscribe (and|&) save",
+    "recurring (shipments?|deliveries|orders)"
+   ],
+   "ask": "How do I skip or stop deliveries?"
+  },
+  {
+   "id": "exclusivity",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "You can't use competitors",
+   "plain": "You agree to only use them, or not to work with competitors.",
+   "patterns": [
+    "exclusiv(e|ely|ity) (basis|provider|arrangement|dealing)",
+    "(shall|will|may) not (engage|use|contract with) (any )?(other|competing)"
+   ]
+  },
+  {
+   "id": "work_for_hire",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "They own what you create",
+   "plain": "Work you make while under this agreement belongs to them.",
+   "patterns": [
+    "work(s)? (made )?for hire",
+    "(assign|transfer)s? (to (the )?company )?all (right, title and interest|intellectual property)",
+    "inventions? assignment"
+   ],
+   "ask": "Do I keep anything I create on my own time?"
+  },
+  {
+   "id": "confidentiality",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You must keep things secret",
+   "plain": "You agree to keep certain information confidential, sometimes for years.",
+   "patterns": [
+    "confidential(ity)? (obligations?|information|agreement)",
+    "non-?disclosure",
+    "\\bnda\\b"
+   ]
+  },
+  {
+   "id": "non_solicit",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You can't poach their people",
+   "plain": "After leaving, you can't recruit their staff or approach their clients.",
+   "patterns": [
+    "non-?solicit",
+    "(solicit|recruit|hire) (any )?(employees?|clients?|customers?)"
+   ]
+  },
+  {
+   "id": "probation",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Probation period",
+   "plain": "There's a trial period where you can be let go more easily.",
+   "patterns": [
+    "probation(ary)? period"
+   ]
+  },
+  {
+   "id": "overtime_unpaid",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Extra hours may be unpaid",
+   "plain": "You may be expected to work extra hours without extra pay.",
+   "patterns": [
+    "(salary|compensation) (is )?(inclusive of|includes) (all )?(overtime|additional hours)",
+    "no (additional|extra) (pay|compensation) for (overtime|additional hours)"
+   ]
+  },
+  {
+   "id": "clawback",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "They can take money back",
+   "plain": "Bonuses, commissions or relocation money must be paid back in some cases.",
+   "patterns": [
+    "claw[- ]?back",
+    "repay (the|any|all) (bonus|signing|relocation|training)",
+    "(bonus|commission) (shall|will) be (forfeited|repaid)"
+   ],
+   "ask": "When would I have to pay money back?"
+  },
+  {
+   "id": "guest_liability",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You're responsible for guests",
+   "plain": "You're on the hook for anything your guests, kids or other users do.",
+   "patterns": [
+    "responsible for (the (acts|conduct) of )?(your )?(guests|visitors|invitees|children|household)",
+    "(all|any) (activity|use) (that occurs )?under your account"
+   ]
+  },
+  {
+   "id": "rent_increase",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Rent can go up",
+   "plain": "They explain when and by how much rent can be raised.",
+   "patterns": [
+    "rent (increase|escalation|review|adjustment)",
+    "increase (the )?rent"
+   ],
+   "ask": "How often and by how much can rent go up?"
+  },
+  {
+   "id": "maintenance_tenant",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Repairs fall on you",
+   "plain": "You may have to pay for repairs or upkeep yourself.",
+   "patterns": [
+    "tenant (shall|will|is) (be )?responsible for (all )?(repairs?|maintenance)",
+    "(at|is) (the )?tenant'?s (sole )?(cost|expense)"
+   ]
+  },
+  {
+   "id": "subletting",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "No subletting without OK",
+   "plain": "You can't rent out the place or share it without permission.",
+   "patterns": [
+    "sub-?let",
+    "sublease",
+    "assign (this|the) lease"
+   ]
+  },
+  {
+   "id": "pet_policy",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Rules for pets",
+   "plain": "There are rules, fees or bans for pets.",
+   "patterns": [
+    "\\bpets?\\b.{0,40}(not permitted|prohibited|fee|deposit|allowed)",
+    "pet (fee|deposit|rent|policy)"
+   ]
+  },
+  {
+   "id": "insurance_required",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You must have insurance",
+   "plain": "You're required to carry your own insurance.",
+   "patterns": [
+    "(must|shall) (obtain|maintain|carry) (renter'?s? |tenant'?s? |liability )?insurance",
+    "proof of insurance"
+   ]
+  },
+  {
+   "id": "excess_deductible",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You pay the first part",
+   "plain": "In a claim, you pay a set amount (the excess or deductible) before they pay.",
+   "patterns": [
+    "\\b(excess|deductible)\\b.{0,30}(applies|of|amount)",
+    "(you|insured) (must|will) pay (the )?(first|excess|deductible)"
+   ],
+   "ask": "How much is the excess or deductible?"
+  },
+  {
+   "id": "exclusions",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Things that aren't covered",
+   "plain": "There's a list of situations they won't cover, so check it carefully.",
+   "patterns": [
+    "exclusions? (apply|include)",
+    "we will not (pay|cover)",
+    "(is|are|does|do|will) not (be )?covered"
+   ],
+   "ask": "What are the biggest things that aren't covered?"
+  },
+  {
+   "id": "pre_existing",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Pre-existing conditions excluded",
+   "plain": "Problems you already had before signing up may not be covered.",
+   "patterns": [
+    "pre-?existing (medical )?(conditions?|damage|defects?)"
+   ]
+  },
+  {
+   "id": "waiting_period",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Waiting period before cover",
+   "plain": "You have to wait a while before you're covered or can claim.",
+   "patterns": [
+    "waiting period",
+    "(no |not )?(cover(age)?|benefits?) (during|until|for) the first \\d+"
+   ]
+  },
+  {
+   "id": "vehicle_damage",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "You pay for damage",
+   "plain": "If the car, bike or item is damaged while you have it, you pay.",
+   "patterns": [
+    "(you|renter|customer) (are|is|will be|shall be) (responsible|liable) for (any |all )?(damage|loss|theft)",
+    "damage (waiver|protection|fee)"
+   ],
+   "ask": "What would damage cost me, and is there cover?"
+  },
+  {
+   "id": "cancellation_window_booking",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Cancel late, pay anyway",
+   "plain": "Cancel a booking too close to the date and you lose money.",
+   "patterns": [
+    "cancel(led|lations?)? (less|within|fewer) than \\d+ (hours?|days?)",
+    "late cancellation (fee|charge)",
+    "no[- ]show (fee|charge|policy)"
+   ],
+   "ask": "Until when can I cancel for free?",
+   "fact": [
+    "Booking",
+    "Late-cancel fees"
+   ]
+  },
+  {
+   "id": "virtual_currency",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Virtual coins have no real value",
+   "plain": "In-game coins or tokens aren't real money and can be changed or removed.",
+   "patterns": [
+    "virtual (currency|items?|goods|coins?)",
+    "in-?game (currency|items?|purchases)",
+    "(gems|coins|tokens|credits) (have|has) no (real[- ]world|monetary) value"
+   ],
+   "fact": [
+    "Virtual items",
+    "No real value"
+   ]
+  },
+  {
+   "id": "loot_boxes",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Random paid rewards",
+   "plain": "Some purchases give random items, so you might not get what you want.",
+   "patterns": [
+    "loot ?box",
+    "random(ized)? (items?|rewards?|drops)",
+    "gacha",
+    "drop rates?"
+   ]
+  },
+  {
+   "id": "cheating_ban",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Strict anti-cheat bans",
+   "plain": "Using mods, cheats or third-party tools can get you banned permanently.",
+   "patterns": [
+    "(cheat|hack|exploit|bot|mod)s?(ting)? .{0,40}(ban|terminat|suspend)",
+    "anti-?cheat"
+   ]
+  },
+  {
+   "id": "allergen",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Allergens aren't guaranteed",
+   "plain": "They can't promise food is free from allergens, so take care if you have allergies.",
+   "patterns": [
+    "allergen",
+    "cross[- ]contaminat",
+    "may contain (traces|nuts)"
+   ]
+  },
+  {
+   "id": "missing_order",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Rules for missing or wrong orders",
+   "plain": "There are limits on how and when you can report a missing or wrong order.",
+   "patterns": [
+    "(missing|incorrect|wrong|damaged) (items?|orders?)",
+    "report (any )?(issues?|problems?) within"
+   ],
+   "ask": "How quickly do I need to report a problem with an order?"
+  },
+  {
+   "id": "patch_test",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Do a patch test",
+   "plain": "They recommend testing products on your skin first and won't be responsible for reactions.",
+   "patterns": [
+    "patch test",
+    "(allergic|adverse|skin) reactions?",
+    "discontinue use (if|immediately)"
+   ]
+  },
+  {
+   "id": "opened_returns",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Opened items can't be returned",
+   "plain": "Once a product is opened or used, you usually can't send it back.",
+   "patterns": [
+    "(opened|used|unsealed|worn) (products?|items?|goods) (cannot|can't|may not|are not eligible to) be returned",
+    "(must be|in) (unopened|unused|original|sealed) (condition|packaging)"
+   ],
+   "fact": [
+    "Returns",
+    "Unopened only"
+   ]
+  },
+  {
+   "id": "results_not_guaranteed",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Results aren't promised",
+   "plain": "They don't guarantee the product or service will work for you.",
+   "patterns": [
+    "results? (may )?vary",
+    "(not|no) guarantee(d)? (of )?(results|outcomes|success)",
+    "individual results"
+   ]
+  },
+  {
+   "id": "not_medical_advice",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Not medical or professional advice",
+   "plain": "The info is general and not a replacement for a doctor or professional.",
+   "patterns": [
+    "not (a substitute for|intended as|medical|professional|financial|legal) advice",
+    "consult (your|a) (doctor|physician|healthcare|professional)"
+   ]
+  },
+  {
+   "id": "investment_risk",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "You can lose money",
+   "plain": "Investing or trading carries risk, and you could lose some or all of your money.",
+   "patterns": [
+    "(risk|possibility) of (losing|loss of) (some or all|your|the entire)",
+    "past performance (is not|does not)",
+    "(crypto|digital) assets? (are|is) (highly )?(volatile|risky)"
+   ]
+  },
+  {
+   "id": "not_insured_deposits",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "Your money isn't protected",
+   "plain": "Balances may not be covered by deposit insurance if the company fails.",
+   "patterns": [
+    "not (fdic|cdic)[- ]insured",
+    "(not|no) (deposit )?(insurance|protection) (scheme|coverage)",
+    "not protected by"
+   ]
+  },
+  {
+   "id": "withdrawal_limits",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Limits on taking your money out",
+   "plain": "There are limits, delays or fees on withdrawing your money.",
+   "patterns": [
+    "withdrawal (limits?|fees?|restrictions?|delays?)",
+    "(hold|freeze|delay) (your )?(funds|withdrawals|payouts)"
+   ],
+   "ask": "How fast can I take my money out?"
+  },
+  {
+   "id": "payout_hold",
+   "category": "Commitment",
+   "severity": "red_flag",
+   "title": "They can hold your money",
+   "plain": "They can freeze or hold your funds or payouts, sometimes for months.",
+   "patterns": [
+    "(reserve|hold|freeze) (on )?(your )?(funds|payouts|balance|account)",
+    "rolling reserve"
+   ]
+  },
+  {
+   "id": "delivery_estimate",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Delivery dates aren't promises",
+   "plain": "Delivery times are estimates, and delays usually don't earn you anything.",
+   "patterns": [
+    "delivery (dates?|times?) (are|is) (estimates?|approximate|not guaranteed)",
+    "not (be )?(liable|responsible) for (any )?(delays?|late delivery)"
+   ]
+  },
+  {
+   "id": "risk_of_loss",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Lost in the post may be your problem",
+   "plain": "Once the item ships, it may be your risk if it's lost or damaged.",
+   "patterns": [
+    "risk of loss",
+    "title (and risk )?pass(es)? to you upon"
+   ]
+  },
+  {
+   "id": "in_app_purchases",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "In-app purchases",
+   "plain": "The app sells extras inside it, which can add up.",
+   "patterns": [
+    "in-?app purchases?",
+    "(premium|paid) features?"
+   ]
+  },
+  {
+   "id": "ai_outputs",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "AI answers can be wrong",
+   "plain": "The service uses AI, and its answers can be wrong; you're responsible for checking them.",
+   "patterns": [
+    "(ai|artificial intelligence|machine learning|generated) (outputs?|content|responses?)",
+    "(outputs?|responses?) may (be (inaccurate|incorrect)|contain errors)"
+   ]
+  },
+  {
+   "id": "beta_features",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Test features may break",
+   "plain": "Beta or preview features may change, break or disappear.",
+   "patterns": [
+    "\\bbeta\\b|preview (features?|services?)|early access",
+    "experimental features?"
+   ]
+  },
+  {
+   "id": "auto_updates",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Updates install on their own",
+   "plain": "The app or device updates itself, which can change or remove features.",
+   "patterns": [
+    "automatic(ally)? (updates?|download and install)",
+    "(may|will) (automatically )?(update|upgrade) (the )?(software|app|firmware)"
+   ]
+  },
+  {
+   "id": "device_lock",
+   "category": "Commitment",
+   "severity": "heads_up",
+   "title": "Locked to their network or device",
+   "plain": "The device or service is locked to them until conditions are met.",
+   "patterns": [
+    "(device|phone|handset) (is )?(locked|unlock)",
+    "sim[- ]lock",
+    "network lock"
+   ]
+  },
+  {
+   "id": "membership_freeze",
+   "category": "Commitment",
+   "severity": "good_news",
+   "title": "You can pause it",
+   "plain": "You can freeze or pause your membership instead of cancelling.",
+   "patterns": [
+    "(freeze|pause|suspend) (your )?(membership|subscription|account) (for|up to)",
+    "(membership|subscription) (freeze|pause)"
+   ],
+   "fact": [
+    "Pause",
+    "Allowed"
+   ]
+  },
+  {
+   "id": "cancel_online",
+   "category": "Commitment",
+   "severity": "good_news",
+   "title": "Cancel online",
+   "plain": "You can cancel yourself online or in the app.",
+   "patterns": [
+    "cancel (at any time )?(online|in (the )?app|through (your )?account settings|from your account)",
+    "(click|tap) cancel"
+   ],
+   "fact": [
+    "Cancel",
+    "Online, any time"
+   ]
+  },
+  {
+   "id": "prorated_refund",
+   "category": "Money",
+   "severity": "good_news",
+   "title": "Pro-rated refunds",
+   "plain": "If you cancel mid-period you get back money for the unused part.",
+   "patterns": [
+    "pro-?rat(a|ed)(ly)? (refund|credit)",
+    "refund (for|of) (the )?unused (portion|time)"
+   ],
+   "fact": [
+    "Refunds",
+    "Pro-rated"
+   ]
+  },
+  {
+   "id": "human_review",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "A real person can review it",
+   "plain": "You can ask for a human to review automated decisions about you.",
+   "patterns": [
+    "human (review|intervention|oversight)",
+    "(not|never) (be )?subject to (a decision based solely on )?automated"
+   ]
+  },
+  {
+   "id": "ombudsman",
+   "category": "Your rights",
+   "severity": "good_news",
+   "title": "Free outside help with complaints",
+   "plain": "You can take complaints to an independent ombudsman or regulator for free.",
+   "patterns": [
+    "ombudsman",
+    "(file|lodge|make) a complaint with (the )?(regulator|authority|commission|bureau)",
+    "alternative dispute resolution"
+   ]
+  },
+  {
+   "id": "do_not_sell",
+   "category": "Your data",
+   "severity": "good_news",
+   "title": "Opt out of data sale",
+   "plain": "There's a way to tell them not to sell or share your data.",
+   "patterns": [
+    "do not (sell|share) my (personal )?information",
+    "opt[- ]out of (the )?(sale|sharing)",
+    "global privacy control"
+   ]
+  }
+ ],
+ "jargon": [
+  {
+   "term": "Arbitration",
+   "match": "arbitrat",
+   "meaning": "A private referee settles disputes instead of a court. Usually binding, with little room to appeal."
+  },
+  {
+   "term": "Indemnify",
+   "match": "indemnif",
+   "meaning": "You promise to cover their losses or legal costs if your actions get them sued."
+  },
+  {
+   "term": "Hold harmless",
+   "match": "hold harmless|harmless",
+   "meaning": "You won't blame or sue them for certain problems."
+  },
+  {
+   "term": "Liability",
+   "match": "liabilit",
+   "meaning": "Legal responsibility to pay for harm or losses."
+  },
+  {
+   "term": "Limitation of liability",
+   "match": "limitation of liability",
+   "meaning": "A cap on how much they'd ever have to pay you."
+  },
+  {
+   "term": "Consequential damages",
+   "match": "consequential",
+   "meaning": "Knock-on losses (like lost income) caused indirectly. They usually refuse to pay these."
+  },
+  {
+   "term": "Liquidated damages",
+   "match": "liquidated damages",
+   "meaning": "A pre-set penalty amount you'd pay if you break the deal."
+  },
+  {
+   "term": "Warranty",
+   "match": "warrant",
+   "meaning": "A promise that something will work as described."
+  },
+  {
+   "term": "As is",
+   "match": "as is|as-is",
+   "meaning": "You get it in whatever state it's in — no guarantees."
+  },
+  {
+   "term": "Jurisdiction",
+   "match": "jurisdiction",
+   "meaning": "Which courts or region's laws get to decide disputes."
+  },
+  {
+   "term": "Governing law",
+   "match": "governing law|governed by",
+   "meaning": "The specific state or country whose laws apply to the contract."
+  },
+  {
+   "term": "Severability",
+   "match": "severab",
+   "meaning": "If one part is ruled invalid, the rest still counts."
+  },
+  {
+   "term": "Force majeure",
+   "match": "force majeure",
+   "meaning": "Nobody's to blame for things like disasters, wars or pandemics that stop the deal working."
+  },
+  {
+   "term": "Waiver",
+   "match": "waive",
+   "meaning": "Giving up a right you'd otherwise have."
+  },
+  {
+   "term": "Class action",
+   "match": "class action|class-action",
+   "meaning": "A lawsuit where many affected people sue together."
+  },
+  {
+   "term": "Perpetual",
+   "match": "perpetual",
+   "meaning": "Forever. It doesn't expire."
+  },
+  {
+   "term": "Irrevocable",
+   "match": "irrevocable",
+   "meaning": "Can't be taken back or cancelled once given."
+  },
+  {
+   "term": "Royalty-free",
+   "match": "royalty-free|royalty free",
+   "meaning": "They don't have to pay you anything for using it."
+  },
+  {
+   "term": "Sublicense",
+   "match": "sublicens",
+   "meaning": "They can pass the rights you gave them on to other companies."
+  },
+  {
+   "term": "Assign",
+   "match": "assign",
+   "meaning": "Transfer the contract or rights to someone else."
+  },
+  {
+   "term": "Terminate",
+   "match": "terminat",
+   "meaning": "End the agreement."
+  },
+  {
+   "term": "Breach",
+   "match": "breach",
+   "meaning": "Breaking a promise made in the contract."
+  },
+  {
+   "term": "Remedy",
+   "match": "remed",
+   "meaning": "What you can do or get if the other side breaks the deal."
+  },
+  {
+   "term": "Third party",
+   "match": "third part",
+   "meaning": "Anyone who isn't you or them — partners, vendors, advertisers."
+  },
+  {
+   "term": "Affiliates",
+   "match": "affiliate",
+   "meaning": "Companies related to them, like parent companies or sister brands."
+  },
+  {
+   "term": "Sole discretion",
+   "match": "sole discretion",
+   "meaning": "They decide, on their own, with no need to justify it."
+  },
+  {
+   "term": "Notwithstanding",
+   "match": "notwithstanding",
+   "meaning": "\"Despite\" — this part wins even if another part says otherwise."
+  },
+  {
+   "term": "Hereinafter",
+   "match": "hereinafter",
+   "meaning": "\"From now on in this document, called...\""
+  },
+  {
+   "term": "Pursuant to",
+   "match": "pursuant to",
+   "meaning": "\"According to\" or \"under\"."
+  },
+  {
+   "term": "In lieu of",
+   "match": "in lieu of",
+   "meaning": "\"Instead of\"."
+  },
+  {
+   "term": "Pro rata",
+   "match": "pro rata|prorat",
+   "meaning": "Split proportionally — e.g. only paying for the days you used."
+  },
+  {
+   "term": "Jointly and severally",
+   "match": "jointly and severally",
+   "meaning": "Each person can be made to pay the whole amount, not just their share."
+  },
+  {
+   "term": "Personal guarantee",
+   "match": "personal guarant|personally guarant",
+   "meaning": "You personally promise to pay if the business can't."
+  },
+  {
+   "term": "Entire agreement",
+   "match": "entire agreement",
+   "meaning": "Only what's written here counts — verbal promises don't."
+  },
+  {
+   "term": "Counterparts",
+   "match": "counterpart",
+   "meaning": "Copies signed separately still form one valid contract."
+  },
+  {
+   "term": "Escrow",
+   "match": "escrow",
+   "meaning": "Money held by a neutral party until conditions are met."
+  },
+  {
+   "term": "Lien",
+   "match": "\\blien",
+   "meaning": "A legal claim on your property until a debt is paid."
+  },
+  {
+   "term": "Covenant",
+   "match": "covenant",
+   "meaning": "A formal promise to do (or not do) something."
+  },
+  {
+   "term": "Accrue",
+   "match": "accru",
+   "meaning": "Builds up over time, like interest or fees adding up."
+  },
+  {
+   "term": "Addendum",
+   "match": "addend",
+   "meaning": "An extra page added to the contract that changes or adds terms."
+  },
+  {
+   "term": "Amendment",
+   "match": "amendment",
+   "meaning": "A change to the agreement."
+  },
+  {
+   "term": "APR",
+   "match": "\\bapr\\b",
+   "meaning": "Annual percentage rate: the yearly cost of borrowing, including interest."
+  },
+  {
+   "term": "Arrears",
+   "match": "arrears",
+   "meaning": "Money that's overdue."
+  },
+  {
+   "term": "Assignee",
+   "match": "assignee",
+   "meaning": "The person or company a contract is handed over to."
+  },
+  {
+   "term": "Attorney-in-fact",
+   "match": "attorney-in-fact",
+   "meaning": "Someone legally allowed to act on your behalf."
+  },
+  {
+   "term": "Bona fide",
+   "match": "bona fide",
+   "meaning": "Genuine, in good faith."
+  },
+  {
+   "term": "Chargeback",
+   "match": "chargeback",
+   "meaning": "Your bank reversing a card payment you disputed."
+  },
+  {
+   "term": "Collateral",
+   "match": "collateral",
+   "meaning": "Something you put up that they can take if you don't pay."
+  },
+  {
+   "term": "Commencement",
+   "match": "commencement",
+   "meaning": "The start date."
+  },
+  {
+   "term": "Condition precedent",
+   "match": "condition precedent",
+   "meaning": "Something that must happen before the deal kicks in."
+  },
+  {
+   "term": "Consideration",
+   "match": "\\bconsideration\\b",
+   "meaning": "What each side gives the other, like money for a service."
+  },
+  {
+   "term": "Cookie",
+   "match": "\\bcookies?\\b",
+   "meaning": "A small file a website saves on your device to remember or track you."
+  },
+  {
+   "term": "Cure period",
+   "match": "cure period",
+   "meaning": "Time you're given to fix a problem before they act."
+  },
+  {
+   "term": "Damages",
+   "match": "\\bdamages\\b",
+   "meaning": "Money paid to make up for harm or loss."
+  },
+  {
+   "term": "Data controller",
+   "match": "data controller",
+   "meaning": "The company that decides what happens to your data."
+  },
+  {
+   "term": "Data processor",
+   "match": "data processor",
+   "meaning": "A company that handles data for another company."
+  },
+  {
+   "term": "Deductible",
+   "match": "deductible",
+   "meaning": "The part of a claim you pay before insurance pays the rest."
+  },
+  {
+   "term": "De-identified",
+   "match": "de-?identified",
+   "meaning": "Data with your name and obvious details removed."
+  },
+  {
+   "term": "Disclaimer",
+   "match": "disclaim",
+   "meaning": "A statement where they say they aren't responsible for something."
+  },
+  {
+   "term": "Discretion",
+   "match": "discretion",
+   "meaning": "They get to decide, as they see fit."
+  },
+  {
+   "term": "Dispute resolution",
+   "match": "dispute resolution",
+   "meaning": "How disagreements get settled."
+  },
+  {
+   "term": "Due diligence",
+   "match": "due diligence",
+   "meaning": "Checking things carefully before agreeing."
+  },
+  {
+   "term": "Effective date",
+   "match": "effective date",
+   "meaning": "The date the terms start applying."
+  },
+  {
+   "term": "Encumbrance",
+   "match": "encumbranc",
+   "meaning": "A claim or debt attached to something, like a loan on a car."
+  },
+  {
+   "term": "EULA",
+   "match": "\\beula\\b",
+   "meaning": "End User Licence Agreement: the rules for using software."
+  },
+  {
+   "term": "Excess",
+   "match": "\\bexcess\\b",
+   "meaning": "The amount you pay toward an insurance claim (same as a deductible)."
+  },
+  {
+   "term": "Exclusion",
+   "match": "exclusion",
+   "meaning": "Something specifically not covered."
+  },
+  {
+   "term": "Execute",
+   "match": "\\bexecut(e|ed|ion) (this|the) agreement",
+   "meaning": "Sign and make it official."
+  },
+  {
+   "term": "Fiduciary",
+   "match": "fiduciar",
+   "meaning": "Someone trusted to act in your best interest."
+  },
+  {
+   "term": "Forfeit",
+   "match": "forfeit",
+   "meaning": "Lose something as a penalty."
+  },
+  {
+   "term": "Gross negligence",
+   "match": "gross negligence",
+   "meaning": "Extremely careless behaviour, much worse than an honest mistake."
+  },
+  {
+   "term": "Good faith",
+   "match": "good faith",
+   "meaning": "Honestly, without trying to trick anyone."
+  },
+  {
+   "term": "Grace period",
+   "match": "grace period",
+   "meaning": "Extra time after a deadline before a penalty applies."
+  },
+  {
+   "term": "Guarantor",
+   "match": "guarantor",
+   "meaning": "Someone who promises to pay if you can't."
+  },
+  {
+   "term": "Heirs and assigns",
+   "match": "heirs and assigns",
+   "meaning": "The people who inherit or take over the contract."
+  },
+  {
+   "term": "Indemnitee",
+   "match": "indemnitee",
+   "meaning": "The side being protected from costs."
+  },
+  {
+   "term": "Injunction",
+   "match": "injunction",
+   "meaning": "A court order to do or stop doing something."
+  },
+  {
+   "term": "Insolvency",
+   "match": "insolven",
+   "meaning": "When a company can't pay its debts."
+  },
+  {
+   "term": "Intellectual property",
+   "match": "intellectual property",
+   "meaning": "Creative and invented things: designs, logos, writing, code."
+  },
+  {
+   "term": "Joint tenancy",
+   "match": "joint tenancy",
+   "meaning": "Sharing a lease where everyone is responsible together."
+  },
+  {
+   "term": "Lessee",
+   "match": "lessee",
+   "meaning": "The person renting (often you)."
+  },
+  {
+   "term": "Lessor",
+   "match": "lessor",
+   "meaning": "The owner who rents it out."
+  },
+  {
+   "term": "Licensee",
+   "match": "licensee",
+   "meaning": "The one given permission to use something."
+  },
+  {
+   "term": "Material breach",
+   "match": "material breach",
+   "meaning": "A serious failure to follow the contract."
+  },
+  {
+   "term": "Mediation",
+   "match": "mediat",
+   "meaning": "A neutral person helps both sides agree; it isn't binding."
+  },
+  {
+   "term": "Merchantability",
+   "match": "merchantab",
+   "meaning": "A basic promise that a product works as you'd expect."
+  },
+  {
+   "term": "Misrepresentation",
+   "match": "misrepresent",
+   "meaning": "A false statement that led someone to agree."
+  },
+  {
+   "term": "Negligence",
+   "match": "negligen",
+   "meaning": "Carelessness that causes harm."
+  },
+  {
+   "term": "Net 30",
+   "match": "net 30|net thirty",
+   "meaning": "Payment is due within 30 days."
+  },
+  {
+   "term": "Non-exclusive",
+   "match": "non-?exclusive",
+   "meaning": "They can give the same rights to others too."
+  },
+  {
+   "term": "Novation",
+   "match": "novation",
+   "meaning": "Replacing one party or contract with another."
+  },
+  {
+   "term": "Null and void",
+   "match": "null and void",
+   "meaning": "Cancelled, with no legal effect."
+  },
+  {
+   "term": "Opt-in",
+   "match": "opt-?in",
+   "meaning": "You have to say yes before it happens."
+  },
+  {
+   "term": "Opt-out",
+   "match": "opt-?out",
+   "meaning": "It happens unless you say no."
+  },
+  {
+   "term": "Overage",
+   "match": "overage",
+   "meaning": "Charges for going over your limit."
+  },
+  {
+   "term": "Perpetuity",
+   "match": "perpetuity",
+   "meaning": "Forever."
+  },
+  {
+   "term": "Prevailing party",
+   "match": "prevailing party",
+   "meaning": "The side that wins a legal fight."
+  },
+  {
+   "term": "Principal",
+   "match": "\\bprincipal\\b",
+   "meaning": "The original amount borrowed, before interest."
+  },
+  {
+   "term": "Prior written consent",
+   "match": "prior written consent",
+   "meaning": "Their permission in writing, before you act."
+  },
+  {
+   "term": "Proprietary",
+   "match": "proprietar",
+   "meaning": "Owned by them and protected."
+  },
+  {
+   "term": "Quiet enjoyment",
+   "match": "quiet enjoyment",
+   "meaning": "Your right to use a rented place without being disturbed."
+  },
+  {
+   "term": "Recourse",
+   "match": "recourse",
+   "meaning": "A way to get help or compensation."
+  },
+  {
+   "term": "Reimburse",
+   "match": "reimburs",
+   "meaning": "Pay back money that was spent."
+  },
+  {
+   "term": "Release",
+   "match": "\\brelease (of|from) (all )?claims|\\bgeneral release",
+   "meaning": "Giving up the right to sue over something."
+  },
+  {
+   "term": "Renewal term",
+   "match": "renewal term",
+   "meaning": "The next period after the first one ends."
+  },
+  {
+   "term": "Representations",
+   "match": "representations",
+   "meaning": "Statements of fact each side says are true."
+  },
+  {
+   "term": "Rescind",
+   "match": "rescind|rescission",
+   "meaning": "Cancel the contract as if it never happened."
+  },
+  {
+   "term": "Retainer",
+   "match": "retainer",
+   "meaning": "Money paid upfront to secure someone's services."
+  },
+  {
+   "term": "Revocable",
+   "match": "\\brevocabl",
+   "meaning": "Can be taken back."
+  },
+  {
+   "term": "Security deposit",
+   "match": "security deposit",
+   "meaning": "Money held to cover damage or unpaid rent."
+  },
+  {
+   "term": "Service level",
+   "match": "service level",
+   "meaning": "The level of service they promise, like uptime."
+  },
+  {
+   "term": "Set-off",
+   "match": "set-?off",
+   "meaning": "They can subtract what you owe from what they owe you."
+  },
+  {
+   "term": "Statute of limitations",
+   "match": "statute of limitations",
+   "meaning": "The deadline for bringing a legal claim."
+  },
+  {
+   "term": "Subrogation",
+   "match": "subrogat",
+   "meaning": "Your insurer takes over your right to recover money from someone else."
+  },
+  {
+   "term": "Successor",
+   "match": "successor",
+   "meaning": "Whoever takes over the company or contract later."
+  },
+  {
+   "term": "Tenancy",
+   "match": "tenancy",
+   "meaning": "The period you rent a place."
+  },
+  {
+   "term": "Termination for convenience",
+   "match": "termination for convenience",
+   "meaning": "Ending the contract without needing a reason."
+  },
+  {
+   "term": "Time is of the essence",
+   "match": "time is of the essence",
+   "meaning": "Deadlines are strict; missing them is a breach."
+  },
+  {
+   "term": "Tort",
+   "match": "\\btorts?\\b",
+   "meaning": "Harm someone causes that you can sue for, outside a contract."
+  },
+  {
+   "term": "Unconscionable",
+   "match": "unconscionab",
+   "meaning": "So unfair a court may refuse to enforce it."
+  },
+  {
+   "term": "Underwriting",
+   "match": "underwrit",
+   "meaning": "How an insurer or lender decides whether to accept you and at what price."
+  },
+  {
+   "term": "Usury",
+   "match": "usur",
+   "meaning": "Charging an illegally high interest rate."
+  },
+  {
+   "term": "Vesting",
+   "match": "\\bvest(ing|ed)\\b",
+   "meaning": "Earning the full right to something over time, like shares."
+  },
+  {
+   "term": "Void",
+   "match": "\\bvoid\\b",
+   "meaning": "Has no legal effect."
+  },
+  {
+   "term": "Voidable",
+   "match": "voidable",
+   "meaning": "Can be cancelled by one side."
+  },
+  {
+   "term": "Whereas",
+   "match": "\\bwhereas\\b",
+   "meaning": "A fancy 'since' that explains background."
+  },
+  {
+   "term": "Without prejudice",
+   "match": "without prejudice",
+   "meaning": "Said in a way that can't be used against them later."
+  },
+  {
+   "term": "Work for hire",
+   "match": "works? (made )?for hire",
+   "meaning": "Work you create that legally belongs to whoever paid for it."
+  },
+  {
+   "term": "GDPR",
+   "match": "\\bgdpr\\b",
+   "meaning": "Europe's data protection law, giving you rights over your data."
+  },
+  {
+   "term": "CCPA",
+   "match": "\\bccpa\\b|\\bcpra\\b",
+   "meaning": "California's privacy law, letting you see, delete or stop the sale of your data."
+  },
+  {
+   "term": "PIPEDA",
+   "match": "pipeda",
+   "meaning": "Canada's privacy law for businesses."
+  },
+  {
+   "term": "Legitimate interest",
+   "match": "legitimate interests?",
+   "meaning": "A legal reason companies use to process your data without asking."
+  },
+  {
+   "term": "Data subject",
+   "match": "data subject",
+   "meaning": "You, the person the data is about."
+  },
+  {
+   "term": "Beacon",
+   "match": "beacons?",
+   "meaning": "Tiny invisible images used to track whether you opened emails or pages."
+  },
+  {
+   "term": "Fingerprinting",
+   "match": "fingerprinting",
+   "meaning": "Identifying your device from its settings, without cookies."
+  },
+  {
+   "term": "SDK",
+   "match": "\\bsdks?\\b",
+   "meaning": "Code from other companies built into an app, which may collect data."
+  },
+  {
+   "term": "Escalation clause",
+   "match": "escalation clause",
+   "meaning": "Lets a price go up automatically over time."
+  },
+  {
+   "term": "Auto-renewal",
+   "match": "auto-?renew",
+   "meaning": "It continues and charges again unless you cancel."
+  },
+  {
+   "term": "Pro-rated",
+   "match": "pro-?rated",
+   "meaning": "Calculated for just the part of the period you used."
+  },
+  {
+   "term": "Non-refundable",
+   "match": "non-?refundable",
+   "meaning": "You won't get this money back."
+  },
+  {
+   "term": "Restocking fee",
+   "match": "restocking fee",
+   "meaning": "A charge taken out of your refund for returns."
+  },
+  {
+   "term": "Lien holder",
+   "match": "lien ?holder",
+   "meaning": "The lender with a claim on the item until it's paid off."
+  },
+  {
+   "term": "Balloon payment",
+   "match": "balloon payment",
+   "meaning": "A big lump sum due at the end of a loan."
+  },
+  {
+   "term": "Amortization",
+   "match": "amorti[sz]",
+   "meaning": "Paying off a loan bit by bit over time."
+  },
+  {
+   "term": "Co-signer",
+   "match": "co-?sign",
+   "meaning": "Someone who's equally on the hook for the debt."
+  }
+ ]
 }

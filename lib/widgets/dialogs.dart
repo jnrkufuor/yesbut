@@ -42,7 +42,7 @@ Future<bool> confirmLeave(BuildContext context, {String? message, bool exitApp =
   final ok = await _sheet<bool>(
     context,
     (ctx) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _sheetTitle(exitApp ? 'Leave ' : 'Leave this ', exitApp ? 'YesBut?' : 'page?'),
+      _sheetTitle(exitApp ? 'Leave ' : 'Leave this ', exitApp ? 'Yes,But?' : 'page?'),
       const SizedBox(height: 8),
       Text(
         message ?? (exitApp ? 'Your checks stay saved on this phone.' : 'You can always come back to it.'),
@@ -51,7 +51,19 @@ Future<bool> confirmLeave(BuildContext context, {String? message, bool exitApp =
       const SizedBox(height: 22),
       BigButton(label: 'Stay', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
       const SizedBox(height: 8),
-      BigButton(label: 'Leave', color: GColors.red, onTap: () => Navigator.pop(ctx, true)),
+      // Quiet on purpose: outlined in red, so Stay is the obvious choice.
+      Pressable(
+        onTap: () => Navigator.pop(ctx, true),
+        child: Container(
+          height: 58,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(99),
+            border: Border.all(color: GColors.red, width: 1),
+          ),
+          child: const Text('Leave', style: TextStyle(color: GColors.red, fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ),
     ]),
   );
   return ok ?? false;

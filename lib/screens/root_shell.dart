@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
@@ -89,24 +91,32 @@ class PillNav extends StatefulWidget {
   State<PillNav> createState() => _PillNavState();
 }
 
-class _PillNavState extends State<PillNav> {
+class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   static const _icons = ['check', 'search', 'eye', 'history'];
   static const _labels = ['Check', 'Find', 'Live', 'History'];
   static const _w = 330.0;
   static const _h = 70.0;
   static const _btn = 52.0;
   static const _pad = 9.0; // same inset on every side so the circle sits dead centre
-  bool _moving = false;
+  static const _travel = Cubic(0.3, 1.25, 0.5, 1);
+
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 620), value: 1);
+  late double _from = _x(widget.index);
 
   @override
   void didUpdateWidget(PillNav old) {
     super.didUpdateWidget(old);
     if (old.index != widget.index) {
-      setState(() => _moving = true);
-      Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) setState(() => _moving = false);
-      });
+      _from = _bubbleX(); // start from wherever the bubble is right now
+      _c.forward(from: 0);
     }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
   }
 
   double _x(int i) {
@@ -114,8 +124,13 @@ class _PillNavState extends State<PillNav> {
     return _pad + i * (_btn + gap);
   }
 
+  // Travel takes the first 62% of the animation; the icon jiggles after.
+  double get _move => (_c.value / 0.62).clamp(0.0, 1.0);
+  double _bubbleX() => _from + (_x(widget.index) - _from) * _travel.transform(_move);
+
   @override
   Widget build(BuildContext context) {
+    final reduce = MediaQuery.disableAnimationsOf(context);
     return Container(
       width: _w,
       height: _h,
@@ -124,51 +139,68 @@ class _PillNavState extends State<PillNav> {
         borderRadius: BorderRadius.circular(99),
         boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.18), blurRadius: 24, offset: const Offset(0, 10))],
       ),
-      child: Stack(children: [
-        AnimatedPositioned(
-          duration: const Duration(milliseconds: 420),
-          curve: const Cubic(0.3, 1.3, 0.5, 1),
-          left: _x(widget.index),
-          top: (_h - _btn) / 2,
-          width: _btn,
-          height: _btn,
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 200),
-            scale: _moving ? 1.1 : 1,
-            child: const DecoratedBox(
-              decoration: BoxDecoration(color: GColors.white, shape: BoxShape.circle),
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final to = _x(widget.index);
+          final dist = (to - _from).abs();
+          // Speed stretches the bubble into a pill along its path, then it
+          // settles back into a circle as it lands.
+          final stretch = reduce ? 0.0 : math.sin(math.pi * _move) * math.min(34, dist * 0.22);
+          final bw = _btn + stretch;
+          final bh = _btn - stretch * 0.22;
+          final lead = (to > _from ? 1 : -1) * stretch * 0.18; // leans into the direction of travel
+          final cx = (reduce ? to : _bubbleX()) + _btn / 2 + lead;
+          final j = ((_c.value - 0.55) / 0.45).clamp(0.0, 1.0);
+          final jiggle = reduce ? 0.0 : 0.26 * math.sin(j * math.pi * 3) * (1 - j);
+          final bump = reduce ? 1.0 : 1 + 0.12 * math.sin(j * math.pi);
+          return Stack(children: [
+            Positioned(
+              left: cx - bw / 2,
+              top: (_h - bh) / 2,
+              width: bw,
+              height: bh,
+              child: DecoratedBox(
+                decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.circular(99)),
+              ),
             ),
-          ),
-        ),
-        for (var i = 0; i < 4; i++)
-          Positioned(
-            left: _x(i),
-            top: (_h - _btn) / 2,
-            width: _btn,
-            height: _btn,
-            child: Semantics(
-              button: true,
-              selected: i == widget.index,
-              label: _labels[i],
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => widget.onTap(i),
-                child: Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(end: i == widget.index ? 1 : 0),
-                    duration: const Duration(milliseconds: 260),
-                    builder: (context, v, _) => LoopyIcon(
-                      _icons[i],
-                      size: 28,
-                      color: Color.lerp(GColors.white, GColors.ink, v)!,
-                      stroke: 2.4 + 0.9 * v,
+            for (var i = 0; i < 4; i++)
+              Positioned(
+                left: _x(i),
+                top: (_h - _btn) / 2,
+                width: _btn,
+                height: _btn,
+                child: Semantics(
+                  button: true,
+                  selected: i == widget.index,
+                  label: _labels[i],
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => widget.onTap(i),
+                    child: Center(
+                      child: TweenAnimationBuilder<double>(
+                        tween: Tween(end: i == widget.index ? 1 : 0),
+                        duration: const Duration(milliseconds: 260),
+                        builder: (context, v, _) => Transform.rotate(
+                          angle: i == widget.index ? jiggle : 0,
+                          child: Transform.scale(
+                            scale: i == widget.index ? bump : 1,
+                            child: LoopyIcon(
+                              _icons[i],
+                              size: 28,
+                              color: Color.lerp(GColors.white, GColors.ink, v)!,
+                              stroke: 2.4 + 0.9 * v,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
-      ]),
+          ]);
+        },
+      ),
     );
   }
 }
