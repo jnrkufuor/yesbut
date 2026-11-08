@@ -1,0 +1,157 @@
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+
+import '../theme/app_theme.dart';
+
+/// Loading scene: floating web pages and clouds on a soft blob, a sunflower
+/// search bar typing the query, and a big cherry magnifier gliding over the
+/// pages, lighting up whatever it passes. Line style, house colours.
+class SearchScene extends StatefulWidget {
+  const SearchScene({super.key, this.height = 150, this.text = 'terms & conditions'});
+  final double height;
+  final String text;
+  @override
+  State<SearchScene> createState() => _SearchSceneState();
+}
+
+class _SearchSceneState extends State<SearchScene> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 60))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: widget.height,
+        width: double.infinity,
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) => CustomPaint(painter: _ScenePainter(_c.value * 60, widget.text)),
+        ),
+      );
+}
+
+class _ScenePainter extends CustomPainter {
+  _ScenePainter(this.t, this.text);
+  final double t; // seconds
+  final String text;
+
+  static const _ink = Color(0xFF232120);
+  static const _red = Color(0xFFDF1538);
+  static const _blue = Color(0xFF4200FF);
+  static const _sun = Color(0xFFFFD100);
+  static const _w = 200.0, _h = 124.0;
+
+  Paint _line([double w = 2, Color c = _ink]) => Paint()
+    ..color = c
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = w
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = math.min(size.height / _h, size.width / _w);
+    canvas.save();
+    canvas.translate((size.width - _w * k) / 2, (size.height - _h * k) / 2);
+    canvas.scale(k);
+    final white = Paint()..color = Colors.white;
+
+    // Soft blob behind everything.
+    canvas.drawOval(Rect.fromCenter(center: const Offset(100, 62), width: 168, height: 100),
+        Paint()..color = _blue.withValues(alpha: 0.07));
+
+    double f(int i) => math.sin(t * 1.3 + i * 1.7) * 2;
+
+    void card(double x, double y, double w, double h, String kind) {
+      final r = RRect.fromRectAndRadius(Rect.fromLTWH(x, y, w, h), const Radius.circular(5));
+      canvas.drawRRect(r, white);
+      canvas.drawRRect(r, _line());
+      canvas.drawLine(Offset(x, y + 7), Offset(x + w, y + 7), _line());
+      for (var i = 0; i < 3; i++) {
+        canvas.drawCircle(Offset(x + 5 + i * 4, y + 3.5), 0.9, Paint()..color = _ink);
+      }
+      switch (kind) {
+        case 'img':
+          canvas.drawPath(
+              Path()
+                ..moveTo(x + 6, y + h - 6)
+                ..lineTo(x + 16, y + 14)
+                ..lineTo(x + 24, y + h - 12)
+                ..lineTo(x + 30, y + 20)
+                ..lineTo(x + w - 6, y + h - 6),
+              _line());
+          canvas.drawCircle(Offset(x + w - 12, y + 15), 3, _line());
+        case 'play':
+          final tri = Path()
+            ..moveTo(x + w / 2 - 5, y + 12)
+            ..lineTo(x + w / 2 + 7, y + h / 2 + 3.5)
+            ..lineTo(x + w / 2 - 5, y + h - 6)
+            ..close();
+          canvas.drawPath(tri, Paint()..color = _red);
+          canvas.drawPath(tri, _line());
+        default:
+          for (var i = 0; i < 3; i++) {
+            canvas.drawLine(Offset(x + 6, y + 14 + i * 6), Offset(x + w - 6 - (i == 2 ? 14 : 0), y + 14 + i * 6), _line(1.6));
+          }
+      }
+    }
+
+    void cloud(double x, double y, double s) {
+      final p = Path()
+        ..moveTo(x, y)
+        ..arcTo(Rect.fromCircle(center: Offset(x + 5 * s, y - 2 * s), radius: 5 * s), math.pi, 0.7 * math.pi, false)
+        ..arcTo(Rect.fromCircle(center: Offset(x + 12 * s, y - 4 * s), radius: 6 * s), 1.15 * math.pi, 0.8 * math.pi, false)
+        ..arcTo(Rect.fromCircle(center: Offset(x + 19 * s, y - 1 * s), radius: 4 * s), 1.4 * math.pi, 0.7 * math.pi, false)
+        ..close();
+      canvas.drawPath(p, white);
+      canvas.drawPath(p, _line());
+    }
+
+    card(14, 14 + f(0), 54, 34, 'lines');
+    card(130, 6 + f(1), 52, 42, 'img');
+    card(26, 80 + f(2), 50, 32, 'play');
+    card(132, 76 + f(3), 54, 32, 'lines');
+    cloud(62, 16 + f(4) * 0.5, 1.1);
+    cloud(166, 66 + f(5) * 0.5, 0.9);
+
+    // Search bar typing the query, then pausing, then again.
+    final bar = RRect.fromRectAndRadius(const Rect.fromLTWH(40, 50, 124, 17), const Radius.circular(8.5));
+    canvas.drawRRect(bar, Paint()..color = _sun);
+    canvas.drawRRect(bar, _line());
+    canvas.drawCircle(const Offset(51, 57.5), 3.4, _line());
+    canvas.drawLine(const Offset(53.6, 60.1), const Offset(56, 62.5), _line());
+    final q = text.length > 20 ? '${text.substring(0, 19)}…' : text;
+    final n = ((t * 6) % (q.length + 10)).floor().clamp(0, q.length);
+    final tp = TextPainter(
+      text: TextSpan(
+          text: q.substring(0, n),
+          style: const TextStyle(fontFamily: AppTheme.font, fontSize: 8, fontWeight: FontWeight.w600, color: _ink)),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 96);
+    tp.paint(canvas, Offset(62, 58.5 - tp.height / 2));
+    if ((t * 2.5).floor().isEven) {
+      canvas.drawLine(Offset(63 + tp.width, 52.5), Offset(63 + tp.width, 63), _line(1.4));
+    }
+
+    // The magnifier glides over the pages.
+    final mx = 100 + math.sin(t * 0.9) * 62, my = 60 + math.sin(t * 1.8) * 30;
+    canvas.save();
+    canvas.translate(mx, my);
+    canvas.rotate(-0.6 + math.sin(t * 0.9) * 0.25);
+    canvas.drawCircle(Offset.zero, 13, Paint()..color = _sun.withValues(alpha: 0.28));
+    canvas.drawLine(const Offset(0, 15), const Offset(0, 30), _line(4.2));
+    canvas.drawCircle(Offset.zero, 13.5, _line(5.2));
+    canvas.drawCircle(Offset.zero, 13.5, _line(2.6, _red));
+    canvas.drawArc(Rect.fromCircle(center: Offset.zero, radius: 9), 3.6, 0.8, false, _line(1.6, Colors.white));
+    canvas.restore();
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ScenePainter o) => o.t != t || o.text != text;
+}

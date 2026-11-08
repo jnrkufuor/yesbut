@@ -71,7 +71,10 @@ class AppState extends ChangeNotifier {
     _history = _storage.loadHistory();
     _settings = _storage.loadSettings();
     await i18n.setLanguage(_settings.resultLanguage);
-    _onboarded = _storage.onboarded;
+    // The welcome screen shows once, ever: anyone who already has checks or
+    // settings has seen it, and we mark it seen the first time it appears.
+    _onboarded = _storage.onboarded || _history.isNotEmpty;
+    if (!_storage.onboarded) await _storage.setOnboarded();
     _watch = await WatchService.load();
     if (_watch.isNotEmpty) WatchService.scheduleBackground();
     await RuleBasedAnalyzer.load();
