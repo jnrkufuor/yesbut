@@ -25,14 +25,38 @@ jobs:
           channel: stable
           cache: true
 
+      # Keep Gradle and its downloads between runs, so a flaky download
+      # server can't break a build that worked before.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/wrapper
+            ~/.gradle/caches
+          key: gradle-${{ runner.os }}-${{ hashFiles('pubspec.lock', 'pubspec.yaml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
       - name: Generate platforms + apply overlay
         run: ./tool/setup_platforms.sh
 
-      - name: Build release APK
-        run: flutter build apk --release --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+      - name: Build release APK (retries if downloads time out)
+        env:
+          GRADLE_OPTS: -Dorg.gradle.internal.http.connectionTimeout=180000 -Dorg.gradle.internal.http.socketTimeout=180000 -Dorg.gradle.internal.repository.max.retries=8 -Dorg.gradle.internal.repository.initial.backoff=3000
+        run: |
+          for i in 1 2 3 4 5; do
+            flutter build apk --release --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} && exit 0
+            echo "Build attempt $i failed; waiting before retry"; sleep $((i * 45))
+          done
+          exit 1
 
       - name: Build per-device APKs (smaller downloads)
-        run: flutter build apk --release --split-per-abi --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+        env:
+          GRADLE_OPTS: -Dorg.gradle.internal.repository.max.retries=8 -Dorg.gradle.internal.repository.initial.backoff=3000
+        run: |
+          for i in 1 2 3; do
+            flutter build apk --release --split-per-abi --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} --dart-define=OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }} && exit 0
+            sleep 45
+          done
+          exit 1
 
       - name: Collect APKs
         run: |
