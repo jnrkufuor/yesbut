@@ -196,3 +196,92 @@ class _BlobPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BlobPainter old) => old.color != color || old.seed != seed;
 }
+
+/// Hand-drawn eye that opens: 0 = closed (a lashed curve), 1 = wide open
+/// with a pupil. Used for "watch for changes".
+class BlinkEye extends StatelessWidget {
+  const BlinkEye({super.key, required this.open, this.size = 26, this.color = const Color(0xFF232120), this.stroke = 2.4});
+  final double open;
+  final double size;
+  final Color color;
+  final double stroke;
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: _EyePainter(open.clamp(0.0, 1.2), color, stroke));
+}
+
+class _EyePainter extends CustomPainter {
+  _EyePainter(this.open, this.color, this.stroke);
+  final double open;
+  final Color color;
+  final double stroke;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.width / 40;
+    canvas.scale(k);
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke * 40 / size.width * 0.9
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    final o = open;
+    // Upper lid lifts as it opens; lower lid dips a little.
+    final upper = Path()
+      ..moveTo(5, 21)
+      ..quadraticBezierTo(20, 21 - 16 * o + 6 * (1 - o), 35, 21);
+    final lower = Path()
+      ..moveTo(5, 21)
+      ..quadraticBezierTo(20, 21 + 13 * o + 6 * (1 - o), 35, 21);
+    canvas.drawPath(upper, p);
+    if (o > 0.05) canvas.drawPath(lower, p);
+    // Lashes while closed.
+    final lash = (1 - o * 2).clamp(0.0, 1.0);
+    if (lash > 0) {
+      final lp = Paint()
+        ..color = color.withValues(alpha: lash)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = p.strokeWidth
+        ..strokeCap = StrokeCap.round;
+      for (final (x, dx) in const [(12.0, -2.0), (20.0, 0.0), (28.0, 2.0)]) {
+        final y = 21 + 4.5 * (1 - (x - 20).abs() / 30);
+        canvas.drawLine(Offset(x, y), Offset(x + dx, y + 4), lp);
+      }
+    }
+    // Pupil grows in.
+    if (o > 0.2) {
+      canvas.drawCircle(const Offset(20, 21), 4.6 * ((o - 0.2) / 0.8).clamp(0.0, 1.0), p);
+      canvas.drawCircle(const Offset(20.6, 21), 1.4 * ((o - 0.4) / 0.6).clamp(0.0, 1.0), Paint()..color = color);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_EyePainter o) => o.open != open || o.color != color;
+}
+
+/// The bin with a lid that lifts while pressed and bobs when tapped.
+class LidTrash extends StatelessWidget {
+  const LidTrash({super.key, required this.lift, this.size = 24, this.color = Colors.white, this.stroke = 2.4});
+  final double lift; // 0 closed .. 1 lifted
+  final double size;
+  final Color color;
+  final double stroke;
+  @override
+  Widget build(BuildContext context) {
+    final ds = Loopy.paths['trash']!;
+    return SizedBox.square(
+      dimension: size,
+      child: Stack(clipBehavior: Clip.none, children: [
+        SvgPicture.string(Loopy.svg(ds.sublist(2), color, stroke, 40), width: size, height: size),
+        Transform.translate(
+          offset: Offset(0, -size * 0.12 * lift),
+          child: Transform.rotate(
+            angle: -0.32 * lift,
+            alignment: const Alignment(-0.6, -0.4),
+            child: SvgPicture.string(Loopy.svg(ds.sublist(0, 2), color, stroke, 40), width: size, height: size),
+          ),
+        ),
+      ]),
+    );
+  }
+}

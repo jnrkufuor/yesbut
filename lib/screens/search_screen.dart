@@ -507,7 +507,7 @@ class _ResultCard extends StatelessWidget {
           ),
           const Padding(
             padding: EdgeInsets.only(top: 10, left: 6),
-            child: Icon(Icons.arrow_outward_rounded, size: 20, color: GColors.ink),
+            child: const FlowArrow(size: 20),
           ),
         ]),
       ),

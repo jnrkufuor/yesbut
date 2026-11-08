@@ -157,7 +157,7 @@ class _ChangeCard extends StatelessWidget {
               ]),
             ),
             const SizedBox(width: 10),
-            const Icon(Icons.arrow_outward_rounded, color: GColors.white),
+            const FlowArrow(color: GColors.white, size: 24),
           ]),
         ),
       );

@@ -287,7 +287,7 @@ class _WebSearchRow extends StatelessWidget {
                 style: const TextStyle(color: GColors.white, fontSize: 14),
               ),
             ),
-            const Icon(Icons.arrow_outward_rounded, color: GColors.white, size: 20),
+            const FlowArrow(color: GColors.white, size: 20),
           ]),
         ),
       );

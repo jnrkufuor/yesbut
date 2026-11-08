@@ -45,7 +45,7 @@ class _ScenePainter extends CustomPainter {
   static const _sun = Color(0xFFFFD100);
   static const _w = 200.0, _h = 124.0;
 
-  Paint _line([double w = 2, Color c = _ink]) => Paint()
+  Paint _line([double w = 1.6, Color c = _ink]) => Paint()
     ..color = c
     ..style = PaintingStyle.stroke
     ..strokeWidth = w
@@ -61,17 +61,22 @@ class _ScenePainter extends CustomPainter {
     final white = Paint()..color = Colors.white;
 
     // Soft blob behind everything.
-    // A lopsided egg rather than a neat circle: fuller on the left, tipped.
-    final egg = Path()
-      ..moveTo(28, 70)
-      ..cubicTo(18, 36, 62, 8, 112, 14)
-      ..cubicTo(160, 20, 190, 46, 178, 78)
-      ..cubicTo(168, 106, 120, 118, 78, 110)
-      ..cubicTo(46, 104, 34, 92, 28, 70)
+    // A soft, slightly crooked rounded square, like a hand-cut canvas.
+    final canvasShape = Path()
+      ..moveTo(30, 16)
+      ..cubicTo(70, 8, 130, 12, 172, 14)
+      ..cubicTo(186, 15, 190, 26, 189, 40)
+      ..cubicTo(188, 66, 192, 88, 186, 104)
+      ..cubicTo(182, 114, 170, 116, 150, 115)
+      ..cubicTo(110, 113, 60, 118, 26, 112)
+      ..cubicTo(13, 110, 10, 100, 11, 86)
+      ..cubicTo(12, 60, 8, 38, 13, 26)
+      ..cubicTo(16, 18, 22, 17, 30, 16)
       ..close();
-    canvas.drawPath(egg, Paint()..color = _blue.withValues(alpha: 0.06));
+    canvas.drawPath(canvasShape, Paint()..color = _blue.withValues(alpha: 0.06));
 
-    double f(int i) => math.sin(t * 1.3 + i * 1.7) * 2;
+    // Each piece drifts on its own slow loop (a few units each way).
+    Offset f2(int i) => Offset(math.sin(t * 0.55 + i * 2.1) * 3.5, math.cos(t * 0.7 + i * 1.3) * 3.5);
 
     void card(double x, double y, double w, double h, String kind) {
       final r = RRect.fromRectAndRadius(Rect.fromLTWH(x, y, w, h), const Radius.circular(5));
@@ -118,11 +123,22 @@ class _ScenePainter extends CustomPainter {
       canvas.drawPath(p, _line());
     }
 
-    card(14, 14 + f(0), 54, 34, 'lines');
-    card(130, 6 + f(1), 52, 42, 'img');
-    card(26, 80 + f(2), 50, 32, 'play');
-    cloud(166, 66 + f(5) * 0.5, 0.9);
+    Offset o;
+    o = f2(0);
+    card(16 + o.dx, 18 + o.dy, 54, 34, 'lines');
+    o = f2(1);
+    card(128 + o.dx, 10 + o.dy, 52, 42, 'img');
+    o = f2(2);
+    card(24 + o.dx, 78 + o.dy, 50, 32, 'play');
+    o = f2(3);
+    card(126 + o.dx, 76 + o.dy, 54, 32, 'lines');
+    o = f2(5);
+    cloud(76 + o.dx, 22 + o.dy * 0.6, 0.9);
 
+    // Search bar floats too.
+    final bo = f2(4) * 0.6;
+    canvas.save();
+    canvas.translate(bo.dx, bo.dy);
     // Search bar typing the query, then pausing, then again.
     final bar = RRect.fromRectAndRadius(const Rect.fromLTWH(40, 50, 124, 17), const Radius.circular(8.5));
     canvas.drawRRect(bar, Paint()..color = _sun);
@@ -140,6 +156,8 @@ class _ScenePainter extends CustomPainter {
     if ((t * 2.5).floor().isEven) {
       canvas.drawLine(Offset(cx + 1, 53), Offset(cx + 1, 64), _line(1.4));
     }
+
+    canvas.restore();
 
     // The magnifier glides over the pages.
     final mx = 100 + math.sin(t * 0.9) * 62, my = 60 + math.sin(t * 1.8) * 30;

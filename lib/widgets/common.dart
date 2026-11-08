@@ -20,6 +20,7 @@ class Pressable extends StatefulWidget {
 
 class _PressableState extends State<Pressable> {
   bool _down = false;
+  int _taps = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +29,128 @@ class _PressableState extends State<Pressable> {
       onTapDown: widget.onTap == null ? null : (_) => setState(() => _down = true),
       onTapCancel: () => setState(() => _down = false),
       onTapUp: (_) => setState(() => _down = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _down ? widget.scale : 1,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
-        child: widget.child,
+      onTap: widget.onTap == null
+          ? null
+          : () {
+              setState(() => _taps++);
+              widget.onTap!();
+            },
+      child: PressScope(
+        down: _down,
+        taps: _taps,
+        child: AnimatedScale(
+          scale: _down ? widget.scale : 1,
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          child: widget.child,
+        ),
       ),
     );
   }
+}
+
+/// Lets icons inside a [Pressable] react to it (micro-interactions): whether
+/// it's held down, and a counter that ticks on every tap.
+class PressScope extends InheritedWidget {
+  const PressScope({super.key, required this.down, required this.taps, required super.child});
+  final bool down;
+  final int taps;
+  static PressScope? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<PressScope>();
+  @override
+  bool updateShouldNotify(PressScope old) => old.down != down || old.taps != taps;
+}
+
+/// Base for icons that play a short animation when their card is tapped.
+abstract class TapReactive extends StatefulWidget {
+  const TapReactive({super.key});
+}
+
+abstract class TapReactiveState<T extends TapReactive> extends State<T> with SingleTickerProviderStateMixin {
+  late final AnimationController tap = AnimationController(vsync: this, duration: tapDuration);
+  Duration get tapDuration => const Duration(milliseconds: 520);
+  int? _seen;
+  bool down = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final p = PressScope.of(context);
+    if (p == null) return;
+    if (_seen != null && p.taps != _seen && !MediaQuery.disableAnimationsOf(context)) tap.forward(from: 0);
+    _seen = p.taps;
+    down = p.down; // build follows a dependency change
+  }
+
+  @override
+  void dispose() {
+    tap.dispose();
+    super.dispose();
+  }
+}
+
+/// The ↗ on cards: leans out while pressed, then on tap flows out of the
+/// top-right corner and a fresh one slides in from the bottom-left.
+class FlowArrow extends TapReactive {
+  const FlowArrow({super.key, this.color = GColors.ink, this.size = 22});
+  final Color color;
+  final double size;
+  @override
+  State<FlowArrow> createState() => _FlowArrowState();
+}
+
+class _FlowArrowState extends TapReactiveState<FlowArrow> {
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: widget.size,
+        child: ClipRect(
+          child: AnimatedBuilder(
+            animation: tap,
+            builder: (_, __) {
+              final v = Curves.easeInOutCubic.transform(tap.value);
+              final lean = down ? widget.size * 0.12 : 0.0;
+              final travel = widget.size * 1.1;
+              Widget arrow(double t) => Transform.translate(
+                    offset: Offset(t * travel + lean, -t * travel - lean),
+                    child: Icon(Icons.arrow_outward_rounded, color: widget.color, size: widget.size),
+                  );
+              return Stack(children: [
+                arrow(v),
+                if (tap.isAnimating) arrow(v - 1),
+              ]);
+            },
+          ),
+        ),
+      );
+}
+
+/// Spins once when tapped (refresh).
+class SpinTap extends StatefulWidget {
+  const SpinTap({super.key, required this.child, required this.onTap});
+  final Widget child;
+  final VoidCallback onTap;
+  @override
+  State<SpinTap> createState() => _SpinTapState();
+}
+
+class _SpinTapState extends State<SpinTap> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 650));
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Pressable(
+        onTap: () {
+          _c.forward(from: 0);
+          widget.onTap();
+        },
+        child: RotationTransition(
+          turns: CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
+          child: widget.child,
+        ),
+      );
 }
 
 /// The wordmark: "yes," (Bricolage) + "but" (Newsreader italic) + cherry asterisk.

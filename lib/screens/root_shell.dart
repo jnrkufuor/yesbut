@@ -128,7 +128,7 @@ class PillNav extends StatefulWidget {
   State<PillNav> createState() => _PillNavState();
 }
 
-class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
+class _PillNavState extends State<PillNav> with TickerProviderStateMixin {
   static const _icons = ['check', 'search', 'eye', 'history'];
   static const _labels = ['Check', 'Search', 'Live', 'History'];
   static const _w = 330.0;
@@ -140,6 +140,8 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   late final AnimationController _c =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 620), value: 1);
   late double _from = _x(widget.index);
+  // Keeps the blob gently alive (its edge ripples slowly, like liquid).
+  late final AnimationController _idle = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
 
   @override
   void didUpdateWidget(PillNav old) {
@@ -153,6 +155,7 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _c.dispose();
+    _idle.dispose();
     super.dispose();
   }
 
@@ -180,27 +183,32 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
         animation: _c,
         builder: (context, _) {
           final to = _x(widget.index);
-          // The bubble slides over like before, but moves like a drop of
-          // water: it stretches a tapering tail behind it while it travels
-          // and pulls back into a round drop when it lands. Never fades.
+          // Liquid blob: slides over like the first version, stretches into
+          // a long wobbly drop while it travels (leading edge fuller), then
+          // settles back with a jelly wobble. Its edge always ripples a
+          // little, like liquid. Never fades.
           final m = _move;
           final x = reduce ? to : _bubbleX();
           final dist = (to - _from).abs();
-          final tail = reduce ? 0.0 : math.sin(math.pi * m) * math.min(34.0, dist * 0.3);
+          final stretch = reduce ? 0.0 : math.sin(math.pi * m) * math.min(1.0, dist / 120);
           final j = ((_c.value - 0.55) / 0.45).clamp(0.0, 1.0);
-          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.06;
+          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.1;
           final jiggle = reduce ? 0.0 : 0.26 * math.sin(j * math.pi * 3) * (1 - j);
           final bump = reduce ? 1.0 : 1 + 0.12 * math.sin(j * math.pi);
           return Stack(children: [
             Positioned.fill(
-              child: CustomPaint(
-                painter: _DropPainter(
-                  cx: x + _btn / 2,
-                  cy: _h / 2,
-                  r: _btn / 2,
-                  tail: tail,
-                  dir: to >= _from ? 1 : -1,
-                  wobble: wob,
+              child: AnimatedBuilder(
+                animation: _idle,
+                builder: (_, __) => CustomPaint(
+                  painter: _BlobPainter(
+                    cx: x + _btn / 2,
+                    cy: _h / 2,
+                    r: _btn / 2,
+                    stretch: stretch,
+                    dir: to >= _from ? 1 : -1,
+                    wobble: wob,
+                    phase: reduce ? 0 : _idle.value * 2 * math.pi,
+                  ),
                 ),
               ),
             ),
@@ -246,32 +254,45 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
 }
 
 
-/// The white bubble: a round drop with a tapering tail trailing behind it
-/// while it moves (tail = 0 when it's resting).
-class _DropPainter extends CustomPainter {
-  _DropPainter({required this.cx, required this.cy, required this.r, required this.tail, required this.dir, required this.wobble});
-  final double cx, cy, r, tail, wobble;
+/// The white liquid blob under the active tab.
+class _BlobPainter extends CustomPainter {
+  _BlobPainter({
+    required this.cx,
+    required this.cy,
+    required this.r,
+    required this.stretch,
+    required this.dir,
+    required this.wobble,
+    required this.phase,
+  });
+  final double cx, cy, r, stretch, wobble, phase;
   final int dir;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = GColors.white;
-    final s = tail / 34; // 0..1 how stretched
-    final rx = r * (1 + 0.05 * s + wobble), ry = r * (1 - 0.06 * s - wobble);
-    canvas.drawOval(Rect.fromCenter(center: Offset(cx, cy), width: rx * 2, height: ry * 2), paint);
-    if (tail < 0.5) return;
+    const n = 72;
     final d = dir.toDouble();
-    final tip = Offset(cx - d * (rx + tail), cy);
-    final path = Path()
-      ..moveTo(tip.dx, tip.dy)
-      ..cubicTo(tip.dx + d * tail * 0.55, cy - ry * 0.25, cx - d * rx * 0.75, cy - ry, cx, cy - ry)
-      ..lineTo(cx, cy + ry)
-      ..cubicTo(cx - d * rx * 0.75, cy + ry, tip.dx + d * tail * 0.55, cy + ry * 0.25, tip.dx, tip.dy)
-      ..close();
-    canvas.drawPath(path, paint);
+    // Stretched along the path while moving, flattened a bit top-to-bottom.
+    final sx = 1 + 0.55 * stretch + wobble;
+    final sy = 1 - 0.18 * stretch - wobble * 0.8;
+    final path = Path();
+    for (var i = 0; i <= n; i++) {
+      final a = i / n * 2 * math.pi;
+      final cosA = math.cos(a), sinA = math.sin(a);
+      // Gentle ripples that drift around the edge; stronger while moving.
+      final ripple = (0.035 + 0.05 * stretch) *
+          (math.sin(3 * a + phase) * 0.6 + math.sin(5 * a - phase * 1.5) * 0.4);
+      // Leading side fuller, trailing side tapers.
+      final lead = 1 + 0.12 * stretch * cosA * d;
+      final rr = r * (1 + ripple) * lead;
+      final px = cx + cosA * rr * sx - d * r * 0.25 * stretch; // centre lags a touch behind the front
+      final py = cy + sinA * rr * sy;
+      i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
+    }
+    canvas.drawPath(path..close(), Paint()..color = GColors.white);
   }
 
   @override
-  bool shouldRepaint(_DropPainter o) =>
-      o.cx != cx || o.tail != tail || o.wobble != wobble || o.r != r || o.cy != cy || o.dir != dir;
+  bool shouldRepaint(_BlobPainter o) =>
+      o.cx != cx || o.stretch != stretch || o.wobble != wobble || o.phase != phase || o.dir != dir || o.r != r;
 }

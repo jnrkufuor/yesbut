@@ -49,7 +49,7 @@ class ActionTile extends StatelessWidget {
                     child: LoopyIcon(icon, size: 70, color: fg, stroke: 1.5),
                   ),
                   const Spacer(),
-                  Icon(Icons.arrow_outward_rounded, color: fg, size: 22),
+                  FlowArrow(color: fg, size: 22),
                 ]),
                 const Spacer(),
                 Text(title,

@@ -108,7 +108,7 @@ class _LinkScreenState extends State<LinkScreen> {
                 child: Text('No link? Search for a company’s terms instead.',
                     style: TextStyle(fontSize: 13.5, height: 1.45)),
               ),
-              Icon(Icons.arrow_outward_rounded, size: 20, color: GColors.ink),
+              FlowArrow(size: 20),
             ]),
           ),
         ),

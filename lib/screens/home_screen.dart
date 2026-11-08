@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 import 'package:animations/animations.dart';
@@ -305,7 +307,7 @@ class RoundIconButton extends StatelessWidget {
             border: Border.all(color: GColors.line, width: 1),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
-            LoopyIcon(icon, size: 24, stroke: 2.4),
+            _NudgeIcon(icon),
             if (label != null) ...[
               const SizedBox(width: 6),
               Text(label!, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
@@ -368,5 +370,34 @@ class SearchBarButton extends StatelessWidget {
             ),
           ]),
         ),
+      );
+}
+
+
+/// Header icons answer a tap with a tiny gesture of their own: back slides
+/// back, share lifts, settings turns, others give a little bounce.
+class _NudgeIcon extends TapReactive {
+  const _NudgeIcon(this.icon);
+  final String icon;
+  @override
+  State<_NudgeIcon> createState() => _NudgeIconState();
+}
+
+class _NudgeIconState extends TapReactiveState<_NudgeIcon> {
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: tap,
+        builder: (_, child) {
+          final v = tap.value;
+          final hump = math.sin(v * math.pi);
+          return switch (widget.icon) {
+            'back' => Transform.translate(offset: Offset(-5 * hump, 0), child: child),
+            'share' => Transform.translate(offset: Offset(0, -5 * hump), child: child),
+            'settings' => Transform.rotate(angle: Curves.easeOutBack.transform(v) * math.pi / 3, child: child),
+            'doc' => Transform.rotate(angle: 0.18 * math.sin(v * math.pi * 2) * (1 - v), child: child),
+            _ => Transform.scale(scale: 1 + 0.15 * hump, child: child),
+          };
+        },
+        child: LoopyIcon(widget.icon, size: 24, stroke: 2.4),
       );
 }

@@ -187,7 +187,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   height: 50,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(color: GColors.red, shape: BoxShape.circle),
-                  child: const LoopyIcon('trash', size: 24, color: GColors.white, stroke: 2.4),
+                  child: const _LidBin(),
                 ),
               ),
             ),
@@ -1464,7 +1464,12 @@ class _TrackButton extends StatelessWidget {
               alignment: Alignment.center,
               child: child,
             ),
-            child: LoopyIcon('eye', size: 26, color: on ? GColors.white : GColors.ink, stroke: 2.4),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: on ? 1 : 0),
+              duration: const Duration(milliseconds: 420),
+              curve: Curves.easeOutBack,
+              builder: (_, o, __) => BlinkEye(open: o, size: 28, color: on ? GColors.white : GColors.ink),
+            ),
           ),
         ),
       ),
@@ -1493,6 +1498,12 @@ class _ReaderRow extends StatelessWidget {
     final state = context.watch<AppState>();
     final st = state.settings;
     final current = nameOf(result.engine);
+    final chosen = switch (st.engine) {
+      EngineChoice.gemini => 'Gemini',
+      EngineChoice.offline => 'On your phone',
+      _ => 'DeepSeek',
+    };
+    final pending = chosen != current;
     final sensitiveOnly = webUrlOf(result) == null && result.text.trim().isEmpty;
     return Row(children: [
       PopupMenuButton<EngineChoice>(
@@ -1500,10 +1511,9 @@ class _ReaderRow extends StatelessWidget {
         tooltip: 'Change reader',
         color: GColors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: GColors.line)),
-        onSelected: (e) async {
-          await state.updateSettings(st.copyWith(engine: e));
-          onReread();
-        },
+        // Switching only picks the reader; the refresh button turns cherry
+        // to show it'll read again with the new one when you tap it.
+        onSelected: (e) => state.updateSettings(st.copyWith(engine: e)),
         itemBuilder: (_) => [
           for (final (e, name) in const [
             (EngineChoice.deepseek, 'DeepSeek'),
@@ -1514,7 +1524,7 @@ class _ReaderRow extends StatelessWidget {
               value: e,
               child: Row(children: [
                 Expanded(child: Text('Read with $name', style: const TextStyle(fontSize: 14))),
-                if (name == current) const Icon(Icons.check_rounded, size: 18),
+                if (name == chosen) const Icon(Icons.check_rounded, size: 18),
               ]),
             ),
         ],
@@ -1523,7 +1533,10 @@ class _ReaderRow extends StatelessWidget {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             const BrandAsterisk(size: 13),
             const SizedBox(width: 7),
-            Text(current == 'On your phone' ? 'Read on your phone' : 'Read by $current',
+            Text(
+                pending
+                    ? 'Next: ${chosen == 'On your phone' ? 'on your phone' : chosen}'
+                    : (current == 'On your phone' ? 'Read on your phone' : 'Read by $current'),
                 style: const TextStyle(fontSize: 13.5, color: GColors.inkSoft)),
             if (!sensitiveOnly) const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: GColors.inkSoft),
           ]),
@@ -1533,18 +1546,42 @@ class _ReaderRow extends StatelessWidget {
       if (!sensitiveOnly)
         Semantics(
           button: true,
-          label: 'Read it again',
-          child: Pressable(
+          label: pending ? 'Read it again with $chosen' : 'Read it again',
+          child: SpinTap(
             onTap: onReread,
-            child: Container(
-              width: 40,
-              height: 40,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 260),
+              width: 32,
+              height: 32,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(color: GColors.ink, shape: BoxShape.circle),
-              child: const LoopyIcon('refresh', size: 22, color: GColors.white, stroke: 2.4),
+              decoration: BoxDecoration(color: pending ? GColors.red : GColors.ink, shape: BoxShape.circle),
+              child: const LoopyIcon('refresh', size: 18, color: GColors.white, stroke: 2.6),
             ),
           ),
         ),
     ]);
   }
+}
+
+
+/// Bin whose lid lifts while you press and bobs when you tap.
+class _LidBin extends TapReactive {
+  const _LidBin();
+  @override
+  State<_LidBin> createState() => _LidBinState();
+}
+
+class _LidBinState extends TapReactiveState<_LidBin> {
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: tap,
+        builder: (_, __) {
+          final bob = math.sin(tap.value * math.pi * 2) * (1 - tap.value);
+          return TweenAnimationBuilder<double>(
+            tween: Tween(end: down ? 1 : 0),
+            duration: const Duration(milliseconds: 160),
+            builder: (_, held, __) => LidTrash(lift: (held + bob.abs()).clamp(0.0, 1.0), size: 24),
+          );
+        },
+      );
 }
