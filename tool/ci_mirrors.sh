@@ -37,9 +37,15 @@ def first = { RepositoryHandler repos ->
   repos.remove(r)
   repos.addFirst(r)
 }
-beforeSettings { s -> first(s.pluginManagement.repositories) }
-allprojects {
-  first(buildscript.repositories)
-  first(repositories)
+beforeSettings { s ->
+  first(s.pluginManagement.repositories)
+  first(s.dependencyResolutionManagement.repositories)
+}
+allprojects { p ->
+  // Builds that only allow repositories from settings already got the
+  // mirror above; adding it to the project would break them.
+  def mode = p.gradle.settings.dependencyResolutionManagement.repositoriesMode.get().toString()
+  first(p.buildscript.repositories)
+  if (mode == 'PREFER_PROJECT') first(p.repositories)
 }
 G
