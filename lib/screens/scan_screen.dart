@@ -71,9 +71,9 @@ class _ScanScreenState extends State<ScanScreen> {
     return InputScaffold(
       accent: GColors.red,
       icon: Icons.document_scanner_rounded,
-      title: 'Scan the ',
-      titleSerif: 'contract',
-      subtitle: 'Snap each page. Text is read right on your phone.',
+      title: 'Point at the ',
+      titleSerif: 'paper',
+      subtitle: 'One photo per page. The words are read right on your phone.',
       bottom: BigButton(
         label: n == 0 ? 'Add a page to start' : 'Check $n page${n == 1 ? '' : 's'}',
         icon: Icons.arrow_forward_rounded,

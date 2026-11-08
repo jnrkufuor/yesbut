@@ -16,8 +16,8 @@ class UploadScreen extends StatelessWidget {
     return InputScaffold(
       accent: GColors.blue,
       icon: Icons.upload_file_rounded,
-      title: 'Upload a ',
-      titleSerif: 'file',
+      title: 'Got it saved ',
+      titleSerif: 'somewhere?',
       subtitle: 'A PDF or text file from your phone. We read it right here.',
       bottom: BigButton(
         label: 'Choose a file',

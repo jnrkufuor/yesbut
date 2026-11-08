@@ -146,7 +146,7 @@ List<Widget> _sections(List<CatalogItem> items, AppState state) {
   final done = items.where((i) => state.cachedFor(i.url) != null).toList();
   final todo = items.where((i) => state.cachedFor(i.url) == null).toList();
   Widget head(String t, String sub) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+        padding: const EdgeInsets.fromLTRB(4, 30, 4, 10),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(t, style: const TextStyle(fontFamily: AppTheme.display, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.6)),
           const SizedBox(height: 2),

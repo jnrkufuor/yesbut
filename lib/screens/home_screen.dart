@@ -267,8 +267,8 @@ class PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        LoopyIcon(icon, size: 28, stroke: 2.6),
-        const SizedBox(width: 8),
+        IconBlob(icon, size: 40),
+        const SizedBox(width: 10),
         Text(title,
             style: const TextStyle(
               fontFamily: AppTheme.display,

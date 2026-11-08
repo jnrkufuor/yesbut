@@ -10,6 +10,7 @@ import '../services/ingestion/terms_finder.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/puppy.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
@@ -116,7 +117,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 onSubmit: () => _go(),
               ),
             ]),
-            const SizedBox(height: 22),
+            const SizedBox(height: 32),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 320),
               switchInCurve: Curves.easeOutCubic,
@@ -312,7 +313,7 @@ class _SniffingState extends State<_Sniffing> {
     final name = widget.query.length > 22 ? '${widget.query.substring(0, 20)}…' : widget.query;
     final base = Theme.of(context).textTheme.headlineMedium!.copyWith(fontSize: 24);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const SniffLoader(height: 220),
+      const PuppyLoader(height: 120),
       const SizedBox(height: 24),
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),

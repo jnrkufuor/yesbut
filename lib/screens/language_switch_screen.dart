@@ -56,15 +56,8 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
   Duration _last = Duration.zero;
   double _t = 0; // seconds since start
   double _angle = 0;
-  double _speed = 1.4; // radians per second
-  bool _done = false;
-  double _doneAt = 0;
-  double _pop = 0; // 0..1 bubble pop
   bool _downloading = false;
   String? _error;
-
-  static const _accel = 0.75; // seconds of speeding up once done
-  static const _popTime = 0.32;
 
   _Words get _w => _copy[widget.code] ?? _copy['en']!;
 
@@ -85,27 +78,21 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
     final dt = (now - _last).inMicroseconds / 1e6;
     _last = now;
     _t += dt;
-    if (!_done) {
-      // Slow, gently rising while we work.
-      _speed = math.min(2.6, 1.4 + _t * 0.15);
-    } else {
-      final k = ((_t - _doneAt) / _accel).clamp(0.0, 1.0);
-      _speed = 2.6 + 26 * k * k; // ease-in: whoosh
-      if (k >= 1) {
-        _pop = ((_t - _doneAt - _accel) / _popTime).clamp(0.0, 1.0);
-        if (_pop >= 1) {
-          _ticker.stop();
-          if (mounted) Navigator.of(context).pop();
-          return;
-        }
-      }
-    }
-    _angle += _speed * dt;
+    // Turns in surges: quick, then lazy, then quick again.
+    final speed = 1.1 + 2.6 * math.pow(0.5 + 0.5 * math.sin(_t * 2.2), 3);
+    _angle += speed * dt;
     setState(() {});
   }
 
+  /// Each leg swells and shrinks in turn, going round clockwise, like a cell
+  /// breathing.
+  List<double> get _legs => [
+        for (var i = 0; i < 6; i++) 0.5 + 0.5 * math.pow(0.5 + 0.5 * math.sin(_t * 9 - i * math.pi / 3), 1.6),
+      ];
+
   Future<void> _run() async {
     final state = context.read<AppState>();
+    final nav = Navigator.of(context);
     final minWait = Future<void>.delayed(const Duration(milliseconds: 1200));
     try {
       if (!await OfflineTranslator.isReady(widget.code)) {
@@ -113,32 +100,19 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
         await OfflineTranslator.prepare(widget.code);
       }
       await state.updateSettings(state.settings.copyWith(resultLanguage: widget.code));
-      if (mounted) setState(() => _downloading = false);
       // Wait until the screens underneath have actually been translated.
       await Future<void>.delayed(const Duration(milliseconds: 250));
       await state.i18n.settle();
       await minWait;
-      if (mounted) {
-        _doneAt = _t;
-        _done = true;
-      }
+      if (mounted) nav.pop(); // the route fades out
     } catch (_) {
       if (mounted) setState(() => _error = _w.failed);
     }
   }
 
-  Color _color() {
-    const cs = [GColors.red, GColors.blue, GColors.green, GColors.ink];
-    final x = (_t * 0.55) % cs.length;
-    final i = x.floor();
-    final f = Curves.easeInOut.transform(x - i);
-    return Color.lerp(cs[i], cs[(i + 1) % cs.length], f)!;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final c = _error != null ? GColors.inkFaint : _color();
-    final bubble = Curves.easeOut.transform(_pop);
+    final c = _error != null ? GColors.inkFaint : GColors.red;
     return PopScope(
       canPop: _error != null,
       child: Scaffold(
@@ -146,38 +120,23 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 28),
-            child: Column(children: [
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               const Spacer(),
-              SizedBox(
-                width: 180,
-                height: 180,
-                child: Stack(alignment: Alignment.center, children: [
-                  // The bubble's skin: a thin ring that bursts outward.
-                  if (_pop > 0)
-                    Opacity(
-                      opacity: (1 - bubble).clamp(0.0, 1.0),
-                      child: Container(
-                        width: 70 + 110 * bubble,
-                        height: 70 + 110 * bubble,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: c, width: 2.5 * (1 - bubble) + 0.5),
-                        ),
-                      ),
-                    ),
-                  Opacity(
-                    opacity: (1 - bubble * 1.4).clamp(0.0, 1.0),
-                    child: Transform.scale(
-                      scale: 1 + 0.5 * bubble,
-                      child: Transform.rotate(angle: _angle, child: BrandAsterisk(size: 72, color: c)),
+              Center(
+                child: SizedBox.square(
+                  dimension: 120,
+                  child: Center(
+                    child: Transform.rotate(
+                      angle: _angle,
+                      child: BrandAsterisk(size: 84, color: c, legs: _error != null ? null : _legs),
                     ),
                   ),
-                ]),
+                ),
               ),
               const SizedBox(height: 28),
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 200),
-                opacity: _done ? 0 : 1,
+              // Fixed-height text block so nothing jumps when the words change.
+              SizedBox(
+                height: 120,
                 child: Column(children: [
                   Text(
                     _error != null ? '…' : (_downloading ? _w.getting : _w.switching),
@@ -195,10 +154,12 @@ class _LanguageSwitchScreenState extends State<LanguageSwitchScreen> with Single
                   ),
                 ]),
               ),
-              if (_error != null) ...[
-                const SizedBox(height: 24),
-                BigButton(label: _w.back, color: GColors.ink, onTap: () => Navigator.of(context).pop()),
-              ],
+              SizedBox(
+                height: 58,
+                child: _error == null
+                    ? null
+                    : BigButton(label: _w.back, color: GColors.ink, onTap: () => Navigator.of(context).pop()),
+              ),
               const Spacer(flex: 2),
             ]),
           ),

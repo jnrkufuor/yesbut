@@ -49,8 +49,8 @@ class _LinkScreenState extends State<LinkScreen> {
     return InputScaffold(
       accent: GColors.ink,
       icon: Icons.link_rounded,
-      title: 'Drop a ',
-      titleSerif: 'link',
+      title: 'Where do the terms ',
+      titleSerif: 'live?',
       subtitle: 'Paste the web address of any terms, privacy policy or subscription page.',
       bottom: BigButton(
         label: 'Read it for me',

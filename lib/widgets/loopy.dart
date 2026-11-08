@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -79,15 +81,116 @@ class LoopyAccent extends StatelessWidget {
   }
 }
 
-/// The cherry hand-drawn asterisk from the logo.
+/// The cherry hand-drawn asterisk from the logo: six uneven, slightly bowed
+/// legs (not a perfect star, on purpose). Pass [legs] (six 0..1+ values) to
+/// grow and shrink each leg, e.g. for the language-change animation.
 class BrandAsterisk extends StatelessWidget {
-  const BrandAsterisk({super.key, this.size = 12, this.color = const Color(0xFFDF1538)});
+  const BrandAsterisk({super.key, this.size = 12, this.color = const Color(0xFFDF1538), this.legs});
   final double size;
   final Color color;
+  final List<double>? legs;
   @override
-  Widget build(BuildContext context) => SvgPicture.string(
-        Loopy.svg(const ['M8 1.6 L8.2 14.4', 'M2.3 4.7 L13.7 11.4', 'M2.5 11.7 L13.5 4.3'], color, 3, 16),
-        width: size,
-        height: size,
+  Widget build(BuildContext context) => CustomPaint(
+        size: Size.square(size),
+        painter: _AsteriskPainter(color, legs),
       );
+}
+
+class _AsteriskPainter extends CustomPainter {
+  _AsteriskPainter(this.color, this.legs);
+  final Color color;
+  final List<double>? legs;
+
+  // (degrees clockwise from up, length, bow) in a 16-unit box.
+  static const _legs = [
+    (-4.0, 6.9, 0.55),
+    (57.0, 6.1, -0.7),
+    (121.0, 6.8, 0.45),
+    (178.0, 6.3, -0.5),
+    (236.0, 7.2, 0.65),
+    (299.0, 5.9, -0.45),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.width / 16;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.3 * k;
+    const cx = 8.0, cy = 8.1;
+    for (var i = 0; i < _legs.length; i++) {
+      final (deg, len, bow) = _legs[i];
+      final sc = legs == null ? 1.0 : legs![i % legs!.length];
+      if (sc <= 0.02) continue;
+      final r = deg * math.pi / 180;
+      final dx = math.sin(r), dy = -math.cos(r);
+      final px = math.cos(r), py = math.sin(r);
+      final sx = cx + dx * 0.5, sy = cy + dy * 0.5;
+      final ex = cx + dx * len * sc, ey = cy + dy * len * sc;
+      final mx = (sx + ex) / 2 + px * bow * sc, my = (sy + ey) / 2 + py * bow * sc;
+      canvas.drawPath(
+        Path()
+          ..moveTo(sx * k, sy * k)
+          ..quadraticBezierTo(mx * k, my * k, ex * k, ey * k),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AsteriskPainter old) => old.color != color || old.legs != legs;
+}
+
+/// A loopy icon sitting in a hand-drawn, slightly lumpy bubble (not a
+/// perfect circle). The lumps differ per icon so headers don't look stamped.
+class IconBlob extends StatelessWidget {
+  const IconBlob(this.icon, {super.key, this.color = const Color(0xFF232120), this.iconColor = Colors.white, this.size = 42});
+  final String icon;
+  final Color color;
+  final Color iconColor;
+  final double size;
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+        dimension: size,
+        child: CustomPaint(
+          painter: _BlobPainter(color, icon.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff)),
+          child: Center(child: LoopyIcon(icon, size: size * 0.64, color: iconColor, stroke: 2.2)),
+        ),
+      );
+}
+
+class _BlobPainter extends CustomPainter {
+  _BlobPainter(this.color, this.seed);
+  final Color color;
+  final int seed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rnd = math.Random(seed);
+    const n = 7;
+    final c = size.center(Offset.zero);
+    final base = size.width / 2;
+    final turn = rnd.nextDouble() * math.pi;
+    final pts = [
+      for (var i = 0; i < n; i++)
+        c +
+            Offset.fromDirection(
+              turn + i * 2 * math.pi / n + (rnd.nextDouble() - 0.5) * 0.35,
+              base * (0.88 + rnd.nextDouble() * 0.12),
+            ),
+    ];
+    // Smooth closed curve through the points (Catmull-Rom as cubics).
+    final path = Path()..moveTo(pts[0].dx, pts[0].dy);
+    for (var i = 0; i < n; i++) {
+      final p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      final c1 = p1 + (p2 - p0) / 6, c2 = p2 - (p3 - p1) / 6;
+      path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
+    }
+    canvas.drawPath(path..close(), Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(_BlobPainter old) => old.color != color || old.seed != seed;
 }

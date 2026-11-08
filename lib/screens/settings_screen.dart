@@ -42,7 +42,7 @@ class SettingsScreen extends StatelessWidget {
                   style: TextStyle(
                       fontFamily: AppTheme.display, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1)),
               const SizedBox(width: 8),
-              const LoopyIcon('settings', size: 28, stroke: 2.6),
+              const IconBlob('settings', size: 40),
             ]),
             const SizedBox(height: 28),
             const HeadingText('Make it ', serif: 'yours', size: 36),
@@ -50,26 +50,27 @@ class SettingsScreen extends StatelessWidget {
 
             const _Label('READER'),
             _Group(children: [
-              for (final r in [
-                (EngineChoice.gemini, 'Gemini', 'Google’s free AI. Fast, reads each document closely.', AppState.readers[EngineChoice.gemini]!.available),
-                (EngineChoice.deepseek, 'DeepSeek', 'Open-source AI (V4 Flash), free through OpenRouter.', AppState.readers[EngineChoice.deepseek]!.available),
-                (EngineChoice.offline, 'On your phone', 'Private and instant. Nothing leaves your phone.', true),
-              ])
-                Opacity(
-                  opacity: r.$4 ? 1 : 0.45,
-                  child: _Row(
-                    title: r.$2,
-                    body: r.$4 ? r.$3 : '${r.$3} Not set up in this build.',
-                    onTap: r.$4 ? () => set(st.copyWith(engine: r.$1)) : null,
-                    trailing: _Radio(st.engine == r.$1),
-                  ),
+              _Row(
+                title: 'Who reads your terms',
+                trailing: _Dropdown(
+                  value: st.engine == EngineChoice.claude ? 'gemini' : st.engine.name,
+                  items: const {'gemini': 'Gemini', 'deepseek': 'DeepSeek', 'offline': 'On your phone'},
+                  onChanged: (v) => set(st.copyWith(engine: EngineChoice.values.byName(v))),
                 ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(14, 0, 14, 12),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
                 child: Text(
-                  'AI readers send the terms (not your name or account) to Google or OpenRouter. '
-                  'If one is busy we try the other, then your phone, so you always get an answer.',
-                  style: TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
+                  switch (st.engine) {
+                    EngineChoice.offline => 'Quick and private. Your terms never leave your phone.',
+                    EngineChoice.deepseek => AppState.readers[EngineChoice.deepseek]!.available
+                        ? 'A free AI that reads every document closely. Takes a few seconds.'
+                        : 'Not switched on yet, so your phone reads for now.',
+                    _ => AppState.readers[EngineChoice.gemini]!.available
+                        ? 'Google’s free AI. Reads every document closely and fast.'
+                        : 'Not switched on yet, so your phone reads for now.',
+                  },
+                  style: const TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
                 ),
               ),
             ]),
@@ -157,7 +158,7 @@ class _Label extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+        padding: const EdgeInsets.fromLTRB(4, 26, 4, 8),
         child: Text(text,
             style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: GColors.inkSoft)),
       );
@@ -250,32 +251,6 @@ class _Switch extends StatelessWidget {
 }
 
 /// Compact outlined dropdown in the brand style.
-/// Brand radio: charcoal ring, filled dot when picked; grey ring otherwise.
-class _Radio extends StatelessWidget {
-  const _Radio(this.on);
-  final bool on;
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 10, right: 4),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: on ? GColors.ink : GColors.line, width: 1.5),
-          ),
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutBack,
-            scale: on ? 1 : 0,
-            child: Container(width: 11, height: 11, decoration: const BoxDecoration(color: GColors.ink, shape: BoxShape.circle)),
-          ),
-        ),
-      );
-}
-
 class _Dropdown extends StatelessWidget {
   const _Dropdown({required this.value, required this.items, required this.onChanged});
   final String value;

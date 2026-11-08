@@ -121,15 +121,16 @@ class _ResultScreenState extends State<ResultScreen> {
     final t = Theme.of(context).textTheme;
     final shown = _filter == null ? r.findings : r.bySeverity(_filter!);
 
-    final scoreColor = GColors.forScore(r.score);
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Stack(children: [
-        ListView(
+        CustomScrollView(
         controller: _scroll,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
-        children: staggered([
+        slivers: [
+        SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+        sliver: SliverList.list(children: staggered([
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
@@ -159,7 +160,21 @@ class _ResultScreenState extends State<ResultScreen> {
           const SizedBox(height: 10),
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
-          _ScoreCard(result: r),
+        ])),
+        ),
+        // The score stays put: everything below scrolls up and tucks under it.
+        PinnedHeaderSliver(
+          child: ColoredBox(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: FadeInUp(index: 4, child: _ScoreCard(result: r)),
+            ),
+          ),
+        ),
+        SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
+        sliver: SliverList.list(children: staggered([
           if (r.summary != null || r.audience != null || r.dealType != 'general' || r.industry != 'general') ...[
             const SizedBox(height: 6),
             _AboutCard(result: r),
@@ -256,55 +271,10 @@ class _ResultScreenState extends State<ResultScreen> {
               style: t.bodySmall?.copyWith(color: GColors.inkFaint),
             ),
           ),
-        ]),
-      ),
-        // Score badge that docks top-right once the big card scrolls away.
-        Positioned(
-          top: 14,
-          right: 16,
-          child: IgnorePointer(
-            ignoring: !_showMini,
-            child: AnimatedSlide(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
-              offset: _showMini ? Offset.zero : const Offset(0, -1.4),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 220),
-                opacity: _showMini ? 1 : 0,
-                child: Pressable(
-                  onTap: () => _scroll.animateTo(0, duration: const Duration(milliseconds: 600), curve: Curves.easeOutCubic),
-                  child: Container(
-                    height: 50,
-                    padding: const EdgeInsets.fromLTRB(6, 0, 14, 0),
-                    decoration: BoxDecoration(
-                      color: GColors.white,
-                      borderRadius: BorderRadius.circular(99),
-                      border: Border.all(color: GColors.line, width: 1),
-                      boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(color: scoreColor, shape: BoxShape.circle),
-                        child: Text('${r.score}',
-                            style: TextStyle(
-                              fontFamily: AppTheme.display,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: GColors.onColor(scoreColor),
-                            )),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(r.verdict, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                    ]),
-                  ),
-                ),
-              ),
-            ),
-          ),
+        ], start: 5)),
         ),
+        ],
+      ),
         // Back to top.
         Positioned(
           right: 16,

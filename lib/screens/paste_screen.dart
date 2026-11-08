@@ -50,9 +50,9 @@ class _PasteScreenState extends State<PasteScreen> {
     return InputScaffold(
       accent: GColors.green,
       icon: Icons.content_paste_rounded,
-      title: 'Paste the ',
+      title: 'Drop in the ',
       titleSerif: 'fine print',
-      subtitle: 'Copy terms from an app, email or website and drop them here.',
+      subtitle: 'Copy the terms from an app, email or website and put them below.',
       bottom: BigButton(
         label: 'Find the catches',
         icon: Icons.arrow_forward_rounded,
@@ -182,13 +182,7 @@ class InputScaffold extends StatelessWidget {
                         style: const TextStyle(
                             fontFamily: AppTheme.display, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1)),
                     const SizedBox(width: 8),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-                      child: LoopyIcon(_loopy, size: 28, color: GColors.onColor(accent), stroke: 2.2),
-                    ),
+                    IconBlob(_loopy, color: accent, iconColor: GColors.onColor(accent), size: 40),
                   ]),
                   const SizedBox(height: 28),
                   HeadingText(title, serif: titleSerif, size: 36),
