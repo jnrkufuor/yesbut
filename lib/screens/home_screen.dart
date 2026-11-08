@@ -403,7 +403,14 @@ class _NudgeIconState extends TapReactiveState<_NudgeIcon> {
                 ),
               ]),
             'settings' => Transform.rotate(angle: Curves.easeOutBack.transform(v) * math.pi / 3, child: child),
-            'doc' => Transform.rotate(angle: 0.18 * math.sin(v * math.pi * 2) * (1 - v), child: child),
+            // The text lines inside are written out again, one after another.
+            'doc' => tap.isAnimating
+                ? DrawnLoopy('doc', size: 24, stroke: 2.4, progress: {
+                    2: ((v - 0.0) / 0.4).clamp(0.0, 1.0),
+                    3: ((v - 0.25) / 0.4).clamp(0.0, 1.0),
+                    4: ((v - 0.5) / 0.4).clamp(0.0, 1.0),
+                  })
+                : child!,
             _ => Transform.scale(scale: 1 + 0.15 * hump, child: child),
           };
         },

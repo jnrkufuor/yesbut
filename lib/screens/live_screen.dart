@@ -45,7 +45,7 @@ class _LiveScreenState extends State<LiveScreen> {
 
   Future<void> _refresh() async {
     final state = context.read<AppState>();
-    final n = await state.refreshWatch();
+    final n = await state.refreshWatch(force: true);
     await _loadTrending(force: true);
     if (mounted) showToast(context, n == 0 ? 'Nothing new right now.' : '$n of your terms changed.');
   }
@@ -75,11 +75,26 @@ class _LiveScreenState extends State<LiveScreen> {
                 child: HeadingText('What’s ', serif: 'changed', size: 36),
               ),
               const SizedBox(height: 10),
-              Text('Terms you watch are re-checked a couple of times a day. We’ll send a notification when one changes.',
+              Text('We re-check the terms you watch on a schedule and send a notification when one changes. Pull down to check now.',
                   style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
             ]),
             const SizedBox(height: 20),
-            FadeInUp(index: 4, child: _sectionHead('Changes', state.checkingWatch ? 'Checking now…' : null)),
+            FadeInUp(
+              index: 4,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 0, 10),
+                child: Row(children: [
+                  Expanded(child: Text('Changes', style: t.titleLarge)),
+                  if (state.checkingWatch)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 8),
+                      child: Text('Checking now…', style: TextStyle(fontSize: 13, color: GColors.inkSoft)),
+                    )
+                  else
+                    _EveryPicker(state: state),
+                ]),
+              ),
+            ),
             if (changed.isEmpty)
               FadeInUp(
                 index: 5,
@@ -200,16 +215,39 @@ class _WatchRow extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontFamily: AppTheme.display, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
-              Text(item.lastChecked == null ? 'Not checked yet' : 'Checked ${timeAgo(item.lastChecked!)}',
+              Text(
+                  '${item.lastChecked == null ? 'Not checked yet' : 'Checked ${timeAgo(item.lastChecked!)}'}'
+                  '${item.everyDays == null ? '' : ' · ${(WatchService.frequencies[item.everyDays] ?? '').toLowerCase()}'}',
                   style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft)),
             ]),
           ),
           Semantics(
-            label: 'Stop watching',
-            child: IconButton(
-              onPressed: () => state.unwatch(item.url),
-              icon: const LoopyIcon('eye', size: 24, color: GColors.ink, stroke: 2.4),
-              tooltip: 'Stop watching',
+            button: true,
+            label: 'Watch settings',
+            child: Pressable(
+              onTap: () => showWatchSettings(context, item),
+              child: SizedBox(
+                width: 46,
+                height: 46,
+                child: Stack(alignment: Alignment.center, children: [
+                  const LoopyIcon('settings', size: 24, stroke: 2.4),
+                  // A small cherry dot when this one has its own schedule.
+                  if (item.everyDays != null)
+                    Positioned(
+                      right: 8,
+                      top: 9,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: GColors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: GColors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
             ),
           ),
         ]),
@@ -321,4 +359,39 @@ class _TrendCache {
       ..sort((a, b) => (b.updated ?? DateTime(1990)).compareTo(a.updated ?? DateTime(1990)));
     return list;
   }
+}
+
+
+/// "✱ Every 3 months ⌄": how often everything without its own schedule is
+/// re-checked. Same look as the reader picker on results.
+class _EveryPicker extends StatelessWidget {
+  const _EveryPicker({required this.state});
+  final AppState state;
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<int>(
+        tooltip: 'How often to check',
+        color: GColors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: GColors.line)),
+        onSelected: state.setWatchEvery,
+        itemBuilder: (_) => [
+          for (final e in WatchService.frequencies.entries)
+            PopupMenuItem(
+              value: e.key,
+              child: Row(children: [
+                Expanded(child: Text(e.value, style: const TextStyle(fontSize: 14))),
+                if (e.key == state.watchEvery) const Icon(Icons.check_rounded, size: 18),
+              ]),
+            ),
+        ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const BrandAsterisk(size: 13),
+            const SizedBox(width: 7),
+            Text('Check ${(WatchService.frequencies[state.watchEvery] ?? 'every 3 months').toLowerCase()}',
+                style: const TextStyle(fontSize: 13.5, color: GColors.inkSoft)),
+            const Icon(Icons.keyboard_arrow_down_rounded, size: 20, color: GColors.inkSoft),
+          ]),
+        ),
+      );
 }

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:path_parsing/path_parsing.dart';
 
 /// YesBut's hand-drawn, single-line icon set (40×40 viewBox).
 class Loopy {
@@ -287,4 +288,78 @@ class LidTrash extends StatelessWidget {
       ]),
     );
   }
+}
+
+class _PathMaker extends PathProxy {
+  final path = Path();
+  @override
+  void moveTo(double x, double y) => path.moveTo(x, y);
+  @override
+  void lineTo(double x, double y) => path.lineTo(x, y);
+  @override
+  void cubicTo(double x1, double y1, double x2, double y2, double x3, double y3) =>
+      path.cubicTo(x1, y1, x2, y2, x3, y3);
+  @override
+  void close() => path.close();
+}
+
+final Map<String, Path> _parsed = {};
+Path _svgPath(String d) => _parsed.putIfAbsent(d, () {
+      final m = _PathMaker();
+      writeSvgPathDataToPath(d, m);
+      return m.path;
+    });
+
+/// A loopy icon drawn stroke by stroke, so parts can be re-drawn (pen
+/// effect) or nudged. [progress]: how much of each stroke is drawn (0..1,
+/// missing = whole). [shift]: per-stroke offset in the 40-unit box.
+class DrawnLoopy extends StatelessWidget {
+  const DrawnLoopy(this.name,
+      {super.key, this.size = 30, this.color = const Color(0xFF232120), this.stroke = 2.4, this.progress = const {}, this.shift = const {}});
+  final String name;
+  final double size;
+  final Color color;
+  final double stroke;
+  final Map<int, double> progress;
+  final Map<int, Offset> shift;
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: _DrawnPainter(Loopy.paths[name] ?? const [], color, stroke, progress, shift));
+}
+
+class _DrawnPainter extends CustomPainter {
+  _DrawnPainter(this.ds, this.color, this.stroke, this.progress, this.shift);
+  final List<String> ds;
+  final Color color;
+  final double stroke;
+  final Map<int, double> progress;
+  final Map<int, Offset> shift;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / 40);
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+    for (var i = 0; i < ds.length; i++) {
+      var p = _svgPath(ds[i]);
+      final s = shift[i];
+      if (s != null) p = p.shift(s);
+      final f = (progress[i] ?? 1).clamp(0.0, 1.0);
+      if (f <= 0) continue;
+      if (f >= 1) {
+        canvas.drawPath(p, paint);
+        continue;
+      }
+      for (final m in p.computeMetrics()) {
+        canvas.drawPath(m.extractPath(0, m.length * f), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DrawnPainter o) => true;
 }

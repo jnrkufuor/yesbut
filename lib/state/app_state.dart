@@ -35,6 +35,24 @@ class AppState extends ChangeNotifier {
   bool _checkingWatch = false;
   bool get checkingWatch => _checkingWatch;
 
+  int _watchEvery = WatchService.defaultEvery;
+  int get watchEvery => _watchEvery;
+
+  Future<void> setWatchEvery(int days) async {
+    _watchEvery = days;
+    notifyListeners();
+    await WatchService.saveEvery(days);
+  }
+
+  /// Per-item schedule; null goes back to the general one.
+  Future<void> setItemEvery(String url, int? days) async {
+    final i = _watch.indexWhere((w) => w.url == url);
+    if (i == -1) return;
+    _watch[i] = _watch[i].copyWith(everyDays: days, useDefault: days == null);
+    notifyListeners();
+    await WatchService.save(_watch);
+  }
+
   bool isWatching(String? url) => url != null && _watch.any((w) => w.url == url);
 
   Future<void> watch(AnalysisResult r) async {
@@ -54,11 +72,13 @@ class AppState extends ChangeNotifier {
   }
 
   /// Re-check everything you watch now (Live tab pull-to-refresh / open).
-  Future<int> refreshWatch() async {
+  Future<int> refreshWatch({bool force = false}) async {
     if (_checkingWatch || _watch.isEmpty) return 0;
     _checkingWatch = true;
     notifyListeners();
-    final (updated, changed) = await WatchService.checkAll(_watch);
+    // Pull to refresh checks everything now; opening the tab only checks
+    // what's due on its schedule.
+    final (updated, changed) = await WatchService.checkAll(_watch, force: force, every: _watchEvery);
     _watch = updated;
     _checkingWatch = false;
     notifyListeners();
@@ -87,6 +107,7 @@ class AppState extends ChangeNotifier {
     _onboarded = _storage.onboarded || _history.isNotEmpty;
     if (!_storage.onboarded) await _storage.setOnboarded();
     _watch = await WatchService.load();
+    _watchEvery = await WatchService.loadEvery();
     if (_watch.isNotEmpty) WatchService.scheduleBackground();
     await RuleBasedAnalyzer.load();
     await catalog.load();

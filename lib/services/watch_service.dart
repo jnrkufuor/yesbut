@@ -18,6 +18,8 @@ class WatchItem {
   final int? score; // score from the last full check
   final bool changed; // changed since you last looked
   final DateTime? changedAt;
+  /// How often to re-check, in days. null = use the general setting.
+  final int? everyDays;
 
   const WatchItem({
     required this.url,
@@ -29,6 +31,7 @@ class WatchItem {
     this.score,
     this.changed = false,
     this.changedAt,
+    this.everyDays,
   });
 
   WatchItem copyWith({
@@ -39,6 +42,8 @@ class WatchItem {
     int? score,
     bool? changed,
     DateTime? changedAt,
+    int? everyDays,
+    bool useDefault = false,
   }) =>
       WatchItem(
         url: url,
@@ -50,6 +55,7 @@ class WatchItem {
         score: score ?? this.score,
         changed: changed ?? this.changed,
         changedAt: changedAt ?? this.changedAt,
+        everyDays: useDefault ? null : (everyDays ?? this.everyDays),
       );
 
   Map<String, dynamic> toJson() => {
@@ -62,6 +68,7 @@ class WatchItem {
         'score': score,
         'changed': changed,
         'changedAt': changedAt?.toIso8601String(),
+        'everyDays': everyDays,
       };
 
   factory WatchItem.fromJson(Map<String, dynamic> j) => WatchItem(
@@ -74,6 +81,7 @@ class WatchItem {
         score: j['score'] is num ? (j['score'] as num).round() : null,
         changed: j['changed'] == true,
         changedAt: DateTime.tryParse('${j['changedAt']}'),
+        everyDays: j['everyDays'] is num ? (j['everyDays'] as num).round() : null,
       );
 }
 
@@ -82,6 +90,28 @@ class WatchItem {
 /// changes.
 class WatchService {
   static const _key = 'watchlist_v1';
+  static const _everyKey = 'watch_every_days';
+
+  /// Check-frequency choices, in days.
+  static const frequencies = <int, String>{
+    1: 'Daily',
+    7: 'Weekly',
+    30: 'Monthly',
+    90: 'Every 3 months',
+    182: 'Every 6 months',
+    365: 'Yearly',
+  };
+  static const defaultEvery = 90;
+
+  static Future<int> loadEvery() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_everyKey) ?? defaultEvery;
+  }
+
+  static Future<void> saveEvery(int days) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_everyKey, days);
+  }
   static const _task = 'yesbut-watch-check';
   static final _notes = FlutterLocalNotificationsPlugin();
   static bool _notesReady = false;
@@ -122,10 +152,18 @@ class WatchService {
 
   /// Re-fetches every watched page. Returns the updated list; items whose
   /// text or "last updated" date moved are marked [WatchItem.changed].
-  static Future<(List<WatchItem>, List<WatchItem>)> checkAll(List<WatchItem> items) async {
+  static Future<(List<WatchItem>, List<WatchItem>)> checkAll(List<WatchItem> items,
+      {bool force = false, int every = defaultEvery}) async {
     final out = <WatchItem>[];
     final newlyChanged = <WatchItem>[];
+    final now0 = DateTime.now();
     for (final it in items) {
+      // Not due yet (its own schedule, or the general one)? Skip it.
+      final days = it.everyDays ?? every;
+      if (!force && it.lastChecked != null && now0.difference(it.lastChecked!).inHours < days * 24 - 2) {
+        out.add(it);
+        continue;
+      }
       try {
         final page = await WebFetcher().fetchWithRetry(it.url);
         final fp = fingerprint(page.text);
@@ -212,7 +250,7 @@ void callbackDispatcher() {
     try {
       final items = await WatchService.load();
       if (items.isEmpty) return true;
-      final (updated, changed) = await WatchService.checkAll(items);
+      final (updated, changed) = await WatchService.checkAll(items, every: await WatchService.loadEvery());
       await WatchService.save(updated);
       await WatchService.notifyChanged(changed);
     } catch (_) {}

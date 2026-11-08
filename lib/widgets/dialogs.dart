@@ -3,6 +3,7 @@ import '../i18n/text.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../services/watch_service.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import 'common.dart';
@@ -92,6 +93,68 @@ class LeaveGuard extends StatelessWidget {
         },
         child: child,
       );
+}
+
+/// Per-item watch settings: how often to check it, or stop watching.
+Future<void> showWatchSettings(BuildContext context, WatchItem item) async {
+  final state = context.read<AppState>();
+  final general = WatchService.frequencies[state.watchEvery] ?? 'Every 3 months';
+  int? pick = item.everyDays;
+  final stop = await _sheet<bool>(
+    context,
+    (ctx) => StatefulBuilder(builder: (ctx, set) {
+      Widget chip(String label, int? days) {
+        final on = pick == days;
+        return Pressable(
+          onTap: () {
+            set(() => pick = days);
+            state.setItemEvery(item.url, days);
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            height: 38,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: on ? GColors.ink : GColors.white,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: GColors.ink, width: 1),
+            ),
+            child: Text(label,
+                style: TextStyle(fontSize: 13, fontWeight: on ? FontWeight.w600 : FontWeight.w400, color: on ? GColors.white : GColors.ink)),
+          ),
+        );
+      }
+
+      return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _sheetTitle('Watching ', item.title),
+        const SizedBox(height: 8),
+        const Text('How often should we check these terms for changes?',
+            style: TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft)),
+        const SizedBox(height: 16),
+        Wrap(spacing: 6, runSpacing: 6, children: [
+          chip('Same as the rest ($general)', null),
+          for (final e in WatchService.frequencies.entries) chip(e.value, e.key),
+        ]),
+        const SizedBox(height: 22),
+        BigButton(label: 'Done', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
+        const SizedBox(height: 8),
+        Pressable(
+          onTap: () => Navigator.pop(ctx, true),
+          child: Container(
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(99), border: Border.all(color: GColors.red, width: 1)),
+            child: const Text('Stop watching', style: TextStyle(color: GColors.red, fontSize: 16, fontWeight: FontWeight.w600)),
+          ),
+        ),
+      ]);
+    }),
+  );
+  if (stop == true) {
+    await state.unwatch(item.url);
+    if (context.mounted) showToast(context, 'Stopped watching.');
+  }
 }
 
 /// Reading again with the same reader rarely changes much: check first.

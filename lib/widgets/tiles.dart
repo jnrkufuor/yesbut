@@ -51,7 +51,8 @@ class ActionTile extends StatelessWidget {
                     child: _TileIcon(icon, color: fg),
                   ),
                   const Spacer(),
-                  FlowArrow(color: fg, size: 22),
+                  // Quiet, steady arrow: just a hint the card opens.
+                  Opacity(opacity: 0.7, child: Icon(Icons.arrow_outward_rounded, color: fg, size: 22)),
                 ]),
                 const Spacer(),
                 Text(title,
@@ -254,23 +255,35 @@ class _TileIcon extends TapReactive {
 
 class _TileIconState extends TapReactiveState<_TileIcon> {
   @override
+  Duration get tapDuration => const Duration(milliseconds: 620);
+
+  @override
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: tap,
-        builder: (_, child) {
-          final v = tap.value;
-          if (!tap.isAnimating) return child!;
-          final decay = 1 - v;
-          return switch (widget.icon) {
-            'scan' => Transform.scale(scale: 1 - 0.16 * math.sin(v * math.pi * 2) * decay, child: child),
-            'upload' => Transform.translate(offset: Offset(0, -9 * math.sin(v * math.pi) * (v < 0.6 ? 1 : decay * 2.5)), child: child),
-            'paste' => Transform.rotate(angle: 0.16 * math.sin(v * math.pi * 3) * decay, child: child),
-            _ => Transform.rotate(
-                angle: 0.28 * math.sin(v * math.pi * 2.5) * decay,
-                alignment: const Alignment(0.2, -0.7),
-                child: child,
-              ),
-          };
+        builder: (_, __) {
+          final v = tap.isAnimating ? Curves.easeInOut.transform(tap.value) : 1.0;
+          final moving = tap.isAnimating;
+          final progress = <int, double>{};
+          final shift = <int, Offset>{};
+          switch (widget.icon) {
+            case 'scan': // the circle in the middle is drawn again
+              if (moving) progress[4] = v;
+            case 'upload': // the arrow dips, then shoots up, then settles
+              if (moving) {
+                final t = tap.value;
+                final y = t < 0.3
+                    ? 5 * math.sin(t / 0.3 * math.pi / 2)
+                    : t < 0.7
+                        ? 5 - 12 * Curves.easeOut.transform((t - 0.3) / 0.4)
+                        : -7 * (1 - Curves.easeOut.transform((t - 0.7) / 0.3));
+                shift[1] = Offset(0, y);
+              }
+            case 'paste': // the scribble writes itself left to right
+              if (moving) progress[1] = v;
+            default: // link: the loop is drawn again
+              if (moving) progress[0] = v;
+          }
+          return DrawnLoopy(widget.icon, size: 70, color: widget.color, stroke: 1.5, progress: progress, shift: shift);
         },
-        child: LoopyIcon(widget.icon, size: 70, color: widget.color, stroke: 1.5),
       );
 }
