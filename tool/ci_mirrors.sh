@@ -37,9 +37,13 @@ def first = { RepositoryHandler repos ->
   repos.remove(r)
   repos.addFirst(r)
 }
-beforeSettings { s ->
-  first(s.pluginManagement.repositories)
-  first(s.dependencyResolutionManagement.repositories)
+settingsEvaluated { s ->
+  // An empty plugin list means "use the Plugin Portal"; keep that when we add ours.
+  def plugins = s.pluginManagement.repositories
+  if (plugins.isEmpty()) plugins.gradlePluginPortal()
+  first(plugins)
+  def deps = s.dependencyResolutionManagement.repositories
+  if (!deps.isEmpty()) first(deps)
 }
 allprojects { p ->
   // Builds that only allow repositories from settings already got the
