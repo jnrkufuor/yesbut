@@ -21,5 +21,18 @@ elif [ -f "$GRADLE_GROOVY" ] && ! grep -q "proguard-rules.pro" "$GRADLE_GROOVY";
   perl -0pi -e "s/(buildTypes\s*\{\s*release\s*\{)/\$1\n            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'/" "$GRADLE_GROOVY"
 fi
 
+# Notifications need core library desugaring and Android 7+.
+if [ -f "$GRADLE_KTS" ] && ! grep -q "isCoreLibraryDesugaringEnabled" "$GRADLE_KTS"; then
+  perl -0pi -e 's/(compileOptions\s*\{)/$1\n        isCoreLibraryDesugaringEnabled = true/' "$GRADLE_KTS"
+  grep -q "isCoreLibraryDesugaringEnabled" "$GRADLE_KTS" || \
+    perl -0pi -e 's/(\nandroid\s*\{)/$1\n    compileOptions { isCoreLibraryDesugaringEnabled = true }/' "$GRADLE_KTS"
+  perl -0pi -e 's/minSdk\s*=\s*flutter\.minSdkVersion/minSdk = maxOf(flutter.minSdkVersion, 24)/' "$GRADLE_KTS"
+  printf '\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n' >> "$GRADLE_KTS"
+elif [ -f "$GRADLE_GROOVY" ] && ! grep -q "coreLibraryDesugaringEnabled" "$GRADLE_GROOVY"; then
+  perl -0pi -e 's/(compileOptions\s*\{)/$1\n        coreLibraryDesugaringEnabled true/' "$GRADLE_GROOVY"
+  printf "\ndependencies {\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'\n}\n" >> "$GRADLE_GROOVY"
+fi
+grep -n "Desugar\|minSdk\|coreLibrary" "$GRADLE_KTS" "$GRADLE_GROOVY" 2>/dev/null || true
+
 flutter pub get
 echo "✔ Platforms ready."

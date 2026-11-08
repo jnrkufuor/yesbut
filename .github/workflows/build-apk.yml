@@ -29,10 +29,10 @@ jobs:
         run: ./tool/setup_platforms.sh
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Build per-device APKs (smaller downloads)
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --dart-define=GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
 
       - name: Collect APKs
         run: |

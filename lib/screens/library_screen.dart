@@ -11,7 +11,12 @@ import 'flows.dart';
 import 'home_screen.dart' show openLibraryItem, PageHeader;
 
 class LibraryScreen extends StatefulWidget {
-  const LibraryScreen({super.key});
+  const LibraryScreen({super.key, this.bare = false, this.query = ''});
+
+  /// Bare = just the categories and lists, for embedding under Find's search.
+  final bool bare;
+  /// Live filter from Find's search box.
+  final String query;
   @override
   State<LibraryScreen> createState() => _LibraryScreenState();
 }
@@ -25,19 +30,42 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final state = context.watch<AppState>();
     final t = Theme.of(context).textTheme;
 
-    return SafeArea(
-      bottom: false,
-      child: FutureBuilder<List<CatalogItem>>(
+    final body = FutureBuilder<List<CatalogItem>>(
         future: state.catalog.load(),
         builder: (context, snap) {
           final all = snap.data ?? const <CatalogItem>[];
           final cats = <String>{for (final i in all) i.category}.toList();
           final items = all.where((i) {
-            final q = _q.toLowerCase();
+            final q = (widget.bare ? widget.query : _q).toLowerCase();
             final okQ = q.isEmpty || i.name.toLowerCase().contains(q) || i.kind.toLowerCase().contains(q);
             final okC = _cat == null || i.category == _cat;
             return okQ && okC;
           }).toList();
+
+          if (widget.bare) {
+            return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              FadeInUp(
+                index: 5,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(children: [
+                    _Cat(label: 'All', selected: _cat == null, onTap: () => setState(() => _cat = null)),
+                    for (final c in cats)
+                      _Cat(label: c, selected: _cat == c, onTap: () => setState(() => _cat = c)),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 4),
+              ..._sections(items, state),
+              if (items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text('Not in our list. Tap Search and we’ll sniff out their terms on the web.',
+                      style: TextStyle(color: GColors.inkSoft)),
+                ),
+            ]);
+          }
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 18, 16, 130),
@@ -108,8 +136,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ],
           );
         },
-      ),
-    );
+      );
+    return widget.bare ? body : SafeArea(bottom: false, child: body);
   }
 }
 

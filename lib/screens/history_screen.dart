@@ -7,6 +7,7 @@ import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/dialogs.dart';
+import '../widgets/loopy.dart';
 import '../widgets/tiles.dart';
 import 'home_screen.dart' show PageHeader, TextLink;
 import 'flows.dart';
@@ -86,21 +87,18 @@ class HistoryScreen extends StatelessWidget {
           ]),
           const SizedBox(height: 10),
           if (items.isEmpty)
-            FadeInUp(
+            const FadeInUp(
               index: 5,
-              child: Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(color: GColors.surface, borderRadius: BorderRadius.circular(30)),
-                child: const Column(children: [
-                  SizedBox(height: 6),
-                  HopDots(size: 14),
-                  SizedBox(height: 22),
-                  Text('No checks yet',
-                      style: TextStyle(fontFamily: AppTheme.display, fontSize: 20, fontWeight: FontWeight.w700)),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 28),
+                child: Column(children: [
+                  LoopyIcon('sleep', size: 84, stroke: 1.8),
+                  SizedBox(height: 16),
+                  Text('Nothing here yet',
+                      style: TextStyle(fontFamily: AppTheme.display, fontSize: 21, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
                   SizedBox(height: 4),
-                  Text('Scan, upload, paste or link something to get started.',
+                  Text('Scan, upload, paste or link something and it’ll show up here.',
                       textAlign: TextAlign.center, style: TextStyle(color: GColors.inkSoft)),
-                  SizedBox(height: 6),
                 ]),
               ),
             )

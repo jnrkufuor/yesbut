@@ -14,6 +14,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
 import 'home_screen.dart' show RoundIconButton, PageHeader;
+import 'library_screen.dart';
 
 /// "Find the fine print": search the web for a company's terms, show what we
 /// found with how fresh each page is, then check the one you pick.
@@ -97,7 +98,7 @@ class _SearchScreenState extends State<SearchScreen> {
               if (!widget.embedded)
                 Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())])
               else
-                const PageHeader(title: 'Search', icon: 'search'),
+                const PageHeader(title: 'Find', icon: 'search'),
               const SizedBox(height: 28),
               const FittedBox(
                 fit: BoxFit.scaleDown,
@@ -129,7 +130,16 @@ class _SearchScreenState extends State<SearchScreen> {
               child: _busy
                   ? _Sniffing(key: const ValueKey('busy'), query: _searched, progress: _progress)
                   : _results == null
-                      ? const _Suggestions(key: ValueKey('idle'))
+                      ? Column(
+                          key: const ValueKey('idle'),
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('OR PICK A POPULAR ONE',
+                                style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: GColors.inkSoft)),
+                            const SizedBox(height: 10),
+                            LibraryScreen(bare: true, query: _q.text.trim()),
+                          ],
+                        )
                       : _Results(
                           key: ValueKey('r$_run'),
                           query: _searched,

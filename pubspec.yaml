@@ -1,7 +1,7 @@
 name: yesbut
 description: "YesBut — read the fine print without reading the fine print."
 publish_to: "none"
-version: 0.5.0+5
+version: 0.6.0+6
 
 environment:
   sdk: ">=3.5.0 <4.0.0"
@@ -23,6 +23,8 @@ dependencies:
   animations: ^2.0.11
   url_launcher: ^6.3.1
   flutter_tts: ^4.2.3
+  flutter_local_notifications: ^22.3.3
+  workmanager: ^0.10.10
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'screens/onboarding_screen.dart';
 import 'screens/root_shell.dart';
 import 'services/storage.dart';
+import 'services/watch_service.dart';
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
 import 'widgets/loopy.dart';
@@ -13,6 +14,7 @@ import 'widgets/loopy.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  WatchService.initNotifications().catchError((_) {});
   runApp(const YesButApp());
 }
 
@@ -27,7 +29,7 @@ class _YesButAppState extends State<YesButApp> {
   // Show the animated splash for at least its full run, even if init is fast.
   late final Future<void> _ready = Future.wait([
     _state.init(),
-    Future<void>.delayed(const Duration(milliseconds: 3000)), // let the splash breathe
+    Future<void>.delayed(const Duration(milliseconds: 3600)), // 1s pause + animation + a beat
   ]);
 
   @override
@@ -81,7 +83,16 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..forward();
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
+
+  @override
+  void initState() {
+    super.initState();
+    // A one-second pause on a blank screen before "yes," arrives.
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) _c.forward();
+    });
+  }
 
   double _seg(double a, double b, [Curve curve = Curves.linear]) =>
       curve.transform(((_c.value - a) / (b - a)).clamp(0.0, 1.0));

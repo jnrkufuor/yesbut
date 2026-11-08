@@ -3,11 +3,13 @@ import 'package:flutter/foundation.dart';
 import '../models/analysis.dart';
 import '../services/analysis/claude_analyzer.dart';
 import '../services/analysis/context_profile.dart';
+import '../services/analysis/gemini_analyzer.dart';
 import '../services/analysis/offline_translator.dart';
 import '../services/analysis/rule_based_analyzer.dart';
 import '../services/catalog_repository.dart';
 import '../i18n/translations.dart';
 import '../services/storage.dart';
+import '../services/watch_service.dart';
 
 class AppState extends ChangeNotifier {
   AppState(this._storage);
@@ -23,6 +25,43 @@ class AppState extends ChangeNotifier {
   bool _onboarded = true;
 
   List<AnalysisResult> get history => List.unmodifiable(_history);
+
+  // ---------------------------------------------------------------- watch list
+  List<WatchItem> _watch = [];
+  List<WatchItem> get watchlist => List.unmodifiable(_watch);
+  bool _checkingWatch = false;
+  bool get checkingWatch => _checkingWatch;
+
+  bool isWatching(String? url) => url != null && _watch.any((w) => w.url == url);
+
+  Future<void> watch(AnalysisResult r) async {
+    final url = r.sourceRef;
+    if (url == null || isWatching(url)) return;
+    _watch.insert(0, WatchItem(url: url, title: r.title, addedAt: DateTime.now(), score: r.score, lastChecked: DateTime.now()));
+    notifyListeners();
+    await WatchService.save(_watch);
+    await WatchService.askPermission();
+    await WatchService.scheduleBackground();
+  }
+
+  Future<void> unwatch(String url) async {
+    _watch.removeWhere((w) => w.url == url);
+    notifyListeners();
+    await WatchService.save(_watch);
+  }
+
+  /// Re-check everything you watch now (Live tab pull-to-refresh / open).
+  Future<int> refreshWatch() async {
+    if (_checkingWatch || _watch.isEmpty) return 0;
+    _checkingWatch = true;
+    notifyListeners();
+    final (updated, changed) = await WatchService.checkAll(_watch);
+    _watch = updated;
+    _checkingWatch = false;
+    notifyListeners();
+    await WatchService.save(_watch);
+    return changed.length;
+  }
   AppSettings get settings => _settings;
   bool get onboarded => _onboarded;
 
@@ -32,6 +71,8 @@ class AppState extends ChangeNotifier {
     _settings = _storage.loadSettings();
     await i18n.setLanguage(_settings.resultLanguage);
     _onboarded = _storage.onboarded;
+    _watch = await WatchService.load();
+    if (_watch.isNotEmpty) WatchService.scheduleBackground();
     await RuleBasedAnalyzer.load();
     await catalog.load();
   }
@@ -76,7 +117,16 @@ class AppState extends ChangeNotifier {
     final profile = ContextProfiler.profile(work);
     work = work.copyWith(dealType: profile.dealType, industry: profile.industry);
     AnalysisResult result;
-    if (aiEnabled && _settings.aiReady) {
+    if (GeminiAnalyzer.available) {
+      // Free Gemini model reads it against this industry's guide; if it's
+      // unreachable or over its free quota, fall back to the offline reader.
+      try {
+        result = await GeminiAnalyzer().analyze(work);
+      } catch (e) {
+        result = (await offline.analyze(work))
+            .copyWith(note: 'The AI reader was busy, so this is the quicker offline check.');
+      }
+    } else if (aiEnabled && _settings.aiReady) {
       try {
         result = await ClaudeAnalyzer(
           apiKey: _settings.apiKey.trim(),
@@ -173,6 +223,20 @@ class AppState extends ChangeNotifier {
   }
 
   void _save(AnalysisResult r) {
+    final i = _watch.indexWhere((w) => w.url == r.sourceRef);
+    if (i != -1) {
+      _watch[i] = WatchItem(
+        url: _watch[i].url,
+        title: _watch[i].title,
+        addedAt: _watch[i].addedAt,
+        lastChecked: DateTime.now(),
+        hash: _watch[i].hash,
+        pageDate: _watch[i].pageDate,
+        score: r.score,
+        changed: false,
+      );
+      WatchService.save(_watch);
+    }
     _history.removeWhere(
         (h) => h.sourceRef != null && h.sourceRef == r.sourceRef);
     _history.insert(0, r);

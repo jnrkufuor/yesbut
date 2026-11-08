@@ -6,7 +6,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'history_screen.dart';
 import 'home_screen.dart';
-import 'library_screen.dart';
+import 'live_screen.dart';
 import 'search_screen.dart';
 
 class RootShell extends StatefulWidget {
@@ -43,10 +43,10 @@ class _RootShellState extends State<RootShell> {
               key: ValueKey(_index),
               child: switch (_index) {
                 1 => const SearchScreen(embedded: true),
-                2 => const LibraryScreen(),
+                2 => const LiveScreen(),
                 3 => const HistoryScreen(),
                 _ => HomeScreen(
-                    onSeeLibrary: () => _go(2),
+                    onSeeLibrary: () => _go(1),
                     onSeeHistory: () => _go(3),
                     onSearch: () => _go(1),
                   ),
@@ -90,8 +90,8 @@ class PillNav extends StatefulWidget {
 }
 
 class _PillNavState extends State<PillNav> {
-  static const _icons = ['check', 'search', 'library', 'history'];
-  static const _labels = ['Check', 'Search', 'Library', 'History'];
+  static const _icons = ['check', 'search', 'eye', 'history'];
+  static const _labels = ['Check', 'Find', 'Live', 'History'];
   static const _w = 330.0;
   static const _h = 70.0;
   static const _btn = 52.0;

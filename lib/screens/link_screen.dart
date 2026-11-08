@@ -49,12 +49,13 @@ class _LinkScreenState extends State<LinkScreen> {
     return InputScaffold(
       accent: GColors.ink,
       icon: Icons.link_rounded,
-      title: 'Drop a link',
+      title: 'Drop a ',
+      titleSerif: 'link',
       subtitle: 'Paste the web address of any terms, privacy policy or subscription page.',
       bottom: BigButton(
         label: 'Read it for me',
         icon: Icons.arrow_forward_rounded,
-        color: GColors.white,
+        color: GColors.ink,
         onTap: ok ? _go : null,
       ),
       children: [
@@ -69,7 +70,14 @@ class _LinkScreenState extends State<LinkScreen> {
           },
           decoration: InputDecoration(
             hintText: 'https://example.com/terms',
-            prefixIcon: const Icon(Icons.public_rounded, color: GColors.inkFaint),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.line)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.line)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.ink)),
+            prefixIcon: const Padding(
+              padding: EdgeInsets.only(left: 14, right: 6),
+              child: LoopyIcon('link', size: 22, stroke: 2.2),
+            ),
             suffixIcon: _url.text.isEmpty
                 ? null
                 : IconButton(
@@ -78,38 +86,29 @@ class _LinkScreenState extends State<LinkScreen> {
                   ),
           ),
         ),
-        const SizedBox(height: 18),
-        const SoftCard(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            LoopyIcon('eye', size: 26, stroke: 2.2),
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Heads up: some sites build their page with scripts, so the first try can come back empty. '
-                'We retry automatically, and tapping Try again usually does it. Still stuck? Open the page in '
-                'your browser, copy the text and use Paste text.',
-                style: TextStyle(fontSize: 13.5, height: 1.45),
-              ),
-            ),
-          ]),
+        const SizedBox(height: 22),
+        const InfoRow(
+          icon: 'eye',
+          text: 'Some sites build their page with scripts, so the first try can come back empty. '
+              'We retry automatically. Still stuck? Copy the text and use Paste text.',
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         Pressable(
           onTap: () => Flows.search(context),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(GRadius.lg),
-              border: Border.all(color: GColors.white.withValues(alpha: 0.5), width: 1),
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: GColors.line, width: 1),
             ),
             child: const Row(children: [
-              LoopyIcon('search', size: 26, color: GColors.white, stroke: 2.4),
+              LoopyIcon('search', size: 24, stroke: 2.2),
               SizedBox(width: 12),
               Expanded(
-                child: Text('Don’t have the link? Search for a company’s terms instead.',
-                    style: TextStyle(fontSize: 13.5, height: 1.45, color: GColors.white)),
+                child: Text('No link? Search for a company’s terms instead.',
+                    style: TextStyle(fontSize: 13.5, height: 1.45)),
               ),
-              Icon(Icons.arrow_outward_rounded, size: 20, color: GColors.white),
+              Icon(Icons.arrow_outward_rounded, size: 20, color: GColors.ink),
             ]),
           ),
         ),

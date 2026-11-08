@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Needed to fetch online terms pages and (optionally) call the AI engine. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Alerts when terms you watch change. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="Yes,But"

@@ -140,6 +140,10 @@ class _ResultScreenState extends State<ResultScreen> {
           ]),
           const SizedBox(height: 18),
           _SourceChip(result: r),
+          if (webUrlOf(r) != null) ...[
+            const SizedBox(height: 8),
+            _WatchButton(result: r),
+          ],
           const SizedBox(height: 10),
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
@@ -1302,6 +1306,52 @@ class _JargonChipState extends State<_JargonChip> with SingleTickerProviderState
                 child: Text(on ? '×' : '?',
                     style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: on ? fg : bg, height: 1)),
               ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// "Watch for changes": re-checks this page in the background and sends a
+/// notification when the terms change.
+class _WatchButton extends StatelessWidget {
+  const _WatchButton({required this.result});
+  final AnalysisResult result;
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final on = state.isWatching(result.sourceRef);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        toggled: on,
+        child: Pressable(
+          onTap: () async {
+            if (on) {
+              await state.unwatch(result.sourceRef!);
+              if (context.mounted) showToast(context, 'Stopped watching.');
+            } else {
+              await state.watch(result);
+              if (context.mounted) showToast(context, 'Watching. We’ll let you know if these terms change.');
+            }
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            decoration: BoxDecoration(
+              color: on ? GColors.ink : GColors.white,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: GColors.ink, width: 1),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              LoopyIcon('eye', size: 18, color: on ? GColors.white : GColors.ink, stroke: 2.6),
+              const SizedBox(width: 6),
+              Text(on ? 'Watching for changes' : 'Watch for changes',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: on ? GColors.white : GColors.ink)),
             ]),
           ),
         ),

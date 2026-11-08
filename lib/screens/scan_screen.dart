@@ -7,6 +7,7 @@ import '../models/analysis.dart';
 import '../services/ingestion/scanner.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/loopy.dart';
 import 'flows.dart';
 import 'paste_screen.dart';
 
@@ -66,66 +67,64 @@ class _ScanScreenState extends State<ScanScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final n = _pages.length;
     return InputScaffold(
       accent: GColors.red,
       icon: Icons.document_scanner_rounded,
-      title: 'Scan the contract',
+      title: 'Scan the ',
+      titleSerif: 'contract',
       subtitle: 'Snap each page. Text is read right on your phone.',
       bottom: BigButton(
-        label: _pages.isEmpty ? 'Add a page to start' : 'Check ${_pages.length} page${_pages.length == 1 ? '' : 's'}',
+        label: n == 0 ? 'Add a page to start' : 'Check $n page${n == 1 ? '' : 's'}',
         icon: Icons.arrow_forward_rounded,
-        color: GColors.white,
-        onTap: _pages.isEmpty ? null : _analyze,
+        color: GColors.ink,
+        onTap: n == 0 ? null : _analyze,
       ),
       children: [
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.74,
-          children: [
-            for (var i = 0; i < _pages.length; i++)
-              _PageThumb(
-                index: i + 1,
-                path: _pages[i].path,
-                onRemove: () => setState(() => _pages.removeAt(i)),
-              ),
-            Pressable(
-              onTap: _busy ? null : () => _add(),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: GColors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(GRadius.md),
-                  border: Border.all(color: GColors.white.withValues(alpha: 0.5), width: 1),
-                ),
-                child: Center(
-                  child: _busy
-                      ? const HopDots(size: 9)
-                      : const Column(mainAxisSize: MainAxisSize.min, children: [
-                          Icon(Icons.add_a_photo_rounded, color: GColors.white, size: 30),
-                          SizedBox(height: 8),
-                          Text('Snap page',
-                              style: TextStyle(color: GColors.white, fontWeight: FontWeight.w600)),
-                        ]),
-                ),
-              ),
-            ),
-          ],
+        HeroAction(
+          color: GColors.red,
+          icon: 'scan',
+          title: n == 0 ? 'Snap a page' : 'Snap page ${n + 1}',
+          subtitle: 'Hold steady, good light helps',
+          busy: _busy,
+          onTap: () => _add(),
         ),
-        const SizedBox(height: 14),
-        Center(
-          child: TextButton.icon(
-            onPressed: _busy ? null : () => _add(gallery: true),
-            icon: const Icon(Icons.photo_library_rounded, size: 18),
-            label: const Text('Pick from photos instead'),
-            style: TextButton.styleFrom(
-              foregroundColor: GColors.white,
-              textStyle: const TextStyle(fontFamily: AppTheme.font, fontWeight: FontWeight.w700),
+        const SizedBox(height: 12),
+        Center(child: OutlinePill(label: 'Pick from photos', icon: 'upload', onTap: _busy ? null : () => _add(gallery: true))),
+        const SizedBox(height: 26),
+        Row(children: [
+          const Text('YOUR PAGES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.1, color: GColors.inkSoft)),
+          const Spacer(),
+          if (n > 0) Text('$n', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: GColors.inkSoft)),
+        ]),
+        const SizedBox(height: 10),
+        if (n == 0)
+          Container(
+            height: 120,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(color: GColors.line, width: 1),
             ),
+            child: const Text('Pages you snap show up here', style: TextStyle(fontSize: 13, color: GColors.inkFaint)),
+          )
+        else
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.74,
+            children: [
+              for (var i = 0; i < n; i++)
+                _PageThumb(
+                  index: i + 1,
+                  path: _pages[i].path,
+                  onRemove: () => setState(() => _pages.removeAt(i)),
+                ),
+            ],
           ),
-        ),
       ],
     );
   }
@@ -142,6 +141,7 @@ class _PageThumb extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(GRadius.md),
       child: Stack(fit: StackFit.expand, children: [
+        DecoratedBox(decoration: BoxDecoration(border: Border.all(color: GColors.line))),
         Image.file(File(path), fit: BoxFit.cover),
         Positioned(
           left: 8,
