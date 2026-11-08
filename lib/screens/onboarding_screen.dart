@@ -59,7 +59,7 @@ class _Bullet extends StatelessWidget {
             child: Icon(icon, color: GColors.onColor(color), size: 19),
           ),
           const SizedBox(width: 14),
-          Text(text, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w700)),
+          Text(text, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w400)),
         ]),
       );
 }

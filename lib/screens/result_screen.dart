@@ -121,16 +121,15 @@ class _ResultScreenState extends State<ResultScreen> {
     final t = Theme.of(context).textTheme;
     final shown = _filter == null ? r.findings : r.bySeverity(_filter!);
 
+    final scoreColor = GColors.forScore(r.score);
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Stack(children: [
-        CustomScrollView(
+        ListView(
         controller: _scroll,
-        slivers: [
-        SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-        sliver: SliverList.list(children: staggered([
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
+        children: staggered([
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
@@ -166,21 +165,7 @@ class _ResultScreenState extends State<ResultScreen> {
           const SizedBox(height: 10),
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
-        ])),
-        ),
-        // The score stays put: everything below scrolls up and tucks under it.
-        PinnedHeaderSliver(
-          child: ColoredBox(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: FadeInUp(index: 4, child: _ScoreCard(result: r)),
-            ),
-          ),
-        ),
-        SliverPadding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
-        sliver: SliverList.list(children: staggered([
+          _ScoreCard(result: r),
           if (r.summary != null || r.audience != null) ...[
             const SizedBox(height: 6),
             _AboutCard(result: r),
@@ -277,10 +262,55 @@ class _ResultScreenState extends State<ResultScreen> {
               style: t.bodySmall?.copyWith(color: GColors.inkFaint),
             ),
           ),
-        ], start: 5)),
-        ),
-        ],
+        ]),
       ),
+        // Score badge that docks top-right once the big card scrolls away.
+        Positioned(
+          top: 14,
+          right: 16,
+          child: IgnorePointer(
+            ignoring: !_showMini,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutBack,
+              offset: _showMini ? Offset.zero : const Offset(0, -1.4),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 220),
+                opacity: _showMini ? 1 : 0,
+                child: Pressable(
+                  onTap: () => _scroll.animateTo(0, duration: const Duration(milliseconds: 600), curve: Curves.easeOutCubic),
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.fromLTRB(6, 0, 14, 0),
+                    decoration: BoxDecoration(
+                      color: GColors.white,
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: GColors.line, width: 1),
+                      boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(color: scoreColor, shape: BoxShape.circle),
+                        child: Text('${r.score}',
+                            style: TextStyle(
+                              fontFamily: AppTheme.display,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: GColors.onColor(scoreColor),
+                            )),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(r.verdict, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         // Back to top.
         Positioned(
           right: 16,
@@ -592,29 +622,61 @@ class _KeyFacts extends StatelessWidget {
   const _KeyFacts({required this.facts});
   final List<KeyFact> facts;
 
+  Widget _card(KeyFact f) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          border: Border.all(color: GColors.line, width: 1),
+          borderRadius: BorderRadius.circular(GRadius.md),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(f.label.toUpperCase(),
+              style: const TextStyle(fontSize: 10.5, letterSpacing: 1.1, fontWeight: FontWeight.w600, color: GColors.inkFaint)),
+          const SizedBox(height: 4),
+          Text(f.value, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w400, height: 1.3)),
+        ]),
+      );
+
+  /// Even grid: short facts pair up in rows of equal height; long ones get a
+  /// full row so they don't stretch their neighbour.
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(builder: (context, box) {
-      final w = (box.maxWidth - 10) / 2;
-      return Wrap(spacing: 10, runSpacing: 10, children: [
-        for (final f in facts)
-          Container(
-            width: w,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              border: Border.all(color: GColors.line, width: 1),
-              borderRadius: BorderRadius.circular(GRadius.md),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(f.label.toUpperCase(),
-                  style: const TextStyle(
-                      fontSize: 10.5, letterSpacing: 1.1, fontWeight: FontWeight.w800, color: GColors.inkFaint)),
-              const SizedBox(height: 4),
-              Text(f.value, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, height: 1.25)),
-            ]),
-          ),
-      ]);
-    });
+    bool long(KeyFact f) => f.value.length > 60;
+    final rows = <Widget>[];
+    var i = 0;
+    while (i < facts.length) {
+      final a = facts[i];
+      if (long(a) || i == facts.length - 1) {
+        rows.add(SizedBox(width: double.infinity, child: _card(a)));
+        i++;
+        continue;
+      }
+      // Pair with the next short fact (pull a later one forward if needed).
+      final j = facts.indexWhere((f) => !long(f), i + 1);
+      if (j == -1) {
+        rows.add(SizedBox(width: double.infinity, child: _card(a)));
+        i++;
+        continue;
+      }
+      final b = facts[j];
+      rows.add(IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: _card(a)),
+          const SizedBox(width: 10),
+          Expanded(child: _card(b)),
+        ]),
+      ));
+      if (j != i + 1) {
+        // Put the skipped long ones back in line after this pair.
+        facts.sublist(i + 1, j).forEach((f) => rows.add(SizedBox(width: double.infinity, child: _card(f))));
+      }
+      i = j + 1;
+    }
+    return Column(children: [
+      for (var k = 0; k < rows.length; k++) ...[
+        if (k > 0) const SizedBox(height: 10),
+        rows[k],
+      ],
+    ]);
   }
 }
 

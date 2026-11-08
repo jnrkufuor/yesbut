@@ -83,14 +83,16 @@ class DeepSeekAnalyzer implements ContractAnalyzer {
   Future<AnalysisResult> analyze(ContractInput input) async {
     final models = await _pickModels();
     AiFailure? last;
-    for (final model in models.take(3)) {
+    for (final model in [...models.take(3), 'deepseek/deepseek-v4-flash']) {
       var res = await _post(model, input, reasoningOff: !_noReasoningParam);
       if (res.statusCode == 400 && !_noReasoningParam) {
         _noReasoningParam = true;
         res = await _post(model, input, reasoningOff: false);
       }
       if (res.statusCode == 404 || res.statusCode == 402) {
-        last = AiFailure(AiPrompt.reasonForStatus(res.statusCode, res.body));
+        final why = AiFailure(AiPrompt.reasonForStatus(res.statusCode, res.body));
+        // Keep the most useful reason (a privacy-settings block beats "not found").
+        if (last == null || why.reason.contains('privacy')) last = why;
         continue; // that free model went away; try the next one
       }
       if (res.statusCode != 200) throw AiFailure(AiPrompt.reasonForStatus(res.statusCode, res.body));

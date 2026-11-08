@@ -32,6 +32,9 @@ class AiPrompt {
     if (code == 429) return 'it’s over its free limit right now';
     if (code == 401 || code == 403) return 'its key was refused';
     if (code == 402) return 'the free version isn’t available right now';
+    if (code == 404 && body.toLowerCase().contains('data policy')) {
+      return 'your OpenRouter privacy settings are blocking free models';
+    }
     if (code == 404) return 'that model isn’t available';
     if (code >= 500) return 'its servers are busy';
     final m = RegExp(r'"message"\s*:\s*"([^"]{0,90})').firstMatch(body);
