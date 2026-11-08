@@ -251,7 +251,6 @@ class _ResultScreenState extends State<ResultScreen> {
           const SizedBox(height: 26),
           Center(
             child: Text(
-              'Checked with ${r.engine} engine · ${r.wordCount} words · ${timeAgo(r.analyzedAt)}\n'
               'Not legal advice. For big commitments, talk to a lawyer.',
               textAlign: TextAlign.center,
               style: t.bodySmall?.copyWith(color: GColors.inkFaint),
@@ -388,16 +387,27 @@ class _SourceChip extends StatelessWidget {
         ],
       ]),
     );
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: url == null
-          ? chip
-          : Semantics(
-              link: true,
-              label: 'Open the original page',
-              child: Pressable(onTap: () => openExternal(context, url), child: chip),
-            ),
-    );
+    final e = result.engine.toLowerCase();
+    final by = e.startsWith('gemini')
+        ? 'Read by Gemini'
+        : e.startsWith('deepseek')
+            ? 'Read by DeepSeek'
+            : e.startsWith('ai')
+                ? 'Read by AI'
+                : 'Read on your phone';
+    return Row(children: [
+      Flexible(
+        child: url == null
+            ? chip
+            : Semantics(
+                link: true,
+                label: 'Open the original page',
+                child: Pressable(onTap: () => openExternal(context, url), child: chip),
+              ),
+      ),
+      const SizedBox(width: 10),
+      Text(by, style: const TextStyle(fontSize: 12, color: GColors.inkFaint)),
+    ]);
   }
 }
 
@@ -1096,16 +1106,17 @@ class _AboutCard extends StatelessWidget {
         if (r.summary != null) ...[
           label('WHAT THIS IS'),
           const SizedBox(height: 6),
-          Text(r.summary!, style: const TextStyle(fontSize: 14.5, height: 1.45)),
+          _Emphasis(r.summary!),
         ],
         if (r.audience != null) ...[
           if (r.summary != null) const SizedBox(height: 14),
           label('WHO IT APPLIES TO'),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            _RoleChip(text: r.audience!, primary: true),
-            if (r.otherParty != null) _RoleChip(text: 'Also mentions ${r.otherParty}', primary: false),
-          ]),
+          const SizedBox(height: 6),
+          _Emphasis(r.audience!),
+          if (r.otherParty != null) ...[
+            const SizedBox(height: 4),
+            Text('Also mentions ${r.otherParty}.', style: const TextStyle(fontSize: 13, color: GColors.inkSoft)),
+          ],
         ],
         if (r.language != 'en') ...[
           const SizedBox(height: 12),
@@ -1117,21 +1128,53 @@ class _AboutCard extends StatelessWidget {
   }
 }
 
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({required this.text, required this.primary});
+/// A sentence with its key words in bold and underlined. AI readers mark
+/// them with **double asterisks**; otherwise we pick out who it's for
+/// (people, users, drivers…) and names.
+class _Emphasis extends StatelessWidget {
+  const _Emphasis(this.text);
   final String text;
-  final bool primary;
+
+  static final _who = RegExp(
+    r'\b(anyone|everyone|people|users?|customers?|members?|subscribers?|players?|buyers?|sellers?|drivers?|riders?|guests?|hosts?|'
+    r'tenants?|landlords?|employees?|parents?|children|kids|businesses|merchants?|creators?|visitors?|account holders?)\b',
+    caseSensitive: false,
+  );
+
+  static const _base = TextStyle(fontSize: 14.5, height: 1.5, color: GColors.ink);
+  static const _strong = TextStyle(fontWeight: FontWeight.w700, decoration: TextDecoration.underline, decorationThickness: 1.2);
+
+  List<InlineSpan> _spans(String t) {
+    if (t.contains('**')) {
+      final parts = t.split('**');
+      return [
+        for (var i = 0; i < parts.length; i++)
+          if (parts[i].isNotEmpty) TextSpan(text: parts[i], style: i.isOdd ? _strong : null),
+      ];
+    }
+    // No marks: emphasise the "who" words and capitalised names mid-sentence.
+    final names = RegExp(r'(?<=\s)[A-Z][A-Za-z0-9&]+(?:\s[A-Z][A-Za-z0-9&]+)*');
+    final hits = [..._who.allMatches(t), ...names.allMatches(t)]..sort((x, y) => x.start.compareTo(y.start));
+    final out = <InlineSpan>[];
+    var last = 0;
+    for (final m in hits) {
+      if (m.start < last) continue; // overlaps one we already took
+      if (m.start > last) out.add(TextSpan(text: t.substring(last, m.start)));
+      out.add(TextSpan(text: m.group(0), style: _strong));
+      last = m.end;
+    }
+    if (last < t.length) out.add(TextSpan(text: t.substring(last)));
+    return out;
+  }
+
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: primary ? GColors.ink : GColors.white,
-          borderRadius: BorderRadius.circular(99),
-          border: Border.all(color: GColors.ink, width: 1),
-        ),
-        child: Text(text,
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: primary ? GColors.white : GColors.ink)),
-      );
+  Widget build(BuildContext context) {
+    final plain = text.replaceAll('**', '');
+    // Translated: show the translated sentence plainly (marks can't survive).
+    final translated = context.tr(plain);
+    if (translated != plain) return Text(translated, translate: false, style: _base);
+    return Text.rich(TextSpan(children: _spans(text)), translate: false, style: _base);
+  }
 }
 
 /// Checklist of what people care about for this kind of deal.

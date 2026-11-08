@@ -69,7 +69,11 @@ class _LiveScreenState extends State<LiveScreen> {
             ...staggered([
               const PageHeader(title: 'Live', icon: 'eye'),
               const SizedBox(height: 28),
-              const HeadingText('What’s\n', serif: 'changed', size: 36),
+              const FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: HeadingText('What’s ', serif: 'changed', size: 36),
+              ),
               const SizedBox(height: 10),
               Text('Terms you watch are re-checked a couple of times a day. We’ll send a notification when one changes.',
                   style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),

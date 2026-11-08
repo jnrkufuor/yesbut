@@ -8,6 +8,7 @@ import '../models/analysis.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/ingestion/web_fetcher.dart';
+import '../services/analysis/context_profile.dart';
 import '../widgets/common.dart';
 import '../widgets/search_scene.dart';
 import '../widgets/dialogs.dart';
@@ -39,6 +40,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   int _quip = 0;
   int _step = 0; // 0 fetch/read, 1 analyze, 2 done
   String? _error;
+  bool _notTerms = false;
   bool _scriptPage = false;
   Timer? _timer;
 
@@ -90,6 +92,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
         setState(() {
           _error = e.toString();
           _scriptPage = e is ScriptPageException;
+          _notTerms = e is NotTermsException;
         });
       }
     }
@@ -98,7 +101,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    if (_error != null) return _errorView(t);
+    if (_error != null) return _notTerms ? _emptyView(t) : _errorView(t);
 
     final steps = [
       widget.fetching ? 'Grabbing the page' : 'Reading the text',
@@ -148,6 +151,30 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       ),
     );
   }
+
+  /// Nothing that looks like terms: a calm empty state, not a made-up score.
+  Widget _emptyView(TextTheme t) => Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
+              const Spacer(),
+              const LoopyIcon('sleep', size: 84, stroke: 1.8),
+              const SizedBox(height: 22),
+              const HeadingText('Nothing to ', serif: 'check here', size: 30),
+              const SizedBox(height: 12),
+              Text(
+                'We couldn’t find any terms or conditions in this, so there’s nothing to score. '
+                'Try a clearer photo of the page, or paste the full text.',
+                style: t.bodyLarge?.copyWith(color: GColors.inkSoft),
+              ),
+              const Spacer(flex: 2),
+              BigButton(label: 'Try something else', onTap: () => Navigator.of(context).maybePop()),
+            ]),
+          ),
+        ),
+      );
 
   Widget _errorView(TextTheme t) => Scaffold(
         body: SafeArea(

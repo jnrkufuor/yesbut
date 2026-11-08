@@ -99,12 +99,12 @@ class _SearchScreenState extends State<SearchScreen> {
               if (!widget.embedded)
                 Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())])
               else
-                const PageHeader(title: 'Find', icon: 'search'),
+                const PageHeader(title: 'Search', icon: 'search'),
               const SizedBox(height: 28),
               const FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: HeadingText('Find the ', serif: 'fine print', size: 36),
+                child: HeadingText('Look up any ', serif: 'company', size: 36),
               ),
               const SizedBox(height: 10),
               Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',

@@ -138,6 +138,8 @@ class AppState extends ChangeNotifier {
         final res = await r.run(work);
         final note = misses.isEmpty ? null : '${misses.join('; ')}, so ${r.name} read this instead.';
         return (res, note);
+      } on NotTermsException {
+        rethrow;
       } catch (e) {
         misses.add('${r.name} couldn’t answer (${AiPrompt.reasonFor(e)})');
       }
@@ -165,6 +167,7 @@ class AppState extends ChangeNotifier {
       }
     }
 
+    if (!looksLikeTerms(work.text)) throw NotTermsException();
     final profile = ContextProfiler.profile(work);
     work = work.copyWith(dealType: profile.dealType, industry: profile.industry);
     final result0 = await _read(work, offline);

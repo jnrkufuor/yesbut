@@ -400,3 +400,27 @@ class UnsupportedLanguageException implements Exception {
       : 'This looks like $language, which we can’t read yet. Rather than guess, we didn’t score it. '
           'Look for an English, French, Spanish, German, Portuguese or Italian version of the page.';
 }
+
+/// Thrown when what we were given doesn't look like terms at all (a photo of
+/// a home screen, a menu, a few words). We show an empty state instead of
+/// inventing a score.
+class NotTermsException implements Exception {
+  @override
+  String toString() => 'We couldn’t find any terms or conditions in this, so there’s nothing to score. '
+      'Try a clearer photo of the page, or the full text.';
+}
+
+/// Rough check that a text reads like an agreement or policy.
+bool looksLikeTerms(String text) {
+  final words = text.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+  if (words < 30) return false;
+  final markers = RegExp(
+    r'\b(terms|conditions|agree(?:ment|s|d)?|policy|privacy|liab(?:le|ility)|shall|warrant(?:y|ies)|licen[cs]e|'
+    r'governed|jurisdiction|arbitration|refunds?|cancel(?:lation)?|subscription|fees?|charges?|personal (?:data|information)|'
+    r'third part(?:y|ies)|terminat(?:e|ion)|rights?|obligations?|indemnif|consent|you (?:may|must|agree)|we (?:may|will))\b',
+    caseSensitive: false,
+  );
+  final hits = markers.allMatches(text).map((m) => m.group(0)!.toLowerCase()).toList();
+  final distinct = hits.toSet().length;
+  return distinct >= 3 && hits.length * 100 / words >= 1.0;
+}

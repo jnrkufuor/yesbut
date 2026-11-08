@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
 
 /// Loading scene: floating web pages and clouds on a soft blob, a sunflower
 /// search bar typing the query, and a big cherry magnifier gliding over the
@@ -63,7 +62,7 @@ class _ScenePainter extends CustomPainter {
 
     // Soft blob behind everything.
     canvas.drawOval(Rect.fromCenter(center: const Offset(100, 62), width: 168, height: 100),
-        Paint()..color = _blue.withValues(alpha: 0.07));
+        Paint()..color = _blue.withValues(alpha: 0.06));
 
     double f(int i) => math.sin(t * 1.3 + i * 1.7) * 2;
 
@@ -115,8 +114,6 @@ class _ScenePainter extends CustomPainter {
     card(14, 14 + f(0), 54, 34, 'lines');
     card(130, 6 + f(1), 52, 42, 'img');
     card(26, 80 + f(2), 50, 32, 'play');
-    card(132, 76 + f(3), 54, 32, 'lines');
-    cloud(62, 16 + f(4) * 0.5, 1.1);
     cloud(166, 66 + f(5) * 0.5, 0.9);
 
     // Search bar typing the query, then pausing, then again.
@@ -125,17 +122,16 @@ class _ScenePainter extends CustomPainter {
     canvas.drawRRect(bar, _line());
     canvas.drawCircle(const Offset(51, 57.5), 3.4, _line());
     canvas.drawLine(const Offset(53.6, 60.1), const Offset(56, 62.5), _line());
-    final q = text.length > 20 ? '${text.substring(0, 19)}…' : text;
-    final n = ((t * 6) % (q.length + 10)).floor().clamp(0, q.length);
-    final tp = TextPainter(
-      text: TextSpan(
-          text: q.substring(0, n),
-          style: const TextStyle(fontFamily: AppTheme.font, fontSize: 8, fontWeight: FontWeight.w600, color: _ink)),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: 96);
-    tp.paint(canvas, Offset(62, 58.5 - tp.height / 2));
+    // "Typing": little word-shaped dashes appear one by one, then clear.
+    const words = [10.0, 7.0, 13.0, 9.0, 11.0];
+    final shown = ((t * 2.2) % (words.length + 3)).floor().clamp(0, words.length);
+    var cx = 62.0;
+    for (var i = 0; i < shown; i++) {
+      canvas.drawLine(Offset(cx, 58.5), Offset(cx + words[i], 58.5), _line(2.6));
+      cx += words[i] + 4;
+    }
     if ((t * 2.5).floor().isEven) {
-      canvas.drawLine(Offset(63 + tp.width, 52.5), Offset(63 + tp.width, 63), _line(1.4));
+      canvas.drawLine(Offset(cx + 1, 53), Offset(cx + 1, 64), _line(1.4));
     }
 
     // The magnifier glides over the pages.

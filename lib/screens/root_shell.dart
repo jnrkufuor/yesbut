@@ -130,7 +130,7 @@ class PillNav extends StatefulWidget {
 
 class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   static const _icons = ['check', 'search', 'eye', 'history'];
-  static const _labels = ['Check', 'Find', 'Live', 'History'];
+  static const _labels = ['Check', 'Search', 'Live', 'History'];
   static const _w = 330.0;
   static const _h = 70.0;
   static const _btn = 52.0;
@@ -163,7 +163,7 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
 
   // Travel takes the first 62% of the animation; the icon jiggles after.
   double get _move => (_c.value / 0.62).clamp(0.0, 1.0);
-  double _bubbleX() => _from + (_x(widget.index) - _from) * _travel.transform((_move * 1.35).clamp(0.0, 1.0));
+  double _bubbleX() => _from + (_x(widget.index) - _from) * _travel.transform(_move);
 
   @override
   Widget build(BuildContext context) {
@@ -180,25 +180,26 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
         animation: _c,
         builder: (context, _) {
           final to = _x(widget.index);
-          // Liquid move: the front of the drop races ahead (with a little
-          // overshoot) while the back is still letting go, joined by a neck
-          // that thins as it stretches, like water being pulled apart.
+          // One bubble, always there. While it travels it gets squashed as
+          // if pressed from the top (wider, flatter), then springs back into
+          // a circle when it lands, with a small wobble.
           final m = _move;
-          final head = _from + (to - _from) * _travel.transform((m * 1.35).clamp(0.0, 1.0));
-          final tail = _from + (to - _from) * Curves.easeInOutCubic.transform(((m - 0.2) / 0.8).clamp(0.0, 1.0));
+          final x = reduce ? to : _bubbleX();
+          final press = reduce ? 0.0 : math.sin(math.pi * m);
           final j = ((_c.value - 0.55) / 0.45).clamp(0.0, 1.0);
+          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.08;
           final jiggle = reduce ? 0.0 : 0.26 * math.sin(j * math.pi * 3) * (1 - j);
           final bump = reduce ? 1.0 : 1 + 0.12 * math.sin(j * math.pi);
+          final bw = _btn * (1 + 0.3 * press + wob);
+          final bh = _btn * (1 - 0.24 * press - wob);
           return Stack(children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _DropPainter(
-                  head: (reduce ? to : head) + _btn / 2,
-                  tail: (reduce ? to : tail) + _btn / 2,
-                  cy: _h / 2,
-                  r: _btn / 2,
-                  wobble: reduce ? 0 : math.sin(j * math.pi * 2) * (1 - j),
-                ),
+            Positioned(
+              left: x + _btn / 2 - bw / 2,
+              top: (_h - bh) / 2 + 0.24 * press * _btn * 0.25, // pressed down a touch
+              width: bw,
+              height: bh,
+              child: const DecoratedBox(
+                decoration: BoxDecoration(color: GColors.white, borderRadius: BorderRadius.all(Radius.circular(99))),
               ),
             ),
             for (var i = 0; i < 4; i++)
@@ -242,43 +243,3 @@ class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   }
 }
 
-/// The white drop under the active tab. Two circles (front and back of the
-/// drop) bridged by a neck whose edges curve inward; the neck thins as the
-/// drop stretches, then everything pulls back into one round drop.
-class _DropPainter extends CustomPainter {
-  _DropPainter({required this.head, required this.tail, required this.cy, required this.r, required this.wobble});
-  final double head, tail, cy, r, wobble;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = GColors.white;
-    final d = (head - tail).abs();
-    final k = (d / (r * 2.6)).clamp(0.0, 1.0);
-    final rh = r * (1 - 0.14 * k);
-    final rt = r * (1 - 0.34 * k);
-    // A little squash-and-stretch as it settles.
-    final sx = 1 + 0.07 * wobble, sy = 1 - 0.07 * wobble;
-    canvas.save();
-    canvas.translate(head, cy);
-    canvas.scale(sx, sy);
-    canvas.translate(-head, -cy);
-    canvas.drawCircle(Offset(head, cy), rh, paint);
-    if (d > 0.5) {
-      canvas.drawCircle(Offset(tail, cy), rt, paint);
-      final neck = r * (0.5 - 0.45 * k);
-      final mid = (head + tail) / 2;
-      final path = Path()
-        ..moveTo(tail, cy - rt * 0.92)
-        ..quadraticBezierTo(mid, cy - neck, head, cy - rh * 0.92)
-        ..lineTo(head, cy + rh * 0.92)
-        ..quadraticBezierTo(mid, cy + neck, tail, cy + rt * 0.92)
-        ..close();
-      canvas.drawPath(path, paint);
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_DropPainter o) =>
-      o.head != head || o.tail != tail || o.wobble != wobble || o.r != r || o.cy != cy;
-}

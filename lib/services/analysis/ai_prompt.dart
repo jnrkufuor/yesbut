@@ -57,9 +57,10 @@ $_schema''';
   static const _schema = '''
 Respond with ONLY a JSON object, no markdown, using exactly this shape:
 {
+  "is_terms": true or false (false if this isn't terms, a policy or an agreement, e.g. a screenshot of apps, a menu, an article),
   "title": "short name, e.g. 'Netflix Terms of Use'",
-  "summary": "one plain sentence a 12-year-old understands: whose rules these are and for what",
-  "audience": "who these terms apply to in plain words, e.g. 'people booking rides (drivers have separate terms)'",
+  "summary": "one plain sentence a 12-year-old understands: whose rules these are and for what. Wrap the 1-3 most important words in **double asterisks**",
+  "audience": "who these terms apply to, one short plain sentence, e.g. 'People **booking rides**. Drivers have separate terms.' Wrap the key words in **double asterisks**",
   "score": 0-100 integer, how fair to the customer (100 = very fair), using the guide above,
   "tldr": ["first item: one-line overall summary, max 16 words", "then 2-3 bullets of what matters most, each max 14 words"],
   "key_facts": [{"label": "Cancel|Renewal|Price|Refunds|Returns|Disputes|Data|...", "value": "answer in 6 words or fewer"}],
@@ -131,6 +132,7 @@ Keep every sentence short and plain (under 20 words). Order findings red_flag fi
     List<T> list<T>(String k, T Function(Map<String, dynamic>) f) =>
         ((json[k] as List?) ?? const []).whereType<Map>().map((m) => f(Map<String, dynamic>.from(m))).toList();
 
+    if (json['is_terms'] == false) throw NotTermsException();
     final findings = list('findings', Finding.fromJson)..sort((a, b) => a.severity.index.compareTo(b.severity.index));
     if (findings.isEmpty) throw AiFailure('it found nothing to report');
     final aiTitle = json['title']?.toString().trim();
