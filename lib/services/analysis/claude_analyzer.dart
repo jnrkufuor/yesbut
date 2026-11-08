@@ -15,8 +15,12 @@ class ClaudeAnalyzer implements ContractAnalyzer {
     required this.apiKey,
     this.model = 'claude-sonnet-5-5',
     this.endpoint = 'https://api.anthropic.com/v1/messages',
+    this.outputLanguage = 'English',
     http.Client? client,
   }) : _client = client ?? http.Client();
+
+  /// Language every piece of text in the answer should be written in.
+  final String outputLanguage;
 
   final String apiKey;
   final String model;
@@ -33,6 +37,8 @@ You are YesBut, an assistant that explains contracts and terms & conditions to r
 Read the document and respond with ONLY a JSON object (no markdown fences, no commentary) using this exact shape:
 {
   "title": "short name for the document, e.g. 'Netflix Terms of Use'",
+  "summary": "one sentence: what this document is and what service it covers",
+  "audience": "who these terms apply to, e.g. 'riders booking trips (not drivers)'",
   "score": 0-100 integer, how fair this is to the person signing (100 = very fair),
   "tldr": ["3-5 short plain-English bullets of what matters most"],
   "key_facts": [{"label": "Cancel|Renewal|Price|Refunds|Disputes|Commitment|Data|...", "value": "short answer"}],
@@ -49,7 +55,8 @@ Read the document and respond with ONLY a JSON object (no markdown fences, no co
 Focus on gotchas: auto-renewal, cancellation hurdles, fees, price changes, refunds, arbitration/class-action waivers, liability caps, indemnity, data sharing/selling, content licenses, AI training, unilateral changes, account termination, lock-in terms, penalties, deposits, personal guarantees, non-competes.
 Also include genuinely good-for-the-user clauses as good_news.
 Order findings red_flag first. Be specific to THIS document; never invent clauses that are not there.
-Write for a busy person. No legalese. This is not legal advice.''';
+Write for a busy person. No legalese. This is not legal advice.
+The document may be in any language: read it in its own language, but quote excerpts in the original language.''';
 
   @override
   Future<AnalysisResult> analyze(ContractInput input) async {
@@ -67,7 +74,7 @@ Write for a busy person. No legalese. This is not legal advice.''';
           body: jsonEncode({
             'model': model,
             'max_tokens': 4096,
-            'system': _system,
+            'system': '$_system\nWrite every title, explanation, bullet, fact and question in $outputLanguage.',
             'messages': [
               {
                 'role': 'user',
@@ -135,6 +142,8 @@ Write for a busy person. No legalese. This is not legal advice.''';
       questions: strings('questions'),
       wordCount: countWords(input.text),
       text: trimForStorage(input.text),
+      summary: json['summary']?.toString(),
+      audience: json['audience']?.toString(),
       note: input.text.length > _maxChars
           ? 'Very long document — AI read the first ${_maxChars ~/ 1000}k characters.'
           : null,

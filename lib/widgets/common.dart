@@ -484,6 +484,12 @@ class _FadeInUpState extends State<FadeInUp> with SingleTickerProviderStateMixin
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _c.value = 1; // reduce motion
+  }
+
+  @override
   void dispose() {
     _c.dispose();
     super.dispose();

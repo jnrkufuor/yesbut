@@ -37,6 +37,19 @@ class _YesButAppState extends State<YesButApp> {
         title: 'YesBut',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
+        // Accessibility settings applied app-wide.
+        builder: (context, child) {
+          final st = context.watch<AppState>().settings;
+          final mq = MediaQuery.of(context);
+          return MediaQuery(
+            data: mq.copyWith(
+              textScaler: st.largerText ? TextScaler.linear(mq.textScaler.scale(1) * 1.2) : mq.textScaler,
+              boldText: st.boldText || mq.boldText,
+              disableAnimations: st.reduceMotion || mq.disableAnimations,
+            ),
+            child: child!,
+          );
+        },
         home: FutureBuilder<void>(
           future: _ready,
           builder: (context, snap) => AnimatedSwitcher(

@@ -36,6 +36,10 @@
         <intent>
             <action android:name="android.media.action.IMAGE_CAPTURE" />
         </intent>
+        <!-- Read aloud (text-to-speech). -->
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
         <!-- Open terms pages in the browser. -->
         <intent>
             <action android:name="android.intent.action.VIEW" />

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/analysis.dart';
+import '../services/analysis/context_profile.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -48,7 +50,49 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void dispose() {
     _scroll.dispose();
+    _tts?.stop();
     super.dispose();
+  }
+
+  // ---- read aloud
+  FlutterTts? _tts;
+  bool _speaking = false;
+
+  String _script() {
+    final b = StringBuffer()
+      ..writeln('${r.title}.')
+      ..writeln(r.summary ?? '')
+      ..writeln('Fairness score: ${r.score} out of 100. ${r.verdict}.');
+    for (final t in r.tldr) {
+      b.writeln(t);
+    }
+    for (final f in r.findings) {
+      final label = switch (f.severity) {
+        Severity.redFlag => 'Red flag',
+        Severity.headsUp => 'Heads up',
+        Severity.goodNews => 'Good news',
+      };
+      b.writeln('$label: ${f.title}. ${f.plain}');
+    }
+    return b.toString();
+  }
+
+  Future<void> _toggleSpeak() async {
+    final tts = _tts ??= FlutterTts();
+    if (_speaking) {
+      await tts.stop();
+      if (mounted) setState(() => _speaking = false);
+      return;
+    }
+    tts.setCompletionHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    tts.setCancelHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    await tts.setSpeechRate(0.48);
+    setState(() => _speaking = true);
+    await tts.speak(_script());
   }
 
   void _share() => SharePlus.instance.share(
@@ -87,6 +131,11 @@ class _ResultScreenState extends State<ResultScreen> {
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
+            Semantics(
+              label: _speaking ? 'Stop reading aloud' : 'Read aloud',
+              child: RoundIconButton(icon: _speaking ? 'stop' : 'speaker', onTap: _toggleSpeak),
+            ),
+            const SizedBox(width: 6),
             RoundIconButton(icon: 'share', label: 'Share', onTap: _share),
             const SizedBox(width: 6),
             PopupMenuButton<String>(
@@ -113,6 +162,10 @@ class _ResultScreenState extends State<ResultScreen> {
           Text(r.title, style: t.headlineLarge?.copyWith(fontSize: 32)),
           const SizedBox(height: 20),
           _ScoreCard(result: r),
+          if (r.summary != null || r.audience != null) ...[
+            const SizedBox(height: 6),
+            _AboutCard(result: r),
+          ],
           if (r.note != null) ...[
             const SizedBox(height: 12),
             SoftCard(
@@ -129,6 +182,11 @@ class _ResultScreenState extends State<ResultScreen> {
             const SizedBox(height: 26),
             const SectionTitle('Quick facts'),
             _KeyFacts(facts: r.keyFacts),
+          ],
+          if (r.focus.isNotEmpty) ...[
+            const SizedBox(height: 26),
+            SectionTitle('What matters for ${ContextProfiler.typeTitle(r.dealType)}'),
+            _FocusList(items: r.focus),
           ],
           if (r.tldr.isNotEmpty) ...[
             const SizedBox(height: 26),
@@ -1005,4 +1063,121 @@ Uri jumpToQuote(Uri page, String quote) {
 Future<void> openExternal(BuildContext context, Uri url) async {
   final ok = await launchUrl(url, mode: LaunchMode.externalApplication);
   if (!ok && context.mounted) showToast(context, 'Couldn’t open that page.');
+}
+
+
+/// "What this is" + "Who it applies to", right under the score.
+class _AboutCard extends StatelessWidget {
+  const _AboutCard({required this.result});
+  final AnalysisResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget label(String t) => Text(t,
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w600, letterSpacing: 1.2, color: GColors.inkSoft));
+    final r = result;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: GColors.line, width: 1),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (r.summary != null) ...[
+          label('WHAT THIS IS'),
+          const SizedBox(height: 6),
+          Text(r.summary!, style: const TextStyle(fontSize: 14.5, height: 1.45)),
+        ],
+        if (r.audience != null) ...[
+          if (r.summary != null) const SizedBox(height: 14),
+          label('WHO IT APPLIES TO'),
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            _RoleChip(text: r.audience!, primary: true),
+            if (r.otherParty != null) _RoleChip(text: 'Also mentions ${r.otherParty}', primary: false),
+          ]),
+        ],
+        if (r.language != 'en') ...[
+          const SizedBox(height: 12),
+          Text('Original language: ${ContextProfiler.languageNames[r.language] ?? r.language}',
+              style: const TextStyle(fontSize: 12.5, color: GColors.inkSoft)),
+        ],
+      ]),
+    );
+  }
+}
+
+class _RoleChip extends StatelessWidget {
+  const _RoleChip({required this.text, required this.primary});
+  final String text;
+  final bool primary;
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: primary ? GColors.ink : GColors.white,
+          borderRadius: BorderRadius.circular(99),
+          border: Border.all(color: GColors.ink, width: 1),
+        ),
+        child: Text(text,
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: primary ? GColors.white : GColors.ink)),
+      );
+}
+
+/// Checklist of what people care about for this kind of deal.
+class _FocusList extends StatelessWidget {
+  const _FocusList({required this.items});
+  final List<FocusItem> items;
+  @override
+  Widget build(BuildContext context) => Column(children: [
+        for (final f in items)
+          Container(
+            margin: const EdgeInsets.only(bottom: 6),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: f.found ? GColors.ink : GColors.line, width: 1),
+            ),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Container(
+                width: 24,
+                height: 24,
+                margin: const EdgeInsets.only(top: 1),
+                decoration: BoxDecoration(
+                  color: f.found ? GColors.blue : GColors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: f.found ? GColors.blue : GColors.line, width: 1),
+                ),
+                child: f.found
+                    ? const Icon(Icons.check_rounded, size: 15, color: GColors.white)
+                    : const Icon(Icons.remove_rounded, size: 15, color: GColors.inkFaint),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(
+                      child: Text(f.label,
+                          style: const TextStyle(
+                              fontFamily: AppTheme.display, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.3)),
+                    ),
+                    Text(f.found ? 'Covered' : 'Not mentioned',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: f.found ? GColors.blue : GColors.inkSoft)),
+                  ]),
+                  const SizedBox(height: 2),
+                  Text(f.why, style: const TextStyle(fontSize: 13, color: GColors.inkSoft)),
+                  if (f.excerpt != null) ...[
+                    const SizedBox(height: 8),
+                    Text('“${f.excerpt}”',
+                        style: const TextStyle(
+                            fontFamily: AppTheme.serif, fontStyle: FontStyle.italic, fontSize: 14, height: 1.4)),
+                  ] else ...[
+                    const SizedBox(height: 6),
+                    const Text('Worth asking about before you agree.', style: TextStyle(fontSize: 12.5)),
+                  ],
+                ]),
+              ),
+            ]),
+          ),
+      ]);
 }

@@ -11,12 +11,20 @@ class AppSettings {
   final String apiKey;
   final String model;
   final String endpoint;
+  final String resultLanguage; // language results are written in (AI engine)
+  final bool largerText;
+  final bool boldText;
+  final bool reduceMotion;
 
   const AppSettings({
     this.engine = EngineChoice.offline,
     this.apiKey = '',
     this.model = 'claude-sonnet-5-5',
     this.endpoint = 'https://api.anthropic.com/v1/messages',
+    this.resultLanguage = 'en',
+    this.largerText = false,
+    this.boldText = false,
+    this.reduceMotion = false,
   });
 
   bool get aiReady => engine == EngineChoice.claude && apiKey.trim().isNotEmpty;
@@ -26,12 +34,20 @@ class AppSettings {
     String? apiKey,
     String? model,
     String? endpoint,
+    String? resultLanguage,
+    bool? largerText,
+    bool? boldText,
+    bool? reduceMotion,
   }) =>
       AppSettings(
         engine: engine ?? this.engine,
         apiKey: apiKey ?? this.apiKey,
         model: model ?? this.model,
         endpoint: endpoint ?? this.endpoint,
+        resultLanguage: resultLanguage ?? this.resultLanguage,
+        largerText: largerText ?? this.largerText,
+        boldText: boldText ?? this.boldText,
+        reduceMotion: reduceMotion ?? this.reduceMotion,
       );
 }
 
@@ -79,6 +95,10 @@ class Storage {
       apiKey: _prefs.getString(_apiKeyKey) ?? '',
       model: _prefs.getString(_modelKey) ?? d.model,
       endpoint: _prefs.getString(_endpointKey) ?? d.endpoint,
+      resultLanguage: _prefs.getString('result_language') ?? 'en',
+      largerText: _prefs.getBool('a11y_larger') ?? false,
+      boldText: _prefs.getBool('a11y_bold') ?? false,
+      reduceMotion: _prefs.getBool('a11y_motion') ?? false,
     );
   }
 
@@ -87,6 +107,10 @@ class Storage {
     await _prefs.setString(_apiKeyKey, s.apiKey);
     await _prefs.setString(_modelKey, s.model);
     await _prefs.setString(_endpointKey, s.endpoint);
+    await _prefs.setString('result_language', s.resultLanguage);
+    await _prefs.setBool('a11y_larger', s.largerText);
+    await _prefs.setBool('a11y_bold', s.boldText);
+    await _prefs.setBool('a11y_motion', s.reduceMotion);
   }
 
   bool get onboarded => _prefs.getBool(_onboardedKey) ?? false;

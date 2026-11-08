@@ -82,6 +82,23 @@ class KeyFact {
       KeyFact((j['label'] ?? '').toString(), (j['value'] ?? '').toString());
 }
 
+/// One "what matters for this kind of deal" check.
+class FocusItem {
+  final String label;
+  final String why;
+  final bool found;
+  final String? excerpt;
+  const FocusItem({required this.label, required this.why, required this.found, this.excerpt});
+
+  Map<String, dynamic> toJson() => {'label': label, 'why': why, 'found': found, 'excerpt': excerpt};
+  factory FocusItem.fromJson(Map<String, dynamic> j) => FocusItem(
+        label: (j['label'] ?? '').toString(),
+        why: (j['why'] ?? '').toString(),
+        found: j['found'] == true,
+        excerpt: j['excerpt']?.toString(),
+      );
+}
+
 enum SourceKind { paste, link, scan, file, library }
 
 extension SourceKindX on SourceKind {
@@ -110,6 +127,12 @@ class AnalysisResult {
   final int wordCount;
   final String text; // original text (trimmed for storage)
   final String? note; // e.g. "AI unavailable, used offline engine"
+  final String dealType; // "shopping", "rideshare"…
+  final String? audience; // who the terms speak to
+  final String? otherParty; // the other side also mentioned
+  final String? summary; // one-line "what this is"
+  final String language; // detected document language code
+  final List<FocusItem> focus;
 
   const AnalysisResult({
     required this.id,
@@ -127,6 +150,12 @@ class AnalysisResult {
     required this.text,
     this.sourceRef,
     this.note,
+    this.dealType = 'general',
+    this.audience,
+    this.otherParty,
+    this.summary,
+    this.language = 'en',
+    this.focus = const [],
   });
 
   int get readMinutes => (wordCount / 238).ceil().clamp(1, 9999).toInt();
@@ -143,7 +172,17 @@ class AnalysisResult {
     return 'Yikes';
   }
 
-  AnalysisResult copyWith({String? title, String? note}) => AnalysisResult(
+  AnalysisResult copyWith({
+    String? title,
+    String? note,
+    String? dealType,
+    String? audience,
+    String? otherParty,
+    String? summary,
+    String? language,
+    List<FocusItem>? focus,
+  }) =>
+      AnalysisResult(
         id: id,
         title: title ?? this.title,
         sourceKind: sourceKind,
@@ -159,6 +198,12 @@ class AnalysisResult {
         wordCount: wordCount,
         text: text,
         note: note ?? this.note,
+        dealType: dealType ?? this.dealType,
+        audience: audience ?? this.audience,
+        otherParty: otherParty ?? this.otherParty,
+        summary: summary ?? this.summary,
+        language: language ?? this.language,
+        focus: focus ?? this.focus,
       );
 
   String toShareText() {
@@ -202,6 +247,12 @@ class AnalysisResult {
         'wordCount': wordCount,
         'text': text,
         'note': note,
+        'dealType': dealType,
+        'audience': audience,
+        'otherParty': otherParty,
+        'summary': summary,
+        'language': language,
+        'focus': focus.map((f) => f.toJson()).toList(),
       };
 
   factory AnalysisResult.fromJson(Map<String, dynamic> j) {
@@ -233,6 +284,12 @@ class AnalysisResult {
       wordCount: (j['wordCount'] is num) ? (j['wordCount'] as num).round() : 0,
       text: (j['text'] ?? '').toString(),
       note: j['note']?.toString(),
+      dealType: (j['dealType'] ?? 'general').toString(),
+      audience: j['audience']?.toString(),
+      otherParty: j['otherParty']?.toString(),
+      summary: j['summary']?.toString(),
+      language: (j['language'] ?? 'en').toString(),
+      focus: list('focus', FocusItem.fromJson),
     );
   }
 }

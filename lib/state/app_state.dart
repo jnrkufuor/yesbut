@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/analysis.dart';
 import '../services/analysis/claude_analyzer.dart';
+import '../services/analysis/context_profile.dart';
 import '../services/analysis/rule_based_analyzer.dart';
 import '../services/catalog_repository.dart';
 import '../services/storage.dart';
@@ -45,6 +46,9 @@ class AppState extends ChangeNotifier {
   /// the user always gets an answer.
   Future<AnalysisResult> analyze(ContractInput input) async {
     final offline = await RuleBasedAnalyzer.load();
+    final profile = ContextProfiler.profile(input);
+    final langName = ContextProfiler.languageNames[profile.language] ?? 'another language';
+    final english = profile.language == 'en';
     AnalysisResult result;
     if (_settings.aiReady) {
       try {
@@ -52,15 +56,33 @@ class AppState extends ChangeNotifier {
           apiKey: _settings.apiKey.trim(),
           model: _settings.model.trim(),
           endpoint: _settings.endpoint.trim(),
+          outputLanguage: ContextProfiler.languageNames[_settings.resultLanguage] ?? 'English',
         ).analyze(input);
+        if (!english) {
+          result = result.copyWith(note: 'Translated from $langName by the AI engine.');
+        }
       } catch (e) {
+        // The offline reader can't read other languages: say so, don't guess.
+        if (!english) throw UnsupportedLanguageException(langName);
         result = (await offline.analyze(input)).copyWith(
           note: 'AI check unavailable ($e). Showing the offline check instead.',
         );
       }
     } else {
+      if (!english) throw UnsupportedLanguageException(langName);
       result = await offline.analyze(input);
+      if (_settings.resultLanguage != 'en') {
+        result = result.copyWith(note: 'Results in other languages need the AI engine (Settings). Showing English.');
+      }
     }
+    result = result.copyWith(
+      dealType: profile.dealType,
+      audience: result.audience ?? profile.audience,
+      otherParty: result.otherParty ?? profile.otherParty,
+      summary: result.summary ?? profile.summary,
+      language: profile.language,
+      focus: result.focus.isNotEmpty ? result.focus : profile.focus,
+    );
     final dateNote = _dateNote(input.pageDate);
     if (dateNote != null) {
       result = result.copyWith(note: result.note == null ? dateNote : '$dateNote ${result.note}');

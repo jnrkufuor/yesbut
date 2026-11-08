@@ -20,6 +20,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final _model = TextEditingController(text: _state.settings.model);
   late final _endpoint = TextEditingController(text: _state.settings.endpoint);
   bool _showKey = false;
+  late String _lang = _state.settings.resultLanguage;
+  late bool _larger = _state.settings.largerText;
+  late bool _bold = _state.settings.boldText;
+  late bool _motion = _state.settings.reduceMotion;
 
   @override
   void dispose() {
@@ -35,6 +39,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       apiKey: _key.text.trim(),
       model: _model.text.trim().isEmpty ? const AppSettings().model : _model.text.trim(),
       endpoint: _endpoint.text.trim().isEmpty ? const AppSettings().endpoint : _endpoint.text.trim(),
+      resultLanguage: _lang,
+      largerText: _larger,
+      boldText: _bold,
+      reduceMotion: _motion,
     ));
     if (!mounted) return;
     showToast(context, 'Saved');
@@ -121,6 +129,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                 ),
                 const SizedBox(height: 28),
+                Text('Results language', style: t.titleLarge),
+                const SizedBox(height: 6),
+                const Text(
+                  'We can read terms in English, French, Spanish, German, Portuguese and Italian, and write the '
+                  'results in your language. Reading and translating other languages uses the AI engine; '
+                  'the offline reader is English only.',
+                  style: TextStyle(color: GColors.inkSoft, fontSize: 13, height: 1.45),
+                ),
+                const SizedBox(height: 12),
+                Wrap(spacing: 6, runSpacing: 6, children: [
+                  for (final e in const {
+                    'en': 'English',
+                    'fr': 'Français',
+                    'es': 'Español',
+                    'de': 'Deutsch',
+                    'pt': 'Português',
+                    'it': 'Italiano',
+                  }.entries)
+                    Pressable(
+                      onTap: () => setState(() => _lang = e.key),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        height: 38,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: _lang == e.key ? GColors.ink : GColors.white,
+                          borderRadius: BorderRadius.circular(99),
+                          border: Border.all(color: GColors.ink, width: 1),
+                        ),
+                        child: Text(e.value,
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: _lang == e.key ? FontWeight.w600 : FontWeight.w400,
+                                color: _lang == e.key ? GColors.white : GColors.ink)),
+                      ),
+                    ),
+                ]),
+                const SizedBox(height: 28),
+                Text('Accessibility', style: t.titleLarge),
+                const SizedBox(height: 6),
+                const Text('Tap the speaker on any result to have it read aloud.',
+                    style: TextStyle(color: GColors.inkSoft, fontSize: 13, height: 1.45)),
+                const SizedBox(height: 8),
+                _Toggle(
+                  title: 'Larger text',
+                  body: 'Makes all text about 20% bigger.',
+                  value: _larger,
+                  onChanged: (v) => setState(() => _larger = v),
+                ),
+                _Toggle(
+                  title: 'Bold text',
+                  body: 'Heavier letters for stronger contrast.',
+                  value: _bold,
+                  onChanged: (v) => setState(() => _bold = v),
+                ),
+                _Toggle(
+                  title: 'Reduce motion',
+                  body: 'Turns off the slide-in and pop animations.',
+                  value: _motion,
+                  onChanged: (v) => setState(() => _motion = v),
+                ),
+                const SizedBox(height: 28),
                 Text('Your data', style: t.titleLarge),
                 const SizedBox(height: 10),
                 ListTile(
@@ -145,7 +216,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Center(child: Wordmark(size: 20)),
                 const SizedBox(height: 6),
                 const Center(
-                    child: Text('v0.1.0', style: TextStyle(color: GColors.inkFaint, fontSize: 12, fontWeight: FontWeight.w600))),
+                    child: Text('v0.4.0', style: TextStyle(color: GColors.inkFaint, fontSize: 12, fontWeight: FontWeight.w600))),
               ],
             ),
           ),
@@ -205,6 +276,36 @@ class _EngineOption extends StatelessWidget {
             const SizedBox(width: 8),
             Icon(selected ? Icons.check_circle_rounded : Icons.circle_outlined,
                 color: selected ? color : GColors.line),
+          ]),
+        ),
+      );
+}
+
+
+class _Toggle extends StatelessWidget {
+  const _Toggle({required this.title, required this.body, required this.value, required this.onChanged});
+  final String title;
+  final String body;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  @override
+  Widget build(BuildContext context) => MergeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(children: [
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(body, style: const TextStyle(color: GColors.inkSoft, fontSize: 13)),
+              ]),
+            ),
+            Switch(
+              value: value,
+              onChanged: onChanged,
+              activeThumbColor: GColors.white,
+              activeTrackColor: GColors.ink,
+            ),
           ]),
         ),
       );

@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _stagger(int i, Widget child, {double rise = 14, bool pop = false}) {
+    if (MediaQuery.disableAnimationsOf(context)) return child;
     final start = (i * 0.07).clamp(0.0, 0.7);
     final anim = CurvedAnimation(
       parent: _in,
