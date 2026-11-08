@@ -257,30 +257,27 @@ class _ResultScreenState extends State<ResultScreen> {
           if (r.questions.isNotEmpty) ...[
             const SizedBox(height: 26),
             const SectionTitle('Ponder before you agree'),
-            SoftCard(
-              color: GColors.blueSoft,
-              child: Column(children: [
-                for (var i = 0; i < r.questions.length; i++)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: i == r.questions.length - 1 ? 0 : 14),
-                    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(color: GColors.blue, shape: BoxShape.circle),
-                        child: Text('${i + 1}',
-                            style: const TextStyle(color: GColors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(r.questions[i],
-                            style: const TextStyle(fontSize: 14.5, height: 1.4, fontWeight: FontWeight.w600)),
-                      ),
+            // Everyday "what if" questions: bold question, the answer (when
+            // the terms give one) right under it. Red asterisks as bullets.
+            for (final q in r.questions)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Padding(padding: EdgeInsets.only(top: 4), child: BrandAsterisk(size: 13)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(q.split('\n').first.trim(),
+                          style: const TextStyle(fontSize: 15, height: 1.4, fontWeight: FontWeight.w700)),
+                      if (q.contains('\n') && q.split('\n').skip(1).join(' ').trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(q.split('\n').skip(1).join(' ').trim(),
+                            style: const TextStyle(fontSize: 14.5, height: 1.45, fontWeight: FontWeight.w400, color: GColors.inkSoft)),
+                      ],
                     ]),
                   ),
-              ]),
-            ),
+                ]),
+              ),
           ],
           const SizedBox(height: 26),
           Center(
@@ -1547,15 +1544,27 @@ class _ReaderRow extends StatelessWidget {
         Semantics(
           button: true,
           label: pending ? 'Read it again with $chosen' : 'Read it again',
-          child: SpinTap(
-            onTap: onReread,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              width: 32,
-              height: 32,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(color: pending ? GColors.red : GColors.ink, shape: BoxShape.circle),
-              child: const LoopyIcon('refresh', size: 18, color: GColors.white, stroke: 2.6),
+          child: Pressable(
+            onTap: () async {
+              if (!pending && !await confirmReread(context, current)) return;
+              onReread();
+            },
+            // Turns cherry and gives one full spin when you pick a new reader;
+            // greyed out while the current reader is the one that read it.
+            child: TweenAnimationBuilder<double>(
+              key: ValueKey(pending),
+              tween: Tween(begin: 0, end: pending ? 1 : 0),
+              duration: const Duration(milliseconds: 700),
+              curve: Curves.easeOutBack,
+              builder: (_, turn, child) => Transform.rotate(angle: turn * 2 * math.pi, child: child),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 380),
+                width: 32,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: pending ? GColors.red : GColors.line, shape: BoxShape.circle),
+                child: LoopyIcon('refresh', size: 18, color: pending ? GColors.white : GColors.inkSoft, stroke: 2.6),
+              ),
             ),
           ),
         ),

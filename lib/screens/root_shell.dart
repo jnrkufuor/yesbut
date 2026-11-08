@@ -128,26 +128,27 @@ class PillNav extends StatefulWidget {
   State<PillNav> createState() => _PillNavState();
 }
 
-class _PillNavState extends State<PillNav> with TickerProviderStateMixin {
+class _PillNavState extends State<PillNav> with SingleTickerProviderStateMixin {
   static const _icons = ['check', 'search', 'eye', 'history'];
   static const _labels = ['Check', 'Search', 'Live', 'History'];
   static const _w = 330.0;
   static const _h = 70.0;
   static const _btn = 52.0;
   static const _pad = 9.0; // same inset on every side so the circle sits dead centre
-  static const _travel = Cubic(0.3, 1.25, 0.5, 1);
+  static const _travel = Cubic(0.32, 1.28, 0.45, 1);
 
   late final AnimationController _c =
       AnimationController(vsync: this, duration: const Duration(milliseconds: 620), value: 1);
   late double _from = _x(widget.index);
-  // Keeps the blob gently alive (its edge ripples slowly, like liquid).
-  late final AnimationController _idle = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
+
 
   @override
   void didUpdateWidget(PillNav old) {
     super.didUpdateWidget(old);
     if (old.index != widget.index) {
-      _from = _bubbleX(); // start from wherever the bubble is right now
+      // Start from wherever the bubble is right now, which is measured
+      // against the OLD tab (widget already points at the new one).
+      _from = _from + (_x(old.index) - _from) * _travel.transform(_move);
       _c.forward(from: 0);
     }
   }
@@ -155,7 +156,6 @@ class _PillNavState extends State<PillNav> with TickerProviderStateMixin {
   @override
   void dispose() {
     _c.dispose();
-    _idle.dispose();
     super.dispose();
   }
 
@@ -183,34 +183,20 @@ class _PillNavState extends State<PillNav> with TickerProviderStateMixin {
         animation: _c,
         builder: (context, _) {
           final to = _x(widget.index);
-          // Liquid blob: slides over like the first version, stretches into
-          // a long wobbly drop while it travels (leading edge fuller), then
-          // settles back with a jelly wobble. Its edge always ripples a
-          // little, like liquid. Never fades.
-          final m = _move;
+          // A round white bubble that glides to the new tab with a soft
+          // overshoot (it never fades or changes shape); the icon it lands
+          // on gives a small jiggle.
           final x = reduce ? to : _bubbleX();
-          final dist = (to - _from).abs();
-          final stretch = reduce ? 0.0 : math.sin(math.pi * m) * math.min(1.0, dist / 120);
           final j = ((_c.value - 0.55) / 0.45).clamp(0.0, 1.0);
-          final wob = reduce ? 0.0 : math.sin(j * math.pi * 3) * (1 - j) * 0.1;
           final jiggle = reduce ? 0.0 : 0.26 * math.sin(j * math.pi * 3) * (1 - j);
           final bump = reduce ? 1.0 : 1 + 0.12 * math.sin(j * math.pi);
           return Stack(children: [
-            Positioned.fill(
-              child: AnimatedBuilder(
-                animation: _idle,
-                builder: (_, __) => CustomPaint(
-                  painter: _BlobPainter(
-                    cx: x + _btn / 2,
-                    cy: _h / 2,
-                    r: _btn / 2,
-                    stretch: stretch,
-                    dir: to >= _from ? 1 : -1,
-                    wobble: wob,
-                    phase: reduce ? 0 : _idle.value * 2 * math.pi,
-                  ),
-                ),
-              ),
+            Positioned(
+              left: x,
+              top: (_h - _btn) / 2,
+              width: _btn,
+              height: _btn,
+              child: const DecoratedBox(decoration: BoxDecoration(color: GColors.white, shape: BoxShape.circle)),
             ),
             for (var i = 0; i < 4; i++)
               Positioned(
@@ -254,45 +240,3 @@ class _PillNavState extends State<PillNav> with TickerProviderStateMixin {
 }
 
 
-/// The white liquid blob under the active tab.
-class _BlobPainter extends CustomPainter {
-  _BlobPainter({
-    required this.cx,
-    required this.cy,
-    required this.r,
-    required this.stretch,
-    required this.dir,
-    required this.wobble,
-    required this.phase,
-  });
-  final double cx, cy, r, stretch, wobble, phase;
-  final int dir;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const n = 72;
-    final d = dir.toDouble();
-    // Stretched along the path while moving, flattened a bit top-to-bottom.
-    final sx = 1 + 0.55 * stretch + wobble;
-    final sy = 1 - 0.18 * stretch - wobble * 0.8;
-    final path = Path();
-    for (var i = 0; i <= n; i++) {
-      final a = i / n * 2 * math.pi;
-      final cosA = math.cos(a), sinA = math.sin(a);
-      // Gentle ripples that drift around the edge; stronger while moving.
-      final ripple = (0.035 + 0.05 * stretch) *
-          (math.sin(3 * a + phase) * 0.6 + math.sin(5 * a - phase * 1.5) * 0.4);
-      // Leading side fuller, trailing side tapers.
-      final lead = 1 + 0.12 * stretch * cosA * d;
-      final rr = r * (1 + ripple) * lead;
-      final px = cx + cosA * rr * sx - d * r * 0.25 * stretch; // centre lags a touch behind the front
-      final py = cy + sinA * rr * sy;
-      i == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
-    }
-    canvas.drawPath(path..close(), Paint()..color = GColors.white);
-  }
-
-  @override
-  bool shouldRepaint(_BlobPainter o) =>
-      o.cx != cx || o.stretch != stretch || o.wobble != wobble || o.phase != phase || o.dir != dir || o.r != r;
-}

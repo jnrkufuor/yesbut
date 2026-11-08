@@ -52,15 +52,18 @@ class Loopy {
 }
 
 class LoopyIcon extends StatelessWidget {
-  const LoopyIcon(this.name, {super.key, this.size = 30, this.color = const Color(0xFF232120), this.stroke = 2.4});
+  const LoopyIcon(this.name, {super.key, this.size = 30, this.color = const Color(0xFF232120), this.stroke = 2.4, this.only});
   final String name;
   final double size;
   final Color color;
   final double stroke;
+  /// Draw only these strokes of the icon (to animate parts separately).
+  final List<int>? only;
 
   @override
   Widget build(BuildContext context) {
-    final ds = Loopy.paths[name] ?? Loopy.paths['check']!;
+    final all = Loopy.paths[name] ?? Loopy.paths['check']!;
+    final ds = only == null ? all : [for (final i in only!) if (i < all.length) all[i]];
     return SvgPicture.string(Loopy.svg(ds, color, stroke, 40), width: size, height: size);
   }
 }

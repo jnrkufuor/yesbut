@@ -113,10 +113,11 @@ class _FlowArrowState extends TapReactiveState<FlowArrow> {
                     offset: Offset(t * travel + lean, -t * travel - lean),
                     child: Icon(Icons.arrow_outward_rounded, color: widget.color, size: widget.size),
                   );
-              return Stack(children: [
-                arrow(v),
-                if (tap.isAnimating) arrow(v - 1),
-              ]);
+              // At rest (before or after a tap) the arrow sits in place;
+              // only mid-animation do we show the one leaving and the one
+              // arriving.
+              if (!tap.isAnimating) return arrow(0);
+              return Stack(children: [arrow(v), arrow(v - 1)]);
             },
           ),
         ),

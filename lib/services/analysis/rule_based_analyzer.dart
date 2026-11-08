@@ -214,7 +214,7 @@ class RuleBasedAnalyzer implements ContractAnalyzer {
       findings: findings,
       jargon: jargon,
       keyFacts: facts.entries.map((e) => KeyFact(e.key, e.value)).toList(),
-      questions: questions.take(6).toList(),
+      questions: _everydayFor(hitIds, type),
       wordCount: words,
       text: trimForStorage(text),
     );
@@ -510,3 +510,72 @@ final Map<String, List<_Rule>> _industryExtra = {
         [r'(tags? (attached|on))', r'(worn|washed|altered)']),
   ],
 };
+
+
+/// "Ponder before you agree": everyday what-ifs a regular person might have,
+/// answered from what we found where we can. A different angle from the
+/// catches above, not a repeat of them.
+const Map<String, (String, String)> _everyday = {
+  'auto_renewal': ('What if I forget about it for a few months?', 'It keeps renewing and charging you until you cancel.'),
+  'free_trial': ('What if I only wanted the free trial?', 'Cancel before the trial ends or it turns into a paid plan.'),
+  'cancel_notice': ('What if I decide to cancel the day before it renews?', 'You may be too late. They want notice in advance.'),
+  'cancel_anytime': ('Can I stop whenever I like?', 'Yes, you can cancel at any time.'),
+  'no_refunds': ('What if I stop using it halfway through the month?', 'You probably won’t get money back for the rest.'),
+  'prorated_refund': ('What if I stop using it halfway through the month?', 'You should get back the unused part.'),
+  'price_change': ('Could this cost more next year?', 'Yes. They can change the price, usually with some notice.'),
+  'hidden_renewal_price': ('Will I keep paying this low price?', 'No. It goes up to the regular price after the intro period.'),
+  'termination_by_them': ('Could they shut my account without warning?', 'Yes, in some cases at their discretion.'),
+  'lose_purchases': ('If my account is closed, do I keep what I bought?', 'Maybe not. Purchases can be lost with the account.'),
+  'license_not_own': ('Can I give my purchases to someone else?', 'Usually not. You have a licence to use them, not ownership.'),
+  'no_resale': ('Can I sell or pass this on if I don’t need it?', 'No, it can’t be transferred or resold.'),
+  'arbitration': ('What if something goes really wrong and I want to sue?', 'You’ll likely have to use private arbitration instead of a court.'),
+  'class_waiver': ('Could I join others who had the same problem?', 'No, you agree not to join group (class) cases.'),
+  'data_sharing': ('Who else ends up with my details?', 'Partners and other companies they share data with.'),
+  'tracking': ('Will I see ads based on what I do here?', 'Yes, they use cookies and tracking for ads.'),
+  'precise_location': ('Does it know where I am when I’m not using it?', 'It can collect precise location, sometimes in the background.'),
+  'biometric': ('What happens to my face or fingerprint data?', 'They collect it. Check how long they keep it.'),
+  'data_retention': ('If I leave, how long do they keep my stuff?', 'They keep some data even after you close your account.'),
+  'data_rights': ('Can I get everything they have on me deleted?', 'Yes, you can ask them to delete your data.'),
+  'ai_training': ('Will my photos or posts train their AI?', 'They can use your content to train their models.'),
+  'content_license': ('Could they use my photos in an ad?', 'They get a broad licence to use what you post.'),
+  'virtual_currency': ('What happens to my coins if the game shuts down?', 'They have no real value and can disappear.'),
+  'late_fee': ('What if a payment bounces?', 'Expect a late fee or extra charges.'),
+  'extra_fees': ('Is the price on the page what I’ll actually pay?', 'Maybe not. Extra fees can be added.'),
+  'deposit': ('Will I get my deposit back?', 'Only if nothing is deducted for damage or unpaid amounts.'),
+  'min_term': ('What if I move or lose my job mid-contract?', 'You’re locked in for the minimum term and may owe a fee to leave.'),
+  'opened_returns': ('What if I open it and don’t like it?', 'Opened items usually can’t be returned.'),
+  'patch_test': ('What if I react badly to it?', 'They advise a patch test and won’t take responsibility for reactions.'),
+  'cancellation_window_booking': ('What if my plans change last minute?', 'Cancelling late can cost you some or all of the price.'),
+  'account_sharing': ('Can my family use my account?', 'Check the rules on sharing. Some services limit it.'),
+};
+
+const Map<String, List<String>> _wonders = {
+  'subscription': ['What if I move to another country?', 'Can someone in my family use this too?', 'What if they go out of business?'],
+  'shopping': ['What if it arrives broken?', 'What if it’s cheaper somewhere else next week?', 'What if I buy it as a gift?'],
+  'rideshare': ['What if I leave something in the car?', 'What if the driver cancels on me?'],
+  'rental': ['What if something breaks that I didn’t cause?', 'What if I need to leave early?'],
+  'social': ['What happens to my posts if I delete my account?', 'Could a future employer see what I share?'],
+  'finance': ['What if I can’t pay one month?', 'What if my card is stolen?'],
+};
+const List<String> _wondersGeneral = [
+  'What if they change these terms after I sign up?',
+  'Who do I talk to if something goes wrong?',
+  'What happens to my data if the company is sold?',
+];
+
+List<String> _everydayFor(Set<String> hits, String type) {
+  final out = <String>[];
+  final seen = <String>{};
+  for (final id in hits) {
+    final e = _everyday[id];
+    if (e == null || !seen.add(e.$1)) continue;
+    out.add('${e.$1}\n${e.$2}');
+    if (out.length == 3) break;
+  }
+  // Round it off with a couple of open questions the terms may not answer.
+  for (final q in [...?_wonders[type], ..._wondersGeneral]) {
+    if (out.length >= 5) break;
+    if (seen.add(q)) out.add(q);
+  }
+  return out;
+}

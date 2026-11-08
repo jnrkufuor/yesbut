@@ -72,9 +72,9 @@ Respond with ONLY a JSON object, no markdown, using exactly this shape:
      "category": "Money | Your rights | Your data | Commitment | General"}
   ],
   "jargon": [{"term": "legal word used in the doc", "meaning": "plain meaning"}],
-  "questions": ["things to ask or check before agreeing"]
+  "questions": [{"q": "an everyday what-if a regular customer might actually wonder, from real life (e.g. 'What if I move abroad?', 'Can my kid use my account?', 'What happens if they go out of business?'). A different line of thought from the findings, not a repeat", "a": "short plain answer from the document, or empty string if it doesn't say"}]
 }
-Keep every sentence short and plain (under 20 words). Order findings red_flag first. 5-12 findings. Never invent clauses that are not in the text. Write in English. Be quick and direct.''';
+Keep every sentence short and plain (under 20 words). Give 3-5 questions. Order findings red_flag first. 5-12 findings. Never invent clauses that are not in the text. Write in English. Be quick and direct.''';
 
   static String user(ContractInput input) =>
       'Title (may be a guess): ${input.title}\n\n<document>\n${shorten(input.text)}\n</document>';
@@ -150,7 +150,17 @@ Keep every sentence short and plain (under 20 words). Order findings red_flag fi
       findings: findings,
       jargon: list('jargon', JargonTerm.fromJson),
       keyFacts: list('key_facts', KeyFact.fromJson),
-      questions: strings('questions'),
+      questions: ((json['questions'] as List?) ?? const [])
+          .map((x) {
+            if (x is Map) {
+              final q = (x['q'] ?? x['question'] ?? '').toString().trim();
+              final a = (x['a'] ?? x['answer'] ?? '').toString().trim();
+              return a.isEmpty ? q : '$q\n$a';
+            }
+            return x.toString();
+          })
+          .where((q) => q.trim().isNotEmpty)
+          .toList(),
       wordCount: countWords(input.text),
       text: trimForStorage(input.text),
       summary: json['summary']?.toString(),

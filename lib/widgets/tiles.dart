@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 
@@ -46,7 +48,7 @@ class ActionTile extends StatelessWidget {
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Transform.translate(
                     offset: const Offset(-8, -8),
-                    child: LoopyIcon(icon, size: 70, color: fg, stroke: 1.5),
+                    child: _TileIcon(icon, color: fg),
                   ),
                   const Spacer(),
                   FlowArrow(color: fg, size: 22),
@@ -237,4 +239,38 @@ class HistoryTile extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// The big card icon does its own little move when the card is tapped:
+/// scan pinches in, upload lifts, paste wobbles, link swings.
+class _TileIcon extends TapReactive {
+  const _TileIcon(this.icon, {required this.color});
+  final String icon;
+  final Color color;
+  @override
+  State<_TileIcon> createState() => _TileIconState();
+}
+
+class _TileIconState extends TapReactiveState<_TileIcon> {
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: tap,
+        builder: (_, child) {
+          final v = tap.value;
+          if (!tap.isAnimating) return child!;
+          final decay = 1 - v;
+          return switch (widget.icon) {
+            'scan' => Transform.scale(scale: 1 - 0.16 * math.sin(v * math.pi * 2) * decay, child: child),
+            'upload' => Transform.translate(offset: Offset(0, -9 * math.sin(v * math.pi) * (v < 0.6 ? 1 : decay * 2.5)), child: child),
+            'paste' => Transform.rotate(angle: 0.16 * math.sin(v * math.pi * 3) * decay, child: child),
+            _ => Transform.rotate(
+                angle: 0.28 * math.sin(v * math.pi * 2.5) * decay,
+                alignment: const Alignment(0.2, -0.7),
+                child: child,
+              ),
+          };
+        },
+        child: LoopyIcon(widget.icon, size: 70, color: widget.color, stroke: 1.5),
+      );
 }

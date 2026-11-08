@@ -94,6 +94,37 @@ class LeaveGuard extends StatelessWidget {
       );
 }
 
+/// Reading again with the same reader rarely changes much: check first.
+Future<bool> confirmReread(BuildContext context, String reader) async {
+  final ok = await _sheet<bool>(
+    context,
+    (ctx) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _sheetTitle('Read it ', 'again?'),
+      const SizedBox(height: 8),
+      Text(
+        reader == 'On your phone'
+            ? 'Your phone already read this one, so the result will probably be the same.'
+            : '$reader already read this one, so the result will probably be the same. '
+                'To get a second opinion, pick a different reader first.',
+        style: const TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft),
+      ),
+      const SizedBox(height: 22),
+      BigButton(label: 'Keep this result', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
+      const SizedBox(height: 8),
+      Pressable(
+        onTap: () => Navigator.pop(ctx, true),
+        child: Container(
+          height: 58,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(99), border: Border.all(color: GColors.ink, width: 1)),
+          child: const Text('Read it again anyway', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      ),
+    ]),
+  );
+  return ok ?? false;
+}
+
 /// Confirm deleting a single check.
 Future<bool> confirmDeleteOne(BuildContext context, String title) async {
   final ok = await _sheet<bool>(
@@ -176,7 +207,11 @@ Future<void> showClearHistorySheet(BuildContext context) async {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Yes, delete $n check${n == 1 ? '' : 's'}. I know this can’t be undone.',
+                n == 0
+                    ? 'There’s nothing saved in this time.'
+                    : n == 1
+                        ? 'I understand this removes one saved check for good.'
+                        : 'I understand this removes $n saved checks for good.',
                 style: const TextStyle(fontSize: 14, height: 1.35),
               ),
             ),

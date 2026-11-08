@@ -235,12 +235,14 @@ class _GrowCard extends StatelessWidget {
         closedShape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(40)),
         openShape: const RoundedRectangleBorder(),
         tappable: false,
+        // Let the card's icon and arrow play their little move before the
+        // card grows into the page.
         closedBuilder: (context, open) => ActionTile(
           title: title,
           subtitle: subtitle,
           icon: icon,
           color: color,
-          onTap: open,
+          onTap: () => Future.delayed(const Duration(milliseconds: 280), open),
         ),
         openBuilder: (context, _) => page,
       );
@@ -392,7 +394,14 @@ class _NudgeIconState extends TapReactiveState<_NudgeIcon> {
           final hump = math.sin(v * math.pi);
           return switch (widget.icon) {
             'back' => Transform.translate(offset: Offset(-5 * hump, 0), child: child),
-            'share' => Transform.translate(offset: Offset(0, -5 * hump), child: child),
+            // The arrow pops up out of the box a little; the box stays put.
+            'share' => Stack(children: [
+                const LoopyIcon('share', size: 24, stroke: 2.4, only: [0]),
+                Transform.translate(
+                  offset: Offset(0, -5 * hump),
+                  child: const LoopyIcon('share', size: 24, stroke: 2.4, only: [1, 2]),
+                ),
+              ]),
             'settings' => Transform.rotate(angle: Curves.easeOutBack.transform(v) * math.pi / 3, child: child),
             'doc' => Transform.rotate(angle: 0.18 * math.sin(v * math.pi * 2) * (1 - v), child: child),
             _ => Transform.scale(scale: 1 + 0.15 * hump, child: child),
