@@ -131,36 +131,11 @@ class _ResultScreenState extends State<ResultScreen> {
           Row(children: [
             RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
             const Spacer(),
-            // Read aloud is parked for now: shown greyed out and disabled.
-            Semantics(
-              label: 'Read aloud (coming soon)',
-              enabled: false,
-              child: IgnorePointer(
-                child: Opacity(
-                  opacity: 0.35,
-                  child: RoundIconButton(icon: 'speaker', onTap: _toggleSpeak),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
             RoundIconButton(icon: 'share', label: 'Share', onTap: _share),
             const SizedBox(width: 6),
-            PopupMenuButton<String>(
-              onSelected: _menu,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(GRadius.md)),
-              itemBuilder: (_) => const [
-                PopupMenuItem(value: 'text', child: Text('View original text')),
-                PopupMenuItem(value: 'delete', child: Text('Delete this check')),
-              ],
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: GColors.line, width: 1),
-                ),
-                child: const Icon(Icons.more_horiz_rounded, color: GColors.ink),
-              ),
+            Semantics(
+              label: 'Delete this check',
+              child: RoundIconButton(icon: 'trash', onTap: () => _menu('delete')),
             ),
           ]),
           const SizedBox(height: 18),
@@ -434,7 +409,6 @@ class _ScoreCardState extends State<_ScoreCard> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 600),
           curve: const Cubic(0.2, 0.9, 0.2, 1),
-          height: _open ? 430 : 168,
           decoration: BoxDecoration(
             color: _open ? GColors.ink : bg,
             borderRadius: BorderRadius.circular(32),
@@ -450,11 +424,28 @@ class _ScoreCardState extends State<_ScoreCard> {
                 child: LoopyAccent('score', color: GColors.deep(bg), size: 150, stroke: 2),
               ),
             ),
-            // Front: number + verdict + counts.
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 250),
-              opacity: _open ? 0 : 1,
-              child: SizedBox(
+            // Front (score) and back (what it means) swap, and the card
+            // grows or shrinks to fit whichever is showing.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 560),
+              curve: const Cubic(0.2, 0.9, 0.2, 1),
+              alignment: Alignment.topCenter,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 320),
+                switchInCurve: const Interval(0.3, 1, curve: Curves.easeOut),
+                layoutBuilder: (current, previous) => Stack(
+                  alignment: Alignment.topLeft,
+                  children: [...previous, if (current != null) current],
+                ),
+                child: _open
+                    ? const Padding(
+                        key: ValueKey('back'),
+                        padding: EdgeInsets.all(20),
+                        child: _ScoreExplainer(),
+                      )
+                    : KeyedSubtree(
+                        key: const ValueKey('front'),
+                        child: SizedBox(
                 height: 168,
                 width: double.infinity,
                 child: Stack(alignment: Alignment.center, children: [
@@ -509,19 +500,8 @@ class _ScoreCardState extends State<_ScoreCard> {
                     ]),
                   ),
                 ]),
-              ),
-            ),
-            // Back: what the score means.
-            IgnorePointer(
-              ignoring: !_open,
-              child: AnimatedOpacity(
-                duration: Duration(milliseconds: _open ? 350 : 150),
-                opacity: _open ? 1 : 0,
-                curve: _open ? const Interval(0.4, 1) : Curves.linear,
-                child: const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 20, 20, 18),
-                  child: _ScoreExplainer(),
-                ),
+),
+                      ),
               ),
             ),
             // Expand / contract toggle, fully visible on both sides.
@@ -563,7 +543,7 @@ class _ScoreExplainer extends StatelessWidget {
           Text(n, style: const TextStyle(color: w, fontSize: 12.5, fontWeight: FontWeight.w700)),
           Text(' $l', style: TextStyle(color: w.withValues(alpha: 0.8), fontSize: 12.5)),
         ]);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('What the score means',
           style: TextStyle(fontFamily: AppTheme.display, color: w, fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.5)),
       const SizedBox(height: 6),
@@ -826,38 +806,7 @@ class _FindingCardState extends State<_FindingCard> {
           const SizedBox(height: 12),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final j in terms)
-              // A small tooltip right under the chip, not a full pop-up.
-              Tooltip(
-                message: j.meaning,
-                triggerMode: TooltipTriggerMode.tap,
-                showDuration: const Duration(seconds: 5),
-                preferBelow: true,
-                verticalOffset: 20,
-                margin: const EdgeInsets.symmetric(horizontal: 28),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(16)),
-                textStyle: const TextStyle(color: GColors.white, fontSize: 13, height: 1.4),
-                child: Container(
-                  height: 30,
-                  padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: fg, width: 1),
-                  ),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(j.term, style: TextStyle(fontSize: 12.5, color: fg)),
-                    const SizedBox(width: 5),
-                    Container(
-                      width: 16,
-                      height: 16,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: fg, shape: BoxShape.circle),
-                      child: Text('?',
-                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: bg, height: 1)),
-                    ),
-                  ]),
-                ),
-              ),
+              _JargonChip(term: j, fg: fg, bg: bg),
           ]),
         ],
         if (hasQuote) ...[
@@ -1208,7 +1157,7 @@ class _ExpandArrows extends CustomPainter {
     final p = Paint()
       ..color = color
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 1.6
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
     final s = size.width;
@@ -1238,4 +1187,125 @@ class _ExpandArrows extends CustomPainter {
 
   @override
   bool shouldRepaint(_ExpandArrows old) => old.t != t || old.color != color;
+}
+
+
+/// Jargon pill. Tap it: the pill fills in (so you can see which one) and a
+/// small note grows out from right underneath it. Tap again or wait to close.
+class _JargonChip extends StatefulWidget {
+  const _JargonChip({required this.term, required this.fg, required this.bg});
+  final JargonTerm term;
+  final Color fg;
+  final Color bg;
+  @override
+  State<_JargonChip> createState() => _JargonChipState();
+}
+
+class _JargonChipState extends State<_JargonChip> with SingleTickerProviderStateMixin {
+  final _link = LayerLink();
+  OverlayEntry? _entry;
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 260));
+  bool get _showing => _entry != null;
+
+  void _toggle() => _showing ? _hide() : _show();
+
+  void _show() {
+    final screenW = MediaQuery.sizeOf(context).width;
+    _entry = OverlayEntry(
+      builder: (ctx) => Stack(children: [
+        Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: _hide)),
+        CompositedTransformFollower(
+          link: _link,
+          showWhenUnlinked: false,
+          targetAnchor: Alignment.bottomLeft,
+          followerAnchor: Alignment.topLeft,
+          offset: const Offset(0, 8),
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: ScaleTransition(
+              alignment: Alignment.topLeft,
+              scale: CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
+              child: FadeTransition(
+                opacity: _c,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    constraints: BoxConstraints(maxWidth: screenW * 0.72),
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 11),
+                    decoration: BoxDecoration(
+                      color: GColors.ink,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.2), blurRadius: 14, offset: const Offset(0, 6))],
+                    ),
+                    child: Text(widget.term.meaning,
+                        style: const TextStyle(color: GColors.white, fontSize: 13, height: 1.4)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ]),
+    );
+    Overlay.of(context).insert(_entry!);
+    _c.forward(from: 0);
+    setState(() {});
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted && _showing) _hide();
+    });
+  }
+
+  Future<void> _hide() async {
+    if (!_showing) return;
+    await _c.reverse();
+    _entry?.remove();
+    _entry = null;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _entry?.remove();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = _showing;
+    final fg = widget.fg, bg = widget.bg;
+    return CompositedTransformTarget(
+      link: _link,
+      child: Semantics(
+        button: true,
+        label: '${widget.term.term}: ${widget.term.meaning}',
+        child: Pressable(
+          onTap: _toggle,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 30,
+            padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
+            decoration: BoxDecoration(
+              color: on ? fg : Colors.transparent,
+              borderRadius: BorderRadius.circular(99),
+              border: Border.all(color: fg, width: 1),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(widget.term.term, style: TextStyle(fontSize: 12.5, color: on ? bg : fg)),
+              const SizedBox(width: 5),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: 16,
+                height: 16,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: on ? bg : fg, shape: BoxShape.circle),
+                child: Text(on ? '×' : '?',
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: on ? fg : bg, height: 1)),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
 }

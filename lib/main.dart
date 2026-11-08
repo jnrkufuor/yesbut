@@ -37,7 +37,7 @@ class _YesButAppState extends State<YesButApp> {
       child: ChangeNotifierProvider.value(
         value: _state.i18n,
         child: MaterialApp(
-        title: 'YesBut',
+        title: 'Yes,But',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         // Accessibility settings applied app-wide.

@@ -9,6 +9,7 @@ import '../widgets/common.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
+import 'language_switch_screen.dart';
 
 /// Compact settings. Changes save as you make them.
 class SettingsScreen extends StatelessWidget {
@@ -72,7 +73,15 @@ class SettingsScreen extends StatelessWidget {
                 trailing: _Dropdown(
                   value: st.resultLanguage,
                   items: _langs,
-                  onChanged: (v) => set(st.copyWith(resultLanguage: v)),
+                  onChanged: (v) {
+                    if (v == st.resultLanguage) return;
+                    Navigator.of(context).push(PageRouteBuilder(
+                      opaque: true,
+                      transitionDuration: const Duration(milliseconds: 300),
+                      pageBuilder: (_, __, ___) => LanguageSwitchScreen(code: v, name: _langs[v] ?? v),
+                      transitionsBuilder: (_, a, __, c) => FadeTransition(opacity: a, child: c),
+                    ));
+                  },
                 ),
               ),
               const Padding(

@@ -15,6 +15,26 @@ class OfflineTranslator {
 
   static bool supports(String code) => _lang(code) != null;
 
+  /// True if this language's pack is already on the phone.
+  static Future<bool> isReady(String code) async {
+    final l = _lang(code);
+    if (l == null) return false;
+    if (l == TranslateLanguage.english) return true;
+    try {
+      return await OnDeviceTranslatorModelManager().isModelDownloaded(l.bcpCode);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Downloads the pack (and English, which every translation goes through).
+  static Future<void> prepare(String code) async {
+    final l = _lang(code);
+    if (l == null) throw TranslationUnavailable();
+    await _ensure(TranslateLanguage.english);
+    await _ensure(l);
+  }
+
   static Future<void> _ensure(TranslateLanguage l) async {
     final mm = OnDeviceTranslatorModelManager();
     if (!await mm.isModelDownloaded(l.bcpCode)) {
