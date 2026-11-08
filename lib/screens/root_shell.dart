@@ -23,7 +23,10 @@ class RootShell extends StatefulWidget {
 class _RootShellState extends State<RootShell> {
   int _index = 0;
 
-  void _go(int i) => setState(() => _index = i);
+  void _go(int i) {
+    FocusManager.instance.primaryFocus?.unfocus(); // never carry a keyboard into the next tab
+    setState(() => _index = i);
+  }
 
   @override
   void initState() {

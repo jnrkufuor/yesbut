@@ -16,6 +16,8 @@ class LinkScreen extends StatefulWidget {
 
 class _LinkScreenState extends State<LinkScreen> {
   final _url = TextEditingController();
+  final _focus = FocusNode();
+  late final _typing = FocusFlag(_focus);
 
   @override
   void initState() {
@@ -35,6 +37,8 @@ class _LinkScreenState extends State<LinkScreen> {
   @override
   void dispose() {
     _url.dispose();
+    _typing.dispose();
+    _focus.dispose();
     super.dispose();
   }
 
@@ -52,6 +56,8 @@ class _LinkScreenState extends State<LinkScreen> {
       title: 'Where do the terms ',
       titleSerif: 'live?',
       subtitle: 'Paste the web address of any terms, privacy policy or subscription page.',
+      typing: _typing,
+      sharp: const {0},
       bottom: BigButton(
         label: 'Read it for me',
         icon: Icons.arrow_forward_rounded,
@@ -61,7 +67,7 @@ class _LinkScreenState extends State<LinkScreen> {
       children: [
         TextField(
           controller: _url,
-          autofocus: _url.text.isEmpty,
+          focusNode: _focus,
           keyboardType: TextInputType.url,
           autocorrect: false,
           textInputAction: TextInputAction.go,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../models/analysis.dart';
@@ -22,10 +23,16 @@ class _PasteScreenState extends State<PasteScreen> {
   final _text = TextEditingController();
   final _title = TextEditingController();
   bool _sensitive = false;
+  final _titleFocus = FocusNode();
+  final _textFocus = FocusNode();
+  final _typing = ValueNotifier(false);
+  void _syncTyping() => _typing.value = _titleFocus.hasFocus || _textFocus.hasFocus;
 
   @override
   void initState() {
     super.initState();
+    _titleFocus.addListener(_syncTyping);
+    _textFocus.addListener(_syncTyping);
     if (widget.initialText != null) _text.text = widget.initialText!;
     if (widget.initialTitle != null) _title.text = widget.initialTitle!;
     _text.addListener(() => setState(() {}));
@@ -35,6 +42,9 @@ class _PasteScreenState extends State<PasteScreen> {
   void dispose() {
     _text.dispose();
     _title.dispose();
+    _titleFocus.dispose();
+    _textFocus.dispose();
+    _typing.dispose();
     super.dispose();
   }
 
@@ -58,6 +68,8 @@ class _PasteScreenState extends State<PasteScreen> {
       title: 'Drop in the ',
       titleSerif: 'fine print',
       subtitle: 'Copy the terms from an app, email or website and put them below.',
+      typing: _typing,
+      sharp: const {0, 2},
       bottom: BigButton(
         label: 'Find the catches',
         icon: Icons.arrow_forward_rounded,
@@ -75,6 +87,7 @@ class _PasteScreenState extends State<PasteScreen> {
       children: [
         TextField(
           controller: _title,
+          focusNode: _titleFocus,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             hintText: context.tr('Name it (optional), e.g. Gym membership'),
@@ -87,6 +100,7 @@ class _PasteScreenState extends State<PasteScreen> {
         Stack(children: [
           TextField(
             controller: _text,
+            focusNode: _textFocus,
             minLines: 10,
             maxLines: 16,
             keyboardType: TextInputType.multiline,
@@ -150,7 +164,13 @@ class InputScaffold extends StatelessWidget {
     required this.bottom,
     this.titleSerif,
     this.name,
+    this.typing,
+    this.sharp = const {},
   });
+  /// While true (an input is being typed in) everything except the
+  /// children listed in [sharp] is softly blurred.
+  final ValueListenable<bool>? typing;
+  final Set<int> sharp;
   final Color accent;
   final IconData icon;
   final String title; // lead part of the heading
@@ -166,6 +186,8 @@ class InputScaffold extends StatelessWidget {
     if (accent == GColors.green) return 'paste';
     return 'link';
   }
+
+  Widget _dim(Widget w) => typing == null ? w : FocusDim(active: typing!, child: w);
 
   String get _name => name ??
       (accent == GColors.red
@@ -187,7 +209,7 @@ class InputScaffold extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 18, 16, 20),
               children: [
                 ...staggered([
-                  Row(children: [
+                  _dim(Row(children: [
                     RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop()),
                     const Spacer(),
                     Text(_name,
@@ -195,14 +217,17 @@ class InputScaffold extends StatelessWidget {
                             fontFamily: AppTheme.display, fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -1.1, height: 1)),
                     const SizedBox(width: 8),
                     IconBlob(_loopy, color: accent, iconColor: GColors.onColor(accent), size: 40, pen: true),
-                  ]),
+                  ])),
                   const SizedBox(height: 28),
-                  HeadingText(title, serif: titleSerif, size: 36),
+                  _dim(HeadingText(title, serif: titleSerif, size: 36)),
                   const SizedBox(height: 10),
-                  Text(subtitle, style: const TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft)),
+                  _dim(Text(subtitle, style: const TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft))),
                   const SizedBox(height: 22),
                 ]),
-                ...staggered(children, start: 4),
+                ...staggered([
+                  for (var i = 0; i < children.length; i++)
+                    sharp.contains(i) || children[i] is SizedBox ? children[i] : _dim(children[i]),
+                ], start: 4),
               ],
             ),
           ),

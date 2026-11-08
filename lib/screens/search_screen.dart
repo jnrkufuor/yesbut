@@ -32,6 +32,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final _q = TextEditingController();
   final _focus = FocusNode();
+  late final _typing = FocusFlag(_focus);
   bool _busy = false;
   String _searched = '';
   FinderProgress _progress = const FinderProgress(FinderStage.searching);
@@ -42,6 +43,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _q.addListener(() => setState(() {}));
+    _focus.addListener(() => setState(() {}));
     if ((widget.initialQuery ?? '').isNotEmpty) {
       _q.text = widget.initialQuery!;
       WidgetsBinding.instance.addPostFrameCallback((_) => _go());
@@ -51,6 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _q.dispose();
+    _typing.dispose();
     _focus.dispose();
     super.dispose();
   }
@@ -103,19 +106,24 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: EdgeInsets.fromLTRB(16, 18, 16, widget.embedded ? 130 : 40),
           children: [
             ...staggered([
-              if (!widget.embedded)
-                Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())])
-              else
-                const PageHeader(title: 'Search', icon: 'search'),
-              const SizedBox(height: 28),
-              const FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: HeadingText('Look up any ', serif: 'company', size: 36),
+              FocusDim(
+                active: _typing,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (!widget.embedded)
+                    Row(children: [RoundIconButton(icon: 'back', onTap: () => Navigator.of(context).maybePop())])
+                  else
+                    const PageHeader(title: 'Search', icon: 'search'),
+                  const SizedBox(height: 28),
+                  const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: HeadingText('Look up any ', serif: 'company', size: 36),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',
+                      style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
+                ]),
               ),
-              const SizedBox(height: 10),
-              Text('Type a company or website. We’ll sniff out its terms and check how fresh they are.',
-                  style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
               const SizedBox(height: 20),
               _SearchField(
                 controller: _q,
@@ -125,7 +133,7 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ]),
             const SizedBox(height: 32),
-            AnimatedSwitcher(
+            FocusDim(active: _typing, child: AnimatedSwitcher(
               duration: const Duration(milliseconds: 320),
               switchInCurve: Curves.easeOutCubic,
               transitionBuilder: (c, a) => FadeTransition(
@@ -155,7 +163,7 @@ class _SearchScreenState extends State<SearchScreen> {
                           onOpen: _open,
                           onRetry: () => _go(),
                         ),
-            ),
+            )),
           ],
         ),
       ),
@@ -174,12 +182,16 @@ class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ok = controller.text.trim().isNotEmpty && !busy;
-    return Container(
+    final on = focus.hasFocus;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
       height: 56,
       padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
       decoration: BoxDecoration(
+        color: GColors.white,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: GColors.ink, width: 1),
+        border: Border.all(color: GColors.ink, width: on ? 1.6 : 1),
+        boxShadow: on ? [BoxShadow(color: GColors.ink.withValues(alpha: 0.12), blurRadius: 22, offset: const Offset(0, 8))] : const [],
       ),
       child: Row(children: [
         const LoopyIcon('search', size: 22, stroke: 2.6),

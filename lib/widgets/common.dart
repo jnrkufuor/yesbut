@@ -1,5 +1,7 @@
+import 'dart:ui' as ui;
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 
@@ -672,4 +674,51 @@ class _EntranceData extends InheritedWidget {
   final DateTime start;
   @override
   bool updateShouldNotify(_EntranceData old) => old.start != start;
+}
+
+
+/// Softly blurs and fades whatever it wraps while [active] is on (e.g. while
+/// the search bar is being typed in), so the focused input stands out.
+/// Tapping the dimmed area closes the keyboard.
+class FocusDim extends StatelessWidget {
+  const FocusDim({super.key, required this.active, required this.child});
+  final ValueListenable<bool> active;
+  final Widget child;
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: active,
+        builder: (context, on, _) => TweenAnimationBuilder<double>(
+          tween: Tween(end: on ? 1 : 0),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          builder: (context, v, child) => v == 0
+              ? child!
+              : GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+                  child: AbsorbPointer(
+                    absorbing: on,
+                    child: Opacity(
+                      opacity: 1 - 0.55 * v,
+                      child: ImageFiltered(imageFilter: ui.ImageFilter.blur(sigmaX: 3.5 * v, sigmaY: 3.5 * v), child: child),
+                    ),
+                  ),
+                ),
+          child: child,
+        ),
+      );
+}
+
+/// True while [node] has focus, as something [FocusDim] can listen to.
+class FocusFlag extends ValueNotifier<bool> {
+  FocusFlag(this.node) : super(node.hasFocus) {
+    node.addListener(_sync);
+  }
+  final FocusNode node;
+  void _sync() => value = node.hasFocus;
+  @override
+  void dispose() {
+    node.removeListener(_sync);
+    super.dispose();
+  }
 }
