@@ -28,7 +28,7 @@ class Flows {
   static Future<void> scan(BuildContext context) => Navigator.of(context)
       .push(MaterialPageRoute(builder: (_) => const ScanScreen()));
 
-  static Future<void> upload(BuildContext context) async {
+  static Future<void> upload(BuildContext context, {bool sensitive = false}) async {
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
     try {
@@ -40,6 +40,7 @@ class Flows {
             text: doc.text,
             title: doc.name.isEmpty ? 'Uploaded document' : doc.name,
             kind: SourceKind.file,
+            sensitive: sensitive,
           ),
         ),
       ));
@@ -54,10 +55,11 @@ class Flows {
     required String title,
     required SourceKind kind,
     String? ref,
+    bool sensitive = false,
   }) =>
       Navigator.of(context).push(MaterialPageRoute(
         builder: (_) => AnalyzingScreen(
-          load: () async => ContractInput(text: text, title: title, kind: kind, ref: ref),
+          load: () async => ContractInput(text: text, title: title, kind: kind, ref: ref, sensitive: sensitive),
         ),
       ));
 

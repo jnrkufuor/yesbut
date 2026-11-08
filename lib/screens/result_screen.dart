@@ -135,7 +135,7 @@ class _ResultScreenState extends State<ResultScreen> {
             const Spacer(),
             if (webUrlOf(r) != null)
               _TrackButton(result: r)
-            else
+            else if (r.text.trim().isNotEmpty)
               // Files, scans and pasted text: see exactly what we read.
               Semantics(
                 label: 'See the text we read',
@@ -182,13 +182,8 @@ class _ResultScreenState extends State<ResultScreen> {
               ]),
             ),
           ],
-          if (r.keyFacts.isNotEmpty) ...[
-            const SizedBox(height: 26),
-            const SectionTitle('Quick facts'),
-            _KeyFacts(facts: r.keyFacts),
-          ],
 
-          if (r.tldr.isNotEmpty) ...[
+          if (r.tldr.isNotEmpty || r.keyFacts.isNotEmpty) ...[
             const SizedBox(height: 26),
             _Tldr(result: r),
           ],
@@ -618,68 +613,6 @@ class _MiniCount extends StatelessWidget {
   }
 }
 
-class _KeyFacts extends StatelessWidget {
-  const _KeyFacts({required this.facts});
-  final List<KeyFact> facts;
-
-  Widget _card(KeyFact f) => Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          border: Border.all(color: GColors.line, width: 1),
-          borderRadius: BorderRadius.circular(GRadius.md),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(f.label.toUpperCase(),
-              style: const TextStyle(fontSize: 10.5, letterSpacing: 1.1, fontWeight: FontWeight.w600, color: GColors.inkFaint)),
-          const SizedBox(height: 4),
-          Text(f.value, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w400, height: 1.3)),
-        ]),
-      );
-
-  /// Even grid: short facts pair up in rows of equal height; long ones get a
-  /// full row so they don't stretch their neighbour.
-  @override
-  Widget build(BuildContext context) {
-    bool long(KeyFact f) => f.value.length > 60;
-    final rows = <Widget>[];
-    var i = 0;
-    while (i < facts.length) {
-      final a = facts[i];
-      if (long(a) || i == facts.length - 1) {
-        rows.add(SizedBox(width: double.infinity, child: _card(a)));
-        i++;
-        continue;
-      }
-      // Pair with the next short fact (pull a later one forward if needed).
-      final j = facts.indexWhere((f) => !long(f), i + 1);
-      if (j == -1) {
-        rows.add(SizedBox(width: double.infinity, child: _card(a)));
-        i++;
-        continue;
-      }
-      final b = facts[j];
-      rows.add(IntrinsicHeight(
-        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Expanded(child: _card(a)),
-          const SizedBox(width: 10),
-          Expanded(child: _card(b)),
-        ]),
-      ));
-      if (j != i + 1) {
-        // Put the skipped long ones back in line after this pair.
-        facts.sublist(i + 1, j).forEach((f) => rows.add(SizedBox(width: double.infinity, child: _card(f))));
-      }
-      i = j + 1;
-    }
-    return Column(children: [
-      for (var k = 0; k < rows.length; k++) ...[
-        if (k > 0) const SizedBox(height: 10),
-        rows[k],
-      ],
-    ]);
-  }
-}
-
 class _Tldr extends StatelessWidget {
   const _Tldr({required this.result});
   final AnalysisResult result;
@@ -704,7 +637,8 @@ class _Tldr extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lines = result.tldr;
+    final lines = result.tldr.take(4).toList();
+    final facts = this.facts;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       decoration: BoxDecoration(color: GColors.ink, borderRadius: BorderRadius.circular(32)),
@@ -721,7 +655,8 @@ class _Tldr extends StatelessWidget {
               fontFamily: AppTheme.display, color: GColors.white, fontSize: 20, fontWeight: FontWeight.w700, letterSpacing: -0.4),
         ),
         const SizedBox(height: 14),
-        for (var i = 0; i < lines.length; i++)
+        for (var i = 0; i < lines.length; i++) ...[
+          if (i == 1 && facts.isNotEmpty) _facts(facts),
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -750,6 +685,70 @@ class _Tldr extends StatelessWidget {
               ),
             ]),
           ),
+        ],
+        if (lines.length < 2 && facts.isNotEmpty) _facts(facts),
+      ]),
+    );
+  }
+
+  /// Up to four quick facts (cancel, renewal, price, refunds…) as a tidy
+  /// grid inside the card, so the summary and the facts read as one.
+  static const _priority = ['cancel', 'renew', 'price', 'refund', 'return', 'data', 'dispute', 'trial', 'fee'];
+
+  List<KeyFact> get facts {
+    int rank(KeyFact f) {
+      final l = f.label.toLowerCase();
+      final i = _priority.indexWhere(l.contains);
+      return i == -1 ? 99 : i;
+    }
+
+    final seen = <String>{};
+    final sorted = [...result.keyFacts]..sort((a, b) => rank(a).compareTo(rank(b)));
+    return sorted.where((f) => seen.add(f.label.toLowerCase())).take(4).toList();
+  }
+
+  /// Keeps a fact to its first short clause so the grid stays even.
+  static String _short(String v) {
+    var t = v.trim();
+    if (t.length <= 48) return t;
+    final cut = RegExp(r' \(| — | – |; |, (?:unless|except|but|and|which)\b').firstMatch(t);
+    if (cut != null && cut.start >= 12) t = t.substring(0, cut.start);
+    if (t.length > 60) t = '${t.substring(0, t.lastIndexOf(' ', 58).clamp(20, 58))}…';
+    return t.replaceAll(RegExp(r'[.,;]$'), '');
+  }
+
+  Widget _facts(List<KeyFact> facts) {
+    Widget cell(KeyFact f) => Container(
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+          decoration: BoxDecoration(
+            color: GColors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(f.label.toUpperCase(),
+                style: TextStyle(
+                    fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w600, color: GColors.white.withValues(alpha: 0.55))),
+            const SizedBox(height: 3),
+            Text(_short(f.value), style: const TextStyle(fontSize: 13.5, height: 1.3, color: GColors.white)),
+          ]),
+        );
+    final rows = <Widget>[];
+    for (var i = 0; i < facts.length; i += 2) {
+      rows.add(IntrinsicHeight(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Expanded(child: cell(facts[i])),
+          const SizedBox(width: 8),
+          Expanded(child: i + 1 < facts.length ? cell(facts[i + 1]) : const SizedBox()),
+        ]),
+      ));
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(children: [
+        for (var k = 0; k < rows.length; k++) ...[
+          if (k > 0) const SizedBox(height: 8),
+          rows[k],
+        ],
       ]),
     );
   }

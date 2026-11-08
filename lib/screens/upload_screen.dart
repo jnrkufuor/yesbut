@@ -8,8 +8,14 @@ import 'flows.dart';
 import 'paste_screen.dart';
 
 /// Blue sheet the Upload card grows into; the button opens the file picker.
-class UploadScreen extends StatelessWidget {
+class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
+  @override
+  State<UploadScreen> createState() => _UploadScreenState();
+}
+
+class _UploadScreenState extends State<UploadScreen> {
+  bool _sensitive = false;
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +29,7 @@ class UploadScreen extends StatelessWidget {
         label: 'Choose a file',
         icon: Icons.arrow_forward_rounded,
         color: GColors.ink,
-        onTap: () => Flows.upload(context),
+        onTap: () => Flows.upload(context, sensitive: _sensitive),
       ),
       children: [
         HeroAction(
@@ -31,8 +37,10 @@ class UploadScreen extends StatelessWidget {
           icon: 'upload',
           title: 'Pick a PDF or .txt',
           subtitle: 'From your files, Drive or downloads',
-          onTap: () => Flows.upload(context),
+          onTap: () => Flows.upload(context, sensitive: _sensitive),
         ),
+        const SizedBox(height: 14),
+        SensitiveToggle(value: _sensitive, onChanged: (v) => setState(() => _sensitive = v)),
         const SizedBox(height: 18),
         const InfoRow(icon: 'scan', text: 'Scanned paper? Use Scan it instead, it reads text from photos.'),
       ],

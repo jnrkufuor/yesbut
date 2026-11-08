@@ -61,8 +61,8 @@ Respond with ONLY a JSON object, no markdown, using exactly this shape:
   "summary": "one plain sentence a 12-year-old understands: whose rules these are and for what",
   "audience": "who these terms apply to in plain words, e.g. 'people booking rides (drivers have separate terms)'",
   "score": 0-100 integer, how fair to the customer (100 = very fair), using the guide above,
-  "tldr": ["first item: one-line overall summary", "then 2-4 short bullets of what matters most"],
-  "key_facts": [{"label": "Cancel|Renewal|Price|Refunds|Returns|Disputes|Data|...", "value": "short answer"}],
+  "tldr": ["first item: one-line overall summary, max 16 words", "then 2-3 bullets of what matters most, each max 14 words"],
+  "key_facts": [{"label": "Cancel|Renewal|Price|Refunds|Returns|Disputes|Data|...", "value": "answer in 6 words or fewer"}],
   "findings": [
     {"title": "short punchy headline, max 7 words",
      "plain": "1-2 sentences, everyday words, what it means for ME",
@@ -73,7 +73,7 @@ Respond with ONLY a JSON object, no markdown, using exactly this shape:
   "jargon": [{"term": "legal word used in the doc", "meaning": "plain meaning"}],
   "questions": ["things to ask or check before agreeing"]
 }
-Order findings red_flag first. 5-12 findings. Never invent clauses that are not in the text. Write in English. Be quick and direct.''';
+Keep every sentence short and plain (under 20 words). Order findings red_flag first. 5-12 findings. Never invent clauses that are not in the text. Write in English. Be quick and direct.''';
 
   static String user(ContractInput input) =>
       'Title (may be a guess): ${input.title}\n\n<document>\n${shorten(input.text)}\n</document>';

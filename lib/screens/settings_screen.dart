@@ -10,6 +10,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
 import 'language_switch_screen.dart';
+import 'our_terms_screen.dart';
 
 /// Compact settings. Changes save as you make them.
 class SettingsScreen extends StatelessWidget {
@@ -120,6 +121,12 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Clear history',
                 body: '${state.history.length} saved check${state.history.length == 1 ? '' : 's'}',
                 onTap: () => showClearHistorySheet(context),
+                trailing: const Icon(Icons.chevron_right_rounded, color: GColors.inkSoft),
+              ),
+              _Row(
+                title: 'Our terms & privacy',
+                body: 'How your data is used, in plain words.',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OurTermsScreen())),
                 trailing: const Icon(Icons.chevron_right_rounded, color: GColors.inkSoft),
               ),
             ]),

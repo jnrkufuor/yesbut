@@ -21,6 +21,7 @@ class PasteScreen extends StatefulWidget {
 class _PasteScreenState extends State<PasteScreen> {
   final _text = TextEditingController();
   final _title = TextEditingController();
+  bool _sensitive = false;
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _PasteScreenState extends State<PasteScreen> {
                   text: _text.text,
                   title: _title.text.trim().isEmpty ? 'Pasted terms' : _title.text.trim(),
                   kind: SourceKind.paste,
+                  sensitive: _sensitive,
                 ),
       ),
       children: [
@@ -122,6 +124,12 @@ class _PasteScreenState extends State<PasteScreen> {
                 style: const TextStyle(color: GColors.inkSoft, fontWeight: FontWeight.w400, fontSize: 12)),
           ),
         ]),
+        const SizedBox(height: 12),
+        SensitiveToggle(
+          value: _sensitive,
+          suggest: looksPersonal(_text.text),
+          onChanged: (v) => setState(() => _sensitive = v),
+        ),
       ],
     );
   }
@@ -301,4 +309,81 @@ class InfoRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(child: Text(text, style: const TextStyle(fontSize: 13.5, height: 1.45, color: GColors.inkSoft))),
       ]);
+}
+
+
+/// Spots personal details (emails, phone/ID/card/account numbers) so we can
+/// suggest marking a document sensitive.
+bool looksPersonal(String text) => RegExp(
+      r'[\w.+-]+@[\w-]+\.[\w.]+'
+      r'|\b\d{3}-\d{2}-\d{4}\b'
+      r'|\b(?:\d[ -]?){13,19}\b'
+      r'|\+?\d[\d ()-]{9,}\d'
+      r'|\b[A-Z]{2}\d{2}[A-Z0-9]{11,30}\b'
+      r'|\b(?:date of birth|DOB|SSN|SIN|passport no|account (?:no|number))\b',
+      caseSensitive: false,
+    ).hasMatch(text);
+
+/// "This has personal info" switch for Scan, Upload and Paste. When on, the
+/// document is read on the phone only (no AI) and its text isn't saved.
+class SensitiveToggle extends StatelessWidget {
+  const SensitiveToggle({super.key, required this.value, required this.onChanged, this.suggest = false});
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool suggest; // we spotted personal details
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: value || suggest ? GColors.ink : GColors.line, width: 1),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const LoopyIcon('eye', size: 22, stroke: 2.2),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Has personal info', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600)),
+          ),
+          Semantics(
+            toggled: value,
+            label: 'Mark as sensitive',
+            child: GestureDetector(
+              onTap: () => onChanged(!value),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 46,
+                height: 28,
+                padding: const EdgeInsets.all(3),
+                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+                decoration: BoxDecoration(
+                  color: GColors.white,
+                  borderRadius: BorderRadius.circular(99),
+                  border: Border.all(color: value ? GColors.ink : GColors.line, width: 1),
+                ),
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(color: value ? GColors.ink : GColors.line, shape: BoxShape.circle),
+                ),
+              ),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        Text(
+          value
+              ? 'We’ll read it on your phone only. No AI, nothing sent anywhere, and the text isn’t saved. '
+                  'Still, cover up ID, account or card numbers you don’t need checked.'
+              : suggest
+                  ? 'This looks like it has personal details. Mark it so it stays on your phone.'
+                  : 'Turn on for leases, payslips, medical or bank papers. It stays on your phone.',
+          style: const TextStyle(fontSize: 12.5, height: 1.45, color: GColors.inkSoft),
+        ),
+      ]),
+    );
+  }
 }

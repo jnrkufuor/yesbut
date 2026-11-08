@@ -29,6 +29,7 @@ class _ScanScreenState extends State<ScanScreen> {
   final _scanner = Scanner();
   final _pages = <_Page>[];
   bool _busy = false;
+  bool _sensitive = false;
 
   @override
   void dispose() {
@@ -62,6 +63,7 @@ class _ScanScreenState extends State<ScanScreen> {
       text: text,
       title: 'Scanned contract (${_pages.length} page${_pages.length == 1 ? '' : 's'})',
       kind: SourceKind.scan,
+      sensitive: _sensitive,
     );
   }
 
@@ -91,6 +93,12 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
         const SizedBox(height: 12),
         Center(child: OutlinePill(label: 'Pick from photos', icon: 'upload', onTap: _busy ? null : () => _add(gallery: true))),
+        const SizedBox(height: 18),
+        SensitiveToggle(
+          value: _sensitive,
+          suggest: _pages.any((p) => looksPersonal(p.text)),
+          onChanged: (v) => setState(() => _sensitive = v),
+        ),
         const SizedBox(height: 26),
         Row(children: [
           const Text('YOUR PAGES', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.1, color: GColors.inkSoft)),

@@ -188,6 +188,7 @@ class AnalysisResult {
     List<Finding>? findings,
     List<KeyFact>? keyFacts,
     List<String>? questions,
+    String? text,
   }) =>
       AnalysisResult(
         id: id,
@@ -203,7 +204,7 @@ class AnalysisResult {
         keyFacts: keyFacts ?? this.keyFacts,
         questions: questions ?? this.questions,
         wordCount: wordCount,
-        text: text,
+        text: text ?? this.text,
         note: note ?? this.note,
         dealType: dealType ?? this.dealType,
         industry: industry ?? this.industry,
@@ -315,6 +316,8 @@ class ContractInput {
   /// What kind of deal this is ("shopping", "rideshare"…); tunes the criteria.
   final String dealType;
   final String industry;
+  /// Marked sensitive by the user: read on the phone only, text not kept.
+  final bool sensitive;
   const ContractInput({
     required this.text,
     required this.title,
@@ -323,6 +326,7 @@ class ContractInput {
     this.pageDate,
     this.dealType = 'general',
     this.industry = 'general',
+    this.sensitive = false,
   });
 
   ContractInput copyWith({String? text, String? dealType, String? industry}) => ContractInput(
@@ -333,5 +337,6 @@ class ContractInput {
         pageDate: pageDate,
         dealType: dealType ?? this.dealType,
         industry: industry ?? this.industry,
+        sensitive: sensitive,
       );
 }

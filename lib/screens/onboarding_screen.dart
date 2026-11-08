@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import 'our_terms_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -32,8 +33,18 @@ class OnboardingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Center(
-              child: Text('Not legal advice. Just really fast reading.',
-                  style: t.bodySmall?.copyWith(color: GColors.inkFaint)),
+              child: GestureDetector(
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const OurTermsScreen())),
+                child: Text.rich(
+                  TextSpan(children: [
+                    const TextSpan(text: 'Not legal advice. By continuing you agree to '),
+                    TextSpan(text: 'our terms', style: const TextStyle(decoration: TextDecoration.underline, color: GColors.ink)),
+                    const TextSpan(text: '.'),
+                  ]),
+                  textAlign: TextAlign.center,
+                  style: t.bodySmall?.copyWith(color: GColors.inkFaint),
+                ),
+              ),
             ),
           ]),
         ),

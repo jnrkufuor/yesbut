@@ -118,6 +118,12 @@ class AppState extends ChangeNotifier {
   /// result and a note explaining any fallback.
   Future<(AnalysisResult, String?)> _read(ContractInput work, RuleBasedAnalyzer offline) async {
     final choice = _settings.engine;
+    if (work.sensitive) {
+      return (
+        await offline.analyze(work),
+        'You marked this as sensitive, so it was read on your phone only and the original text wasn’t saved.',
+      );
+    }
     if (choice == EngineChoice.offline) return (await offline.analyze(work), null);
     final order = [choice, ...readers.keys.where((k) => k != choice)];
     final misses = <String>[];
@@ -176,6 +182,7 @@ class AppState extends ChangeNotifier {
 
     // Results stay stored in English; the app-wide translator shows them in
     // the app language (so switching language later re-translates history).
+    if (input.sensitive) result = result.copyWith(text: '');
     final dateNote = _dateNote(input.pageDate);
     if (dateNote != null) {
       result = result.copyWith(note: result.note == null ? dateNote : '$dateNote ${result.note}');
