@@ -699,8 +699,8 @@ class FocusDim extends StatelessWidget {
                   child: AbsorbPointer(
                     absorbing: on,
                     child: Opacity(
-                      opacity: 1 - 0.55 * v,
-                      child: ImageFiltered(imageFilter: ui.ImageFilter.blur(sigmaX: 3.5 * v, sigmaY: 3.5 * v), child: child),
+                      opacity: 1 - 0.7 * v,
+                      child: ImageFiltered(imageFilter: ui.ImageFilter.blur(sigmaX: 10 * v, sigmaY: 10 * v), child: child),
                     ),
                   ),
                 ),

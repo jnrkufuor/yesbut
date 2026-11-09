@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Text;
 import '../i18n/text.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/catalog_repository.dart';
 import '../services/ingestion/page_meta.dart';
 import '../services/ingestion/terms_finder.dart';
+import '../services/feedback.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
@@ -14,7 +16,7 @@ import '../widgets/search_scene.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'flows.dart';
-import 'home_screen.dart' show RoundIconButton, PageHeader;
+import 'home_screen.dart' show RoundIconButton, PageHeader, openLibraryItem;
 import 'library_screen.dart';
 
 /// "Find the fine print": search the web for a company's terms, show what we
@@ -38,10 +40,31 @@ class _SearchScreenState extends State<SearchScreen> {
   FinderProgress _progress = const FinderProgress(FinderStage.searching);
   List<TermsCandidate>? _results;
   int _run = 0;
+  List<String> _recent = [];
+  List<CatalogItem> _catalog = [];
+
+  static const _recentKey = 'recent_searches';
+
+  Future<void> _loadHints() async {
+    final prefs = await SharedPreferences.getInstance();
+    final items = await context.read<AppState>().catalog.load();
+    if (!mounted) return;
+    setState(() {
+      _recent = prefs.getStringList(_recentKey) ?? [];
+      _catalog = items;
+    });
+  }
+
+  Future<void> _remember(String q) async {
+    _recent = [q, ..._recent.where((r) => r.toLowerCase() != q.toLowerCase())].take(6).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_recentKey, _recent);
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadHints());
     _q.addListener(() => setState(() {}));
     _focus.addListener(() => setState(() {}));
     if ((widget.initialQuery ?? '').isNotEmpty) {
@@ -77,10 +100,80 @@ class _SearchScreenState extends State<SearchScreen> {
     });
     await minWait;
     if (!mounted || run != _run) return;
+    if (found.isNotEmpty) Fx.found();
+    _remember(query);
     setState(() {
       _busy = false;
       _results = found;
     });
+  }
+
+  /// Suggestions under the bar while typing: popular services that match,
+  /// your recent searches, and "search the web" for anything else.
+  Widget _suggestions() {
+    final q = _q.text.trim().toLowerCase();
+    final state = context.read<AppState>();
+    final matches = q.isEmpty
+        ? <CatalogItem>[]
+        : _catalog
+            .where((c) => c.name.toLowerCase().contains(q) || c.url.toLowerCase().contains(q))
+            .take(4)
+            .toList();
+    final recent = _recent.where((r) => q.isEmpty || r.toLowerCase().contains(q)).take(q.isEmpty ? 5 : 2).toList();
+    if (matches.isEmpty && recent.isEmpty && q.isEmpty) return const SizedBox(height: 4);
+    Widget row(Widget lead, String label, String? sub, VoidCallback onTap) => Pressable(
+          scale: 0.98,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(children: [
+              SizedBox(width: 28, child: Center(child: lead)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15)),
+                  if (sub != null) Text(sub, style: const TextStyle(fontSize: 12, color: GColors.inkSoft)),
+                ]),
+              ),
+            ]),
+          ),
+        );
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: GColors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: GColors.line, width: 1),
+        boxShadow: [BoxShadow(color: GColors.ink.withValues(alpha: 0.08), blurRadius: 18, offset: const Offset(0, 8))],
+      ),
+      child: Column(children: [
+        for (final c in matches)
+          row(
+            Container(
+              width: 26,
+              height: 26,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: c.brandColor, shape: BoxShape.circle),
+              child: Text(c.name.characters.first,
+                  style: const TextStyle(color: GColors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+            c.name,
+            '${c.kind} · ${c.category}',
+            () {
+              _focus.unfocus();
+              openLibraryItem(context, state, c);
+            },
+          ),
+        for (final r in recent)
+          row(const LoopyIcon('history', size: 20, color: GColors.inkSoft, stroke: 2.4), r, null, () {
+            _q.text = r;
+            _go(r);
+          }),
+        if (q.isNotEmpty)
+          row(const LoopyIcon('search', size: 20, stroke: 2.4), 'Search the web for “${_q.text.trim()}”', null, () => _go()),
+      ]),
+    );
   }
 
   /// Stop the current search: its results are ignored when they arrive.
@@ -125,11 +218,21 @@ class _SearchScreenState extends State<SearchScreen> {
                 ]),
               ),
               const SizedBox(height: 20),
-              _SearchField(
-                controller: _q,
-                focus: _focus,
-                busy: _busy,
-                onSubmit: () => _go(),
+              // While a search runs the bar steps aside for the animation.
+              AnimatedSize(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                child: _busy
+                    ? const SizedBox(width: double.infinity)
+                    : Column(children: [
+                        _SearchField(
+                          controller: _q,
+                          focus: _focus,
+                          busy: _busy,
+                          onSubmit: () => _go(),
+                        ),
+                        if (_focus.hasFocus) _suggestions(),
+                      ]),
               ),
             ]),
             const SizedBox(height: 32),

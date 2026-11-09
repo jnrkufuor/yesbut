@@ -48,7 +48,7 @@ class _YesButAppState extends State<YesButApp> {
           final mq = MediaQuery.of(context);
           return MediaQuery(
             data: mq.copyWith(
-              textScaler: st.largerText ? TextScaler.linear(mq.textScaler.scale(1) * 1.2) : mq.textScaler,
+              textScaler: (st.textScale - 1).abs() < 0.01 ? mq.textScaler : TextScaler.linear(mq.textScaler.scale(1) * st.textScale),
               boldText: st.boldText || mq.boldText,
               disableAnimations: st.reduceMotion || mq.disableAnimations,
             ),

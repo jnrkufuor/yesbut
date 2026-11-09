@@ -5,6 +5,7 @@ import '../i18n/text.dart';
 import 'package:provider/provider.dart';
 
 import '../models/analysis.dart';
+import '../services/feedback.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../services/ingestion/web_fetcher.dart';
@@ -79,6 +80,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       await minWait;
       if (!mounted) return;
       setState(() => _step = 2);
+      Fx.done();
       Navigator.of(context).pushReplacement(PageRouteBuilder(
         transitionDuration: const Duration(milliseconds: 420),
         pageBuilder: (_, __, ___) => ResultScreen(result: result, fresh: true),

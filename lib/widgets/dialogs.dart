@@ -103,39 +103,50 @@ Future<void> showWatchSettings(BuildContext context, WatchItem item) async {
   final stop = await _sheet<bool>(
     context,
     (ctx) => StatefulBuilder(builder: (ctx, set) {
-      Widget chip(String label, int? days) {
-        final on = pick == days;
-        return Pressable(
-          onTap: () {
-            set(() => pick = days);
-            state.setItemEvery(item.url, days);
-          },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            height: 38,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: on ? GColors.ink : GColors.white,
-              borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: GColors.ink, width: 1),
-            ),
-            child: Text(label,
-                style: TextStyle(fontSize: 13, fontWeight: on ? FontWeight.w600 : FontWeight.w400, color: on ? GColors.white : GColors.ink)),
-          ),
-        );
-      }
-
+      final options = <int?, String>{null: 'Same as the rest ($general)', ...WatchService.frequencies};
       return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sheetTitle('Watching ', item.title),
-        const SizedBox(height: 8),
-        const Text('How often should we check these terms for changes?',
-            style: TextStyle(fontSize: 15, height: 1.45, color: GColors.inkSoft)),
-        const SizedBox(height: 16),
-        Wrap(spacing: 6, runSpacing: 6, children: [
-          chip('Same as the rest ($general)', null),
-          for (final e in WatchService.frequencies.entries) chip(e.value, e.key),
+        _sheetTitle('', 'Watching'),
+        const SizedBox(height: 2),
+        Text(item.title,
+            style: const TextStyle(fontFamily: AppTheme.display, fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: -0.4)),
+        const SizedBox(height: 18),
+        Row(children: [
+          const Expanded(
+            child: Text('Check for changes', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          ),
+          PopupMenuButton<int?>(
+            color: GColors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: const BorderSide(color: GColors.line)),
+            onSelected: (d) {
+              set(() => pick = d);
+              state.setItemEvery(item.url, d);
+            },
+            itemBuilder: (_) => [
+              for (final e in options.entries)
+                PopupMenuItem<int?>(
+                  value: e.key,
+                  child: Row(children: [
+                    Expanded(child: Text(e.value, style: const TextStyle(fontSize: 14))),
+                    if (e.key == pick) const Icon(Icons.check_rounded, size: 18),
+                  ]),
+                ),
+            ],
+            child: Container(
+              height: 36,
+              padding: const EdgeInsets.fromLTRB(13, 0, 8, 0),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(99), border: Border.all(color: GColors.ink, width: 1)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(pick == null ? 'Default' : options[pick]!, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                const Icon(Icons.expand_more_rounded, size: 18),
+              ]),
+            ),
+          ),
         ]),
+        const SizedBox(height: 6),
+        Text(
+          pick == null ? 'Uses your general setting on the Live page ($general).' : 'Its own schedule, separate from the rest.',
+          style: const TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
+        ),
         const SizedBox(height: 22),
         BigButton(label: 'Done', color: GColors.ink, onTap: () => Navigator.pop(ctx, false)),
         const SizedBox(height: 8),

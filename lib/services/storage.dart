@@ -15,6 +15,9 @@ class AppSettings {
   final String endpoint;
   final String resultLanguage; // language results are written in (AI engine)
   final bool largerText;
+  final double textScale; // 0.85 … 1.4
+  final bool sounds;
+  final bool haptics;
   final bool boldText;
   final bool reduceMotion;
 
@@ -25,11 +28,13 @@ class AppSettings {
     this.endpoint = 'https://api.anthropic.com/v1/messages',
     this.resultLanguage = 'en',
     this.largerText = false,
+    this.textScale = 1.0,
+    this.sounds = true,
+    this.haptics = true,
     this.boldText = false,
     this.reduceMotion = false,
   });
 
-  bool get aiReady => engine == EngineChoice.claude && apiKey.trim().isNotEmpty;
 
   AppSettings copyWith({
     EngineChoice? engine,
@@ -38,6 +43,9 @@ class AppSettings {
     String? endpoint,
     String? resultLanguage,
     bool? largerText,
+    double? textScale,
+    bool? sounds,
+    bool? haptics,
     bool? boldText,
     bool? reduceMotion,
   }) =>
@@ -48,6 +56,9 @@ class AppSettings {
         endpoint: endpoint ?? this.endpoint,
         resultLanguage: resultLanguage ?? this.resultLanguage,
         largerText: largerText ?? this.largerText,
+        textScale: textScale ?? this.textScale,
+        sounds: sounds ?? this.sounds,
+        haptics: haptics ?? this.haptics,
         boldText: boldText ?? this.boldText,
         reduceMotion: reduceMotion ?? this.reduceMotion,
       );
@@ -94,6 +105,7 @@ class Storage {
       engine: switch (_prefs.getString('reader_v3')) {
         'offline' => EngineChoice.offline,
         'gemini' => EngineChoice.gemini,
+        'claude' => EngineChoice.claude,
         _ => EngineChoice.deepseek,
       },
       apiKey: _prefs.getString(_apiKeyKey) ?? '',
@@ -101,6 +113,9 @@ class Storage {
       endpoint: _prefs.getString(_endpointKey) ?? d.endpoint,
       resultLanguage: _prefs.getString('result_language') ?? 'en',
       largerText: _prefs.getBool('a11y_larger') ?? false,
+      textScale: _prefs.getDouble('a11y_scale') ?? ((_prefs.getBool('a11y_larger') ?? false) ? 1.2 : 1.0),
+      sounds: _prefs.getBool('a11y_sounds') ?? true,
+      haptics: _prefs.getBool('a11y_haptics') ?? true,
       boldText: _prefs.getBool('a11y_bold') ?? false,
       reduceMotion: _prefs.getBool('a11y_motion') ?? false,
     );
@@ -113,6 +128,9 @@ class Storage {
     await _prefs.setString(_endpointKey, s.endpoint);
     await _prefs.setString('result_language', s.resultLanguage);
     await _prefs.setBool('a11y_larger', s.largerText);
+    await _prefs.setDouble('a11y_scale', s.textScale);
+    await _prefs.setBool('a11y_sounds', s.sounds);
+    await _prefs.setBool('a11y_haptics', s.haptics);
     await _prefs.setBool('a11y_bold', s.boldText);
     await _prefs.setBool('a11y_motion', s.reduceMotion);
   }

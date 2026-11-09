@@ -517,8 +517,7 @@ class _ScoreCardState extends State<_ScoreCard> {
                                 color: fg,
                               )),
                         ),
-                        const SizedBox(height: 8),
-                        Text('/100', style: TextStyle(fontSize: 13, color: fg.withValues(alpha: 0.7))),
+
                       ]),
                       Flexible(
                         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1486,6 +1485,7 @@ class _ReaderRow extends StatelessWidget {
     final e = engine.toLowerCase();
     if (e.startsWith('gemini')) return 'Gemini';
     if (e.startsWith('deepseek')) return 'DeepSeek';
+    if (e.startsWith('claude')) return 'Claude';
     if (e.startsWith('ai')) return 'AI reader';
     return 'On your phone';
   }
@@ -1498,6 +1498,7 @@ class _ReaderRow extends StatelessWidget {
     final chosen = switch (st.engine) {
       EngineChoice.gemini => 'Gemini',
       EngineChoice.offline => 'On your phone',
+      EngineChoice.claude => 'Claude',
       _ => 'DeepSeek',
     };
     final pending = chosen != current;
@@ -1512,9 +1513,10 @@ class _ReaderRow extends StatelessWidget {
         // to show it'll read again with the new one when you tap it.
         onSelected: (e) => state.updateSettings(st.copyWith(engine: e)),
         itemBuilder: (_) => [
-          for (final (e, name) in const [
+          for (final (e, name) in [
             (EngineChoice.deepseek, 'DeepSeek'),
             (EngineChoice.gemini, 'Gemini'),
+            if (st.apiKey.trim().isNotEmpty) (EngineChoice.claude, 'Claude'),
             (EngineChoice.offline, 'On your phone'),
           ])
             PopupMenuItem(

@@ -54,14 +54,17 @@ class SettingsScreen extends StatelessWidget {
               _Row(
                 title: 'Who reads your terms',
                 trailing: _Dropdown(
-                  value: st.engine == EngineChoice.claude ? 'deepseek' : st.engine.name,
-                  items: const {'deepseek': 'DeepSeek', 'gemini': 'Gemini', 'offline': 'On your phone'},
+                  value: st.engine.name,
+                  items: const {'deepseek': 'DeepSeek', 'gemini': 'Gemini', 'claude': 'Claude', 'offline': 'On your phone'},
                   onChanged: (v) => set(st.copyWith(engine: EngineChoice.values.byName(v))),
                 ),
               ),
               _Note(
                   switch (st.engine) {
                     EngineChoice.offline => 'Quick and private. Your terms never leave your phone.',
+                    EngineChoice.claude => st.apiKey.trim().isEmpty
+                        ? 'Anthropic’s Claude, with your own API key. Add it below.'
+                        : 'Anthropic’s Claude, using your own API key. Anthropic bills you for what you use.',
                     EngineChoice.deepseek => AppState.readers[EngineChoice.deepseek]!.available
                         ? 'A free AI that reads every document closely. Takes a few seconds.'
                         : 'Not switched on yet, so your phone reads for now.',
@@ -70,6 +73,7 @@ class SettingsScreen extends StatelessWidget {
                         : 'Not switched on yet, so your phone reads for now.',
                   },
               ),
+              if (st.engine == EngineChoice.claude) _ClaudeSetup(settings: st, onChanged: set),
             ]),
 
             const _Label('LANGUAGE'),
@@ -96,10 +100,7 @@ class SettingsScreen extends StatelessWidget {
 
             const _Label('ACCESSIBILITY'),
             _Group(children: [
-              _Row(
-                title: 'Larger text',
-                trailing: _Switch(st.largerText, (v) => set(st.copyWith(largerText: v))),
-              ),
+              _TextSize(value: st.textScale, onChanged: (v) => set(st.copyWith(textScale: v))),
               _Row(
                 title: 'Bold text',
                 body: 'Heavier letters for stronger contrast.',
@@ -109,9 +110,15 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Reduce motion',
                 trailing: _Switch(st.reduceMotion, (v) => set(st.copyWith(reduceMotion: v))),
               ),
-              const Opacity(
-                opacity: 0.4,
-                child: _Row(title: 'Read results aloud', trailing: _Soon()),
+              _Row(
+                title: 'Sound effects',
+                body: 'A little chime when results land.',
+                trailing: _Switch(st.sounds, (v) => set(st.copyWith(sounds: v))),
+              ),
+              _Row(
+                title: 'Vibration',
+                body: 'A soft tap when something finishes.',
+                trailing: _Switch(st.haptics, (v) => set(st.copyWith(haptics: v))),
               ),
             ]),
 
@@ -338,4 +345,112 @@ class _Pill extends StatelessWidget {
               )),
         ),
       );
+}
+
+
+/// Text size: a slider from smaller to larger, with a live "Aa" preview.
+class _TextSize extends StatelessWidget {
+  const _TextSize({required this.value, required this.onChanged});
+  final double value;
+  final ValueChanged<double> onChanged;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Text size', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+          Row(children: [
+            const Text('A', translate: false, style: TextStyle(fontSize: 13, color: GColors.inkSoft)),
+            Expanded(
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: GColors.ink,
+                  inactiveTrackColor: GColors.line,
+                  thumbColor: GColors.ink,
+                  overlayColor: GColors.ink.withValues(alpha: 0.08),
+                  trackHeight: 2,
+                  activeTickMarkColor: GColors.white,
+                  inactiveTickMarkColor: GColors.inkFaint,
+                ),
+                child: Slider(
+                  value: value.clamp(0.85, 1.4),
+                  min: 0.85,
+                  max: 1.4,
+                  divisions: 11,
+                  label: '${(value * 100).round()}%',
+                  onChanged: onChanged,
+                ),
+              ),
+            ),
+            const Text('A', translate: false, style: TextStyle(fontSize: 22, color: GColors.inkSoft)),
+          ]),
+        ]),
+      );
+}
+
+/// Claude needs your own API key (from console.anthropic.com) and a model.
+class _ClaudeSetup extends StatefulWidget {
+  const _ClaudeSetup({required this.settings, required this.onChanged});
+  final AppSettings settings;
+  final ValueChanged<AppSettings> onChanged;
+  @override
+  State<_ClaudeSetup> createState() => _ClaudeSetupState();
+}
+
+class _ClaudeSetupState extends State<_ClaudeSetup> {
+  late final _key = TextEditingController(text: widget.settings.apiKey);
+  bool _show = false;
+
+  static const _models = {
+    'claude-haiku-5-5': 'Haiku (fastest)',
+    'claude-sonnet-5-5': 'Sonnet (balanced)',
+    'claude-opus-5-5': 'Opus (most careful)',
+  };
+
+  @override
+  void dispose() {
+    _key.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final st = widget.settings;
+    final model = _models.containsKey(st.model) ? st.model : 'claude-sonnet-5-5';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        TextField(
+          controller: _key,
+          obscureText: !_show,
+          autocorrect: false,
+          enableSuggestions: false,
+          onChanged: (v) => widget.onChanged(st.copyWith(apiKey: v.trim())),
+          style: const TextStyle(fontSize: 14),
+          decoration: InputDecoration(
+            hintText: context.tr('Your Anthropic API key (sk-ant-…)'),
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.line)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.line)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: const BorderSide(color: GColors.ink)),
+            suffixIcon: IconButton(
+              tooltip: _show ? 'Hide key' : 'Show key',
+              icon: Icon(_show ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20, color: GColors.inkSoft),
+              onPressed: () => setState(() => _show = !_show),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(children: [
+          const Expanded(child: Text('Model', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600))),
+          _Dropdown(value: model, items: _models, onChanged: (v) => widget.onChanged(st.copyWith(model: v))),
+        ]),
+        const SizedBox(height: 8),
+        const Text(
+          'Get a key at console.anthropic.com. It’s stored only on this phone and sent only to Anthropic.',
+          style: TextStyle(fontSize: 12.5, height: 1.4, color: GColors.inkSoft),
+        ),
+      ]),
+    );
+  }
 }

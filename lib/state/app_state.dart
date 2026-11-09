@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/analysis.dart';
 import '../services/analysis/ai_prompt.dart';
+import '../services/analysis/claude_analyzer.dart';
 import '../services/analysis/context_profile.dart';
 import '../services/analysis/deepseek_analyzer.dart';
 import '../services/analysis/gemini_analyzer.dart';
@@ -13,10 +14,13 @@ import '../i18n/app_strings.g.dart';
 import '../services/storage.dart';
 import '../services/watch_service.dart';
 import '../services/incoming.dart';
+import '../services/feedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppState extends ChangeNotifier {
-  AppState(this._storage);
+  AppState(this._storage) {
+    _instance = this;
+  }
 
   /// Whole-app language (translated on the phone).
   final i18n = Translations();
@@ -112,6 +116,8 @@ class AppState extends ChangeNotifier {
     await _storage.init();
     _history = _storage.loadHistory();
     _settings = _storage.loadSettings();
+    Fx.sounds = _settings.sounds;
+    Fx.haptics = _settings.haptics;
     await i18n.setLanguage(_settings.resultLanguage);
     // Fill in any of the app's words the language pack hasn't translated yet.
     if (_settings.resultLanguage != 'en') {
@@ -136,6 +142,8 @@ class AppState extends ChangeNotifier {
 
   Future<void> updateSettings(AppSettings s) async {
     _settings = s;
+    Fx.sounds = s.sounds;
+    Fx.haptics = s.haptics;
     await i18n.setLanguage(s.resultLanguage);
     notifyListeners();
     await _storage.saveSettings(s);
@@ -144,10 +152,24 @@ class AppState extends ChangeNotifier {
   /// Runs the preferred engine and falls back to offline if AI fails, so
   /// the user always gets an answer.
 
-  /// AI readers available in this build, in the order to try them.
-  static Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> get readers => {
+  /// AI readers available, in the order to try them. Claude only counts
+  /// once you've added your own API key in Settings.
+  static Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> get readers =>
+      _instance?._readers ?? _readersFor(const AppSettings());
+  static AppState? _instance;
+  Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> get _readers =>
+      _readersFor(_settings);
+  static Map<EngineChoice, ({String name, bool available, Future<AnalysisResult> Function(ContractInput) run})> _readersFor(
+          AppSettings st) =>
+      {
         EngineChoice.deepseek: (name: 'DeepSeek', available: DeepSeekAnalyzer.available, run: (i) => DeepSeekAnalyzer().analyze(i)),
         EngineChoice.gemini: (name: 'Gemini', available: GeminiAnalyzer.available, run: (i) => GeminiAnalyzer().analyze(i)),
+        EngineChoice.claude: (
+          name: 'Claude',
+          available: st.apiKey.trim().isNotEmpty,
+          run: (i) => ClaudeAnalyzer(apiKey: st.apiKey.trim(), model: st.model.trim().isEmpty ? 'claude-sonnet-5-5' : st.model.trim())
+              .analyze(i),
+        ),
       };
 
   /// Chosen reader first, then the other AI, then the phone. Returns the
@@ -161,13 +183,16 @@ class AppState extends ChangeNotifier {
       );
     }
     if (choice == EngineChoice.offline) return (await offline.analyze(work), null);
-    final order = [choice, ...readers.keys.where((k) => k != choice)];
+    // Claude is only used when you pick it (it runs on your own paid key).
+    final order = [choice, ...readers.keys.where((k) => k != choice && k != EngineChoice.claude)];
     final misses = <String>[];
     for (final k in order) {
       final r = readers[k];
       if (r == null) continue;
       if (!r.available) {
-        if (k == choice) misses.add('${r.name} isn’t set up in this build');
+        if (k == choice) {
+          misses.add(k == EngineChoice.claude ? 'Claude needs your API key in Settings' : '${r.name} isn’t set up in this build');
+        }
         continue;
       }
       try {
