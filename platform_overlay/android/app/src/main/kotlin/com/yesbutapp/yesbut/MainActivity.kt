@@ -20,6 +20,9 @@ class MainActivity : FlutterActivity() {
         /** Sent by the text-selection menu and the "Check this screen" tile. */
         const val ACTION_INCOMING = "com.yesbutapp.yesbut.INCOMING"
         const val EXTRA_SCREEN = "screen_path"
+        const val EXTRA_SCREENS = "screen_paths"
+        /** "Done" on the reading-as-you-scroll notification. */
+        const val ACTION_FINISH_SCREENS = "com.yesbutapp.yesbut.FINISH_SCREENS"
     }
 
     private var channel: MethodChannel? = null
@@ -63,6 +66,15 @@ class MainActivity : FlutterActivity() {
         sendBroadcast(update)
     }
 
+    private fun screens(paths: List<String>): Map<String, Any?>? {
+        if (paths.isEmpty()) return null
+        return mapOf(
+            "kind" to "share", "text" to null,
+            "subject" to if (paths.size == 1) "Screen check" else "Screen check (${paths.size} screens)",
+            "files" to paths, "types" to paths.map { "image/jpeg" },
+        )
+    }
+
     @Suppress("DEPRECATION")
     private fun parse(intent: Intent?): Map<String, Any?>? {
         if (intent == null) return null
@@ -71,13 +83,19 @@ class MainActivity : FlutterActivity() {
                 val u = intent.data ?: return null
                 if (u.scheme == "yesbut") mapOf("kind" to "action", "action" to (u.host ?: "")) else null
             }
+            ACTION_FINISH_SCREENS -> {
+                intent.action = Intent.ACTION_MAIN
+                screens(CaptureService.collect(this))
+            }
             ACTION_INCOMING -> {
+                val many = intent.getStringArrayExtra(EXTRA_SCREENS)
                 val screen = intent.getStringExtra(EXTRA_SCREEN)
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)
                 intent.action = Intent.ACTION_MAIN
-                if (screen != null) {
-                    mapOf("kind" to "share", "text" to null, "subject" to "This screen",
-                        "files" to listOf(screen), "types" to listOf("image/png"))
+                if (many != null) {
+                    screens(many.toList())
+                } else if (screen != null) {
+                    screens(listOf(screen))
                 } else if (!text.isNullOrBlank()) {
                     mapOf("kind" to "share", "text" to text, "subject" to null,
                         "files" to emptyList<String>(), "types" to emptyList<String>())

@@ -101,6 +101,23 @@ class Flows {
 }
 
 
+/// Joins text read from overlapping screenshots, skipping lines that were
+/// already seen on an earlier screen.
+String _joinOverlapping(List<String> parts) {
+  final seen = <String>{};
+  final out = <String>[];
+  for (final part in parts) {
+    final kept = <String>[];
+    for (final line in part.split('\n')) {
+      final key = line.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+      if (key.length >= 6 && !seen.add(key)) continue;
+      kept.add(line);
+    }
+    if (kept.join().trim().isNotEmpty) out.add(kept.join('\n'));
+  }
+  return out.join('\n');
+}
+
 /// Content shared into Yes,But from another app.
 /// - Screenshots: read on the phone (OCR), all pages together.
 /// - PDF / text files: text pulled out of the file.
@@ -131,7 +148,15 @@ Future<void> shareIn(BuildContext context, Incoming inc) async {
           for (final p in docs) {
             parts.add(DocumentReader.extract(p, await File(p).readAsBytes()));
           }
-          final text = parts.join('\n\n');
+          // Screens captured while scrolling overlap: drop lines already read.
+          final text = images.length > 1 ? _joinOverlapping(parts) : parts.join('\n\n');
+          for (final p in images) {
+            if (p.contains('/screen_')) {
+              try {
+                File(p).deleteSync();
+              } catch (_) {}
+            }
+          }
           if (text.trim().split(RegExp(r'\s+')).length < 20) {
             throw DocumentException('We couldn’t read enough text in what you shared. Try clearer screenshots, or copy the text instead.');
           }

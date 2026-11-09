@@ -4,6 +4,13 @@
     <string name="process_label">Yes, but</string>
     <string name="tile_label">Check this screen</string>
     <string name="capture_channel">Screen check</string>
-    <string name="capture_note">Reading this screen…</string>
+    <string name="capture_note">Reading as you scroll</string>
+    <string name="capture_count">Reading as you scroll · %1$d screens</string>
+    <string name="capture_hint">Scroll through the terms, then tap Done.</string>
+    <string name="capture_done">Done</string>
+    <string name="capture_ready">Got %1$d screens</string>
+    <string name="capture_ready_body">Tap to see what they say.</string>
+    <string name="capture_started">Scroll through the terms at an easy pace. Tap the tile again, or Done, when you reach the end.</string>
+    <string name="tile_done">Done reading</string>
     <string name="capture_failed">Couldn’t capture the screen. Try a screenshot and share it to Yes,But.</string>
 </resources>

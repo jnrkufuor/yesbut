@@ -31,6 +31,8 @@ class OurTermsScreen extends StatelessWidget {
     ('What stays on your phone', [
       'Your history, settings and watch list are stored only on this phone. We don’t have servers that keep them.',
       'Reading text from photos and screenshots happens on your phone.',
+      'Check this screen keeps a picture each time the page stops moving, only while you’re reading, '
+          'and only of what Android lets you share. The pictures are read on your phone and deleted after.',
       'Translating the app and your documents happens on your phone, once the language pack is downloaded.',
       'The on-your-phone reader works without sending anything anywhere.',
     ]),

@@ -10,6 +10,7 @@ import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import 'home_screen.dart' show RoundIconButton;
 import 'language_switch_screen.dart';
+import 'anywhere_screen.dart';
 import 'our_terms_screen.dart';
 
 /// Compact settings. Changes save as you make them.
@@ -96,6 +97,16 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               const _Note('Translated on your phone. Each language downloads once (about 30 MB), then works offline.'),
+            ]),
+
+            const _Label('FROM OTHER APPS'),
+            _Group(children: [
+              _Row(
+                title: 'Use it anywhere',
+                body: 'Highlight text, check a screen as you scroll, or share.',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AnywhereScreen())),
+                trailing: const Icon(Icons.chevron_right_rounded, color: GColors.inkSoft),
+              ),
             ]),
 
             const _Label('ACCESSIBILITY'),
