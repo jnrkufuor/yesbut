@@ -115,11 +115,17 @@ class _SearchScreenState extends State<SearchScreen> {
     final state = context.read<AppState>();
     final matches = q.isEmpty
         ? <CatalogItem>[]
-        : _catalog
-            .where((c) => c.name.toLowerCase().contains(q) || c.url.toLowerCase().contains(q))
-            .take(4)
-            .toList();
-    final recent = _recent.where((r) => q.isEmpty || r.toLowerCase().contains(q)).take(q.isEmpty ? 5 : 2).toList();
+        : _catalog.where((c) {
+            // Match the start of a word in the name ("dis" -> Disney+) or the
+            // start of the site ("netf" -> netflix.com), never stray letters.
+            final words = c.name.toLowerCase().split(RegExp(r'[\s·+\-.&]+'));
+            final host = (Uri.tryParse(c.url)?.host ?? '').replaceFirst('www.', '').toLowerCase();
+            return words.any((w) => w.startsWith(q)) || host.startsWith(q) || c.name.toLowerCase().startsWith(q);
+          }).take(4).toList();
+    final recent = _recent
+        .where((r) => q.isEmpty || (r.toLowerCase().startsWith(q) && r.toLowerCase() != q))
+        .take(q.isEmpty ? 5 : 2)
+        .toList();
     if (matches.isEmpty && recent.isEmpty && q.isEmpty) return const SizedBox(height: 4);
     Widget row(Widget lead, String label, String? sub, VoidCallback onTap) => Pressable(
           scale: 0.98,
@@ -219,9 +225,8 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
               const SizedBox(height: 20),
               // While a search runs the bar steps aside for the animation.
-              AnimatedSize(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
+              // (No size animation here: it made the bar jump while typing.)
+              SizedBox(
                 child: _busy
                     ? const SizedBox(width: double.infinity)
                     : Column(children: [
@@ -293,8 +298,9 @@ class _SearchField extends StatelessWidget {
       decoration: BoxDecoration(
         color: GColors.white,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: GColors.ink, width: on ? 1.6 : 1),
-        boxShadow: on ? [BoxShadow(color: GColors.ink.withValues(alpha: 0.12), blurRadius: 22, offset: const Offset(0, 8))] : const [],
+        // Focused: a softer grey outline and a gentle lift, not a heavy black ring.
+        border: Border.all(color: on ? GColors.inkFaint : GColors.ink, width: 1),
+        boxShadow: on ? [BoxShadow(color: GColors.ink.withValues(alpha: 0.10), blurRadius: 22, offset: const Offset(0, 8))] : const [],
       ),
       child: Row(children: [
         const LoopyIcon('search', size: 22, stroke: 2.6),
