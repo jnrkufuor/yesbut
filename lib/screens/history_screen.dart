@@ -6,6 +6,7 @@ import '../models/analysis.dart';
 import '../state/app_state.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/recap.dart';
 import '../widgets/dialogs.dart';
 import '../widgets/loopy.dart';
 import '../widgets/tiles.dart';
@@ -76,6 +77,10 @@ class HistoryScreen extends StatelessWidget {
             Text('Saved on this phone. Long-press a check to rename or delete it.',
                 style: t.bodyLarge?.copyWith(color: GColors.inkSoft)),
             const SizedBox(height: 20),
+            if (items.length >= 2) ...[
+              RecapCard(history: items),
+              const SizedBox(height: 22),
+            ],
             if (items.isNotEmpty)
               Row(children: [
                 Text('${items.length} CHECK${items.length == 1 ? '' : 'S'}',
