@@ -16,6 +16,12 @@ import java.io.File
  * Shared files are copied into the app's cache so Flutter can read them.
  */
 class MainActivity : FlutterActivity() {
+    companion object {
+        /** Sent by the text-selection menu and the "Check this screen" tile. */
+        const val ACTION_INCOMING = "com.yesbutapp.yesbut.INCOMING"
+        const val EXTRA_SCREEN = "screen_path"
+    }
+
     private var channel: MethodChannel? = null
     private var pending: Map<String, Any?>? = null
 
@@ -64,6 +70,18 @@ class MainActivity : FlutterActivity() {
             Intent.ACTION_VIEW -> {
                 val u = intent.data ?: return null
                 if (u.scheme == "yesbut") mapOf("kind" to "action", "action" to (u.host ?: "")) else null
+            }
+            ACTION_INCOMING -> {
+                val screen = intent.getStringExtra(EXTRA_SCREEN)
+                val text = intent.getStringExtra(Intent.EXTRA_TEXT)
+                intent.action = Intent.ACTION_MAIN
+                if (screen != null) {
+                    mapOf("kind" to "share", "text" to null, "subject" to "This screen",
+                        "files" to listOf(screen), "types" to listOf("image/png"))
+                } else if (!text.isNullOrBlank()) {
+                    mapOf("kind" to "share", "text" to text, "subject" to null,
+                        "files" to emptyList<String>(), "types" to emptyList<String>())
+                } else null
             }
             Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
                 val uris = mutableListOf<Uri>()

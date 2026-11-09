@@ -3,6 +3,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Alerts when terms you watch change. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- "Check this screen" quick settings button: one-off screen capture. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 
     <application
         android:label="Yes,But"
@@ -54,6 +57,43 @@
                 <data android:scheme="yesbut" />
             </intent-filter>
         </activity>
+        <!-- "Yes, but" in the text-selection menu of other apps. -->
+        <activity
+            android:name=".ForwardActivity"
+            android:exported="true"
+            android:label="@string/process_label"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter android:label="@string/process_label">
+                <action android:name="android.intent.action.PROCESS_TEXT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+        <!-- Quick settings: "Check this screen". -->
+        <activity
+            android:name=".CaptureActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.yesbutapp.yesbut.capture"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <service
+            android:name=".CaptureService"
+            android:exported="false"
+            android:foregroundServiceType="mediaProjection" />
+        <service
+            android:name=".ScreenTile"
+            android:exported="true"
+            android:label="@string/tile_label"
+            android:icon="@drawable/ic_tile"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+            <meta-data android:name="android.service.quicksettings.ACTIVE_TILE" android:value="false" />
+        </service>
         <receiver android:name=".QuickWidget" android:exported="false" android:label="Yes,But">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
